@@ -9,7 +9,7 @@ use crate::msg::InstantiateMsg;
 use crate::state::BALANCES;
 
 // version info for migration info
-const CONTRACT_NAME: &str = "crates.io:master";
+const CONTRACT_NAME: &str = "crates.io:master_contract";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 

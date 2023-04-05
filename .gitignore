@@ -1,6 +1,6 @@
-/contracts/master/target
+/contracts/master_contract/target
 
-/contracts/master/Cargo.lock
+/contracts/master_contract/Cargo.lock
 
 .idea
 **/*.rs.bk
