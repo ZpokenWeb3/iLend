@@ -49,13 +49,14 @@ pub fn execute_transfer(
 ) -> Result<Response, ContractError> {
     let rcpt_addr = deps.api.addr_validate(&recipient)?;
 
-    BALANCES.update(
-        deps.storage,
-        &info.sender,
-        |balance: Option<Uint128>| -> StdResult<_> {
-            Ok(balance.unwrap_or_default().checked_sub(amount)?)
-        },
-    )?;
+    // BALANCES.update(
+    //     deps.storage,
+    //     &info.sender,
+    //     |balance: Option<Uint128>| -> StdResult<_> {
+    //         Ok(balance.unwrap_or_default().checked_sub(amount)?)
+    //     },
+    // )?;
+
     BALANCES.update(
         deps.storage,
         &rcpt_addr,
