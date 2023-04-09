@@ -1,6 +1,6 @@
 use std::{vec};
 
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, Addr, to_binary};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, to_binary};
 use cw2::set_contract_version;
 
 use crate::msg::{ExecuteMsg, QueryMsg};
@@ -47,7 +47,7 @@ pub fn execute(deps: DepsMut, _env: Env, info: MessageInfo, msg: ExecuteMsg) -> 
             Ok(Response::new()
                 .add_messages(msg))
         }
-        ExecuteMsg::Withdraw { denom: String, amount: Uint128 } => {
+        ExecuteMsg::Withdraw { denom: _String, amount: _Uint128 } => {
             unimplemented!()
         }
     }
