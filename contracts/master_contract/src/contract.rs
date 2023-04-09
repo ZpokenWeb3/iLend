@@ -80,8 +80,8 @@ mod query {
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{Addr, coins};
-    use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
-    use crate::msg::ExecuteMsg::Deposit;
+    use cw_multi_test::{App, ContractWrapper, Executor};
+    
     use super::*;
 
     #[test]
