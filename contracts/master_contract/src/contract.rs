@@ -1,6 +1,6 @@
 use std::{vec};
 
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, Addr, Coin};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, Addr, to_binary};
 use cw2::set_contract_version;
 
 use crate::msg::{ExecuteMsg, QueryMsg};
@@ -32,9 +32,8 @@ pub fn execute(deps: DepsMut, _env: Env, info: MessageInfo, msg: ExecuteMsg) -> 
         ExecuteMsg::Deposit {} => {
             // TODO add some checks for the corresponding underlying balances for user
 
-
             for coin in &info.funds {
-                let current_balance = get_balance(deps.as_ref(), info.sender.clone(), coin.denom.clone())?;
+                let current_balance = query::get_balance(deps.as_ref(), info.sender.to_string(), coin.denom.clone())?;
                 let new_balance = current_balance + coin.amount;
                 USER_PROFILES.save(deps.storage, (info.sender.to_string(), coin.denom.clone()), &new_balance)?;
             }
@@ -48,35 +47,45 @@ pub fn execute(deps: DepsMut, _env: Env, info: MessageInfo, msg: ExecuteMsg) -> 
             Ok(Response::new()
                 .add_messages(msg))
         }
+        ExecuteMsg::Withdraw { denom: String, amount: Uint128 } => {
+            unimplemented!()
+        }
     }
 }
 
-fn get_balance(deps: Deps, address: Addr, token: String) -> StdResult<Uint128> {
-    let balance = USER_PROFILES.load(deps.storage, (address.to_string(), token)).unwrap_or_else(|_| Uint128::zero());
-
-    Ok(balance)
+pub fn query(
+    deps: Deps,
+    _env: Env,
+    msg: QueryMsg,
+) -> StdResult<Binary> {
+    match msg {
+        QueryMsg::GetDeposit { address, denom } => {
+            to_binary(
+                &query::get_balance(deps, address, denom)?)
+        }
+    }
 }
 
-pub fn query(
-    _deps: Deps,
-    _env: Env,
-    _msg: QueryMsg,
-) -> StdResult<Binary> {
-    unimplemented!()
+mod query {
+    use super::*;
+
+    pub fn get_balance(deps: Deps, address: String, denom: String) -> StdResult<Uint128> {
+        let balance = USER_PROFILES.load(deps.storage, (address, denom)).unwrap_or_else(|_| Uint128::zero());
+
+        Ok(balance)
+    }
 }
 
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::Addr;
-    use cw_multi_test::{App, ContractWrapper, Executor};
+    use cosmwasm_std::{Addr, coins};
+    use cw_multi_test::{App, AppResponse, ContractWrapper, Executor};
     use crate::msg::ExecuteMsg::Deposit;
-
-
     use super::*;
 
     #[test]
-    fn test_deposit() {
+    fn test_successfull_deposit() {
         const INIT_BALANCE: u128 = 1000;
         const DEPOSIT_AMOUNT: u128 = 200;
 
@@ -111,6 +120,12 @@ mod tests {
             &coins(DEPOSIT_AMOUNT, "eth"),
         )
             .unwrap();
+
+        let user_deposited_balance : Uint128 = app.wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetDeposit { address: "user".to_string(), denom: "eth".to_string()}).unwrap();
+
+        assert_eq!(user_deposited_balance.u128(), DEPOSIT_AMOUNT);
+
 
         assert_eq!(
             app.wrap()
