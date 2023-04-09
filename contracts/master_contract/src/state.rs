@@ -1,4 +1,15 @@
+use std::collections::HashMap;
+use std::ops::Add;
+use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Uint128};
-use cw_storage_plus::Map;
+use cw_storage_plus::{Item, Map};
 
-pub const BALANCES: Map<&Addr, Uint128> = Map::new("balance");
+/*
+USER PROFILE STORAGE
+Key: (user_address_1, token_A) -> Value: balance_for_token_A
+Key: (user_address_1, token_B) -> Value: balance_for_token_B
+Key: (user_address_2, token_A) -> Value: balance_for_token_A
+ */
+
+pub const USER_PROFILES: Map<(String, String), Uint128> = Map::new("user_profiles");
+pub const VAULT_CONTRACT: Item<String> = Item::new("vault_contract");
