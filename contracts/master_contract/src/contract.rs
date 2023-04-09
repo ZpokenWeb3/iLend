@@ -1,7 +1,6 @@
-use std::{iter, vec};
-#[cfg(not(feature = "library"))]
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, coins, Addr, Coin};
+use std::{vec};
+
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, Addr, Coin};
 use cw2::set_contract_version;
 
 use crate::msg::{ExecuteMsg, QueryMsg};
@@ -52,11 +51,6 @@ pub fn execute(deps: DepsMut, _env: Env, info: MessageInfo, msg: ExecuteMsg) -> 
     }
 }
 
-fn set_user_balance(deps: DepsMut, address: Addr, funds: Vec<Coin>) -> StdResult<()> {
-
-    Ok(())
-}
-
 fn get_balance(deps: Deps, address: Addr, token: String) -> StdResult<Uint128> {
     let balance = USER_PROFILES.load(deps.storage, (address.to_string(), token)).unwrap_or_else(|_| Uint128::zero());
 
@@ -64,9 +58,9 @@ fn get_balance(deps: Deps, address: Addr, token: String) -> StdResult<Uint128> {
 }
 
 pub fn query(
-    deps: Deps,
+    _deps: Deps,
     _env: Env,
-    msg: QueryMsg,
+    _msg: QueryMsg,
 ) -> StdResult<Binary> {
     unimplemented!()
 }
