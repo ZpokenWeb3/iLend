@@ -42,5 +42,17 @@ mod tests {
             .unwrap();
 
         assert_eq!(user_deposited_balance.u128(), FIRST_DEPOSIT_AMOUNT);
+
+        assert_eq!(
+            app.wrap()
+                .query_balance("user", "eth")
+                .unwrap()
+                .amount
+                .u128(),
+            INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
+        );
+
+
+
     }
 }

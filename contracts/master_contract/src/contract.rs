@@ -1,7 +1,7 @@
-use std::vec;
 
-use cosmwasm_std::{to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, coins, coin, WasmMsg, CosmosMsg};
-use cosmwasm_std::WasmMsg::Execute;
+
+use cosmwasm_std::{to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, coins};
+
 use cw2::set_contract_version;
 use crate::contract::query::get_balance;
 
@@ -32,7 +32,7 @@ pub fn instantiate(
 
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
