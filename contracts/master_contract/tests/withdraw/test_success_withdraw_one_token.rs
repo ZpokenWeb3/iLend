@@ -5,8 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::{execute, instantiate, query};
     use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use master_contract::{execute, instantiate, query};
 
     use crate::utils::success_deposit_setup;
 
@@ -17,7 +17,6 @@ mod tests {
         const FIRST_DEPOSIT_AMOUNT: u128 = 200;
         const SECOND_DEPOSIT_AMOUNT: u128 = 300;
 
-
         // having 500 deposited we want to withdraw SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
         let (mut app, addr) = success_deposit_setup();
@@ -25,10 +24,13 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::Withdraw { denom: "eth".to_string(), amount: Uint128::from(SECOND_DEPOSIT_AMOUNT) },
+            &ExecuteMsg::Withdraw {
+                denom: "eth".to_string(),
+                amount: Uint128::from(SECOND_DEPOSIT_AMOUNT),
+            },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -51,8 +53,5 @@ mod tests {
                 .u128(),
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
         );
-
-
-
     }
 }

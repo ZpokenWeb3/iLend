@@ -1,6 +1,5 @@
-use cosmwasm_schema::{cw_serde};
-use cosmwasm_std::{Uint128};
-
+use cosmwasm_schema::cw_serde;
+use cosmwasm_std::Uint128;
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -17,8 +16,6 @@ pub enum ExecuteMsg {
     // Deposit / Withdraw functionality for users
     Deposit {},
     Withdraw { denom: String, amount: Uint128 },
-
-
 }
 
 #[cw_serde]

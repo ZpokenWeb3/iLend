@@ -5,9 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::{execute, instantiate, query};
     use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-
+    use master_contract::{execute, instantiate, query};
 
     #[test]
     fn test_fail_deposit_insufficient_balance_after_successful_deposit() {
@@ -52,14 +51,13 @@ mod tests {
             )
             .unwrap();
 
-
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(INIT_USER_BALANCE / 2, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -72,18 +70,16 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(
-            user_deposited_balance.u128(),
-            INIT_USER_BALANCE / 2
-        );
+        assert_eq!(user_deposited_balance.u128(), INIT_USER_BALANCE / 2);
 
-
-        assert!(app.execute_contract(
-            Addr::unchecked("user"),
-            addr.clone(),
-            &ExecuteMsg::Deposit {},
-            &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
-        ).is_err());
+        assert!(app
+            .execute_contract(
+                Addr::unchecked("user"),
+                addr.clone(),
+                &ExecuteMsg::Deposit {},
+                &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
+            )
+            .is_err());
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -95,13 +91,8 @@ mod tests {
                 },
             )
             .unwrap();
-
 
         // have to be still the same
-        assert_eq!(
-            user_deposited_balance.u128(),
-            INIT_USER_BALANCE / 2
-        );
+        assert_eq!(user_deposited_balance.u128(), INIT_USER_BALANCE / 2);
     }
-
 }

@@ -1,6 +1,5 @@
-use cosmwasm_std::{Uint128};
+use cosmwasm_std::Uint128;
 use cw_storage_plus::{Item, Map};
-
 
 pub const USER_PROFILES: Map<(String, String), Uint128> = Map::new("user_profiles");
 /*
@@ -15,7 +14,6 @@ pub const SUPPORTED_TOKENS: Map<String, String> = Map::new("tokens");
 SUPPORTED_TOKENS STORAGE
 Key: token demon -> Value: itoken denom
 */
-
 
 pub const ADMIN: Item<String> = Item::new("admin");
 /*

@@ -1,9 +1,10 @@
+use cosmwasm_std::{
+    coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    Uint128,
+};
 
-
-use cosmwasm_std::{to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, coins};
-
-use cw2::set_contract_version;
 use crate::contract::query::get_balance;
+use cw2::set_contract_version;
 
 use crate::error::ContractError;
 use crate::msg::InstantiateMsg;
@@ -39,11 +40,19 @@ pub fn execute(
     match msg {
         ExecuteMsg::Deposit {} => {
             // TODO add some checks for the corresponding underlying balances for user
-            assert_eq!(info.funds.len(), 1, "You have to deposit one asset per time");
+            assert_eq!(
+                info.funds.len(),
+                1,
+                "You have to deposit one asset per time"
+            );
 
             let allowed_coin = info.funds.first().unwrap();
-            let current_balance =
-                get_balance(deps.as_ref(), info.sender.to_string(), allowed_coin.denom.clone()).unwrap();
+            let current_balance = get_balance(
+                deps.as_ref(),
+                info.sender.to_string(),
+                allowed_coin.denom.clone(),
+            )
+            .unwrap();
             let new_balance = current_balance.u128() + allowed_coin.amount.u128();
             USER_PROFILES.save(
                 deps.storage,
@@ -51,21 +60,20 @@ pub fn execute(
                 &Uint128::from(new_balance),
             )?;
 
-
             Ok(Response::default())
         }
-        ExecuteMsg::Withdraw { denom, amount, } => {
+        ExecuteMsg::Withdraw { denom, amount } => {
             // TODO have to have exact amount of itokens transfered in info.funds along the call
 
-            assert!(
-                amount.u128() > 0,
-                "Amount should be a positive number"
-            );
+            assert!(amount.u128() > 0, "Amount should be a positive number");
 
             let user_balance =
                 query::get_balance(deps.as_ref(), info.sender.to_string(), denom.clone())?;
 
-            assert!(user_balance.u128() >= amount.u128(), "The account doesn't have enough digital tokens to do withdraw");
+            assert!(
+                user_balance.u128() >= amount.u128(),
+                "The account doesn't have enough digital tokens to do withdraw"
+            );
 
             // TODO burn respective amount of itokens here
 
@@ -80,15 +88,17 @@ pub fn execute(
                 &Uint128::from(remaining),
             )?;
 
-
-            Ok(Response::new()
-                .add_message(BankMsg::Send {
-                    to_address: info.sender.to_string(),
-                    amount: coins(amount.u128(), denom.clone()),
-                }))
+            Ok(Response::new().add_message(BankMsg::Send {
+                to_address: info.sender.to_string(),
+                amount: coins(amount.u128(), denom.clone()),
+            }))
         }
         ExecuteMsg::Fund {} => {
-            assert_eq!(info.sender.to_string(), ADMIN.load(deps.storage).unwrap(), "This functionality is allowed for admin only");
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
 
             Ok(Response::default())
         }

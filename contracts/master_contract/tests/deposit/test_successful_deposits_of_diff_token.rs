@@ -5,9 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::{execute, instantiate, query};
     use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-
+    use master_contract::{execute, instantiate, query};
 
     #[test]
     fn test_successful_deposits_of_diff_token() {
@@ -26,7 +25,10 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("user"),
-                    vec![coin(INIT_BALANCE_FIRST_TOKEN, "eth"), coin(INIT_BALANCE_SECOND_TOKEN, "atom")],
+                    vec![
+                        coin(INIT_BALANCE_FIRST_TOKEN, "eth"),
+                        coin(INIT_BALANCE_SECOND_TOKEN, "atom"),
+                    ],
                 )
                 .unwrap();
 
@@ -35,7 +37,10 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("owner"),
-                    vec![coin(CONTRACT_RESERVES_FIRST_TOKEN, "eth"), coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],
+                    vec![
+                        coin(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
+                        coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom"),
+                    ],
                 )
                 .unwrap();
         });
@@ -49,7 +54,10 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
-                    supported_tokens: vec![("eth".to_string(), "ieth".to_string()), ("atom".to_string(), "iatom".to_string())],
+                    supported_tokens: vec![
+                        ("eth".to_string(), "ieth".to_string()),
+                        ("atom".to_string(), "iatom".to_string()),
+                    ],
                 },
                 &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],
                 "Contract",
@@ -64,7 +72,7 @@ mod tests {
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -72,7 +80,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -111,7 +119,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()

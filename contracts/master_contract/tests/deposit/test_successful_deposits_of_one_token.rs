@@ -5,9 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::{execute, instantiate, query};
     use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-
+    use master_contract::{execute, instantiate, query};
 
     #[test]
     fn test_successful_deposits_of_one_token() {
@@ -59,7 +58,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -98,7 +97,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -133,4 +132,5 @@ mod tests {
                 .u128(),
             CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
-    }}
+    }
+}

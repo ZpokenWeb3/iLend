@@ -3,8 +3,8 @@ use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
 use std::vec;
 
 use cosmwasm_std::Uint128;
-use master_contract::{execute, instantiate, query};
 use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use master_contract::{execute, instantiate, query};
 
 pub fn success_deposit_setup() -> (BasicApp, Addr) {
     const INIT_USER_BALANCE: u128 = 1000;
@@ -55,7 +55,7 @@ pub fn success_deposit_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: Uint128 = app
         .wrap()
@@ -94,7 +94,7 @@ pub fn success_deposit_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: Uint128 = app
         .wrap()

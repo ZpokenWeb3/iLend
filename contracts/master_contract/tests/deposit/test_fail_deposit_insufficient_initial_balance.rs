@@ -5,9 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::{execute, instantiate, query};
     use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-
+    use master_contract::{execute, instantiate, query};
 
     #[test]
     fn test_fail_deposit_insufficient_initial_balance() {
@@ -52,12 +51,14 @@ mod tests {
             )
             .unwrap();
 
-        assert!(app.execute_contract(
-            Addr::unchecked("user"),
-            addr.clone(),
-            &ExecuteMsg::Deposit {},
-            &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
-        ).is_err());
+        assert!(app
+            .execute_contract(
+                Addr::unchecked("user"),
+                addr.clone(),
+                &ExecuteMsg::Deposit {},
+                &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
+            )
+            .is_err());
 
         let user_deposited_balance: Uint128 = app
             .wrap()
