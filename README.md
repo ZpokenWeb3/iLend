@@ -52,3 +52,13 @@ the main differences you might face:
 1. deploying the contract != instantiating a contract - it is a separate action
 2. your user address is not the same as your contract address, make sure you saved both
 3. as for scripts you can use mine, but make sure you paste right addresses and CODE_ID 
+
+
+
+## Tests
+
+run tests in /money-market/contracts/master_contract/ derictory
+```
+cargo wasm && cargo unit-test
+```
+
