@@ -1,7 +1,9 @@
 use std::vec;
 
-use cosmwasm_std::{to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, coins};
+use cosmwasm_std::{to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, coins, coin, WasmMsg, CosmosMsg};
+use cosmwasm_std::WasmMsg::Execute;
 use cw2::set_contract_version;
+use crate::contract::query::get_balance;
 
 use crate::error::ContractError;
 use crate::msg::InstantiateMsg;
@@ -15,12 +17,9 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    // make sure we are sending some reserves in supported tokens to be able to cover first trades for early users
-    assert!(!info.funds.is_empty());
-
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
     ADMIN.save(deps.storage, &msg.admin)?;
 
@@ -33,31 +32,29 @@ pub fn instantiate(
 
 pub fn execute(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => {
             // TODO add some checks for the corresponding underlying balances for user
+            assert_eq!(info.funds.len(), 1, "You have to deposit one asset per time");
 
-            for coin in &info.funds {
-                let current_balance =
-                    query::get_balance(deps.as_ref(), info.sender.to_string(), coin.denom.clone())?;
-                let new_balance = current_balance + coin.amount;
-                USER_PROFILES.save(
-                    deps.storage,
-                    (info.sender.to_string(), coin.denom.clone()),
-                    &new_balance,
-                )?;
-            }
+            let allowed_coin = info.funds.first().unwrap();
+            let current_balance =
+                get_balance(deps.as_ref(), info.sender.to_string(), allowed_coin.denom.clone()).unwrap();
+            let new_balance = current_balance.u128() + allowed_coin.amount.u128();
+            USER_PROFILES.save(
+                deps.storage,
+                (info.sender.to_string(), allowed_coin.denom.clone()),
+                &Uint128::from(new_balance),
+            )?;
+
 
             Ok(Response::default())
         }
-        ExecuteMsg::Withdraw {
-            denom,
-            amount,
-        } => {
+        ExecuteMsg::Withdraw { denom, amount, } => {
             // TODO have to have exact amount of itokens transfered in info.funds along the call
 
             assert!(
@@ -70,13 +67,25 @@ pub fn execute(
 
             assert!(user_balance.u128() >= amount.u128(), "The account doesn't have enough digital tokens to do withdraw");
 
-            let msg = vec![BankMsg::Send {
-                to_address: info.sender.to_string(),
-                amount: coins(amount.u128(), denom),
-            }];
-
             // TODO burn respective amount of itokens here
-            Ok(Response::new().add_messages(msg))
+
+            let current_balance =
+                get_balance(deps.as_ref(), info.sender.to_string(), denom.clone()).unwrap();
+
+            let remaining = current_balance.u128() - amount.u128();
+            assert!(remaining >= 0, "Remaining balance should be greater than 0");
+            USER_PROFILES.save(
+                deps.storage,
+                (info.sender.to_string(), denom.clone()),
+                &Uint128::from(remaining),
+            )?;
+
+
+            Ok(Response::new()
+                .add_message(BankMsg::Send {
+                    to_address: info.sender.to_string(),
+                    amount: coins(amount.u128(), denom.clone()),
+                }))
         }
         ExecuteMsg::Fund {} => {
             assert_eq!(info.sender.to_string(), ADMIN.load(deps.storage).unwrap(), "This functionality is allowed for admin only");
@@ -96,7 +105,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 mod query {
     use super::*;
-
 
     pub fn get_balance(deps: Deps, address: String, denom: String) -> StdResult<Uint128> {
         let balance = USER_PROFILES

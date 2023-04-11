@@ -59,6 +59,6 @@ the main differences you might face:
 
 run tests in /money-market/contracts/master_contract/ derictory
 ```
-cargo wasm && cargo unit-test
+cargo wasm && cargo test
 ```
 

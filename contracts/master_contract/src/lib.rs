@@ -4,9 +4,8 @@ use msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
 mod contract;
 mod error;
-mod msg;
+pub mod msg;
 mod state;
-mod integration_tests;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(

@@ -17,9 +17,11 @@ pub enum ExecuteMsg {
     // Deposit / Withdraw functionality for users
     Deposit {},
     Withdraw { denom: String, amount: Uint128 },
+
+
 }
 
 #[cw_serde]
 pub enum QueryMsg {
-    GetDeposit { address: String, denom: String }
+    GetDeposit { address: String, denom: String },
 }
