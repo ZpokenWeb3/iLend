@@ -1,12 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, coins, Addr};
-    use cw_multi_test::{App, ContractWrapper, Executor};
-    use std::vec;
+    use cosmwasm_std::{Addr};
+    use cw_multi_test::{Executor};
+    
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-    use master_contract::{execute, instantiate, query};
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
+    
 
     use crate::utils::success_deposit_setup;
 
