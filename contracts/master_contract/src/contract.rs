@@ -1,17 +1,18 @@
-use std::{vec};
+use std::vec;
 
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, BankMsg, to_binary};
+use cosmwasm_std::{
+    to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,
+};
 use cw2::set_contract_version;
 
-use crate::msg::{ExecuteMsg, QueryMsg};
 use crate::error::ContractError;
 use crate::msg::InstantiateMsg;
+use crate::msg::{ExecuteMsg, QueryMsg};
 use crate::state::{USER_PROFILES, VAULT_CONTRACT};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:master_contract";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 pub fn instantiate(
     deps: DepsMut,
@@ -26,16 +27,25 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-
-pub fn execute(deps: DepsMut, _env: Env, info: MessageInfo, msg: ExecuteMsg) -> Result<Response, ContractError> {
+pub fn execute(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    msg: ExecuteMsg,
+) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => {
             // TODO add some checks for the corresponding underlying balances for user
 
             for coin in &info.funds {
-                let current_balance = query::get_balance(deps.as_ref(), info.sender.to_string(), coin.denom.clone())?;
+                let current_balance =
+                    query::get_balance(deps.as_ref(), info.sender.to_string(), coin.denom.clone())?;
                 let new_balance = current_balance + coin.amount;
-                USER_PROFILES.save(deps.storage, (info.sender.to_string(), coin.denom.clone()), &new_balance)?;
+                USER_PROFILES.save(
+                    deps.storage,
+                    (info.sender.to_string(), coin.denom.clone()),
+                    &new_balance,
+                )?;
             }
 
             // sending funds to the vault contract
@@ -44,24 +54,21 @@ pub fn execute(deps: DepsMut, _env: Env, info: MessageInfo, msg: ExecuteMsg) -> 
                 amount: info.funds,
             }];
 
-            Ok(Response::new()
-                .add_messages(msg))
+            Ok(Response::new().add_messages(msg))
         }
-        ExecuteMsg::Withdraw { denom: _String, amount: _Uint128 } => {
+        ExecuteMsg::Withdraw {
+            denom: _String,
+            amount: _Uint128,
+        } => {
             unimplemented!()
         }
     }
 }
 
-pub fn query(
-    deps: Deps,
-    _env: Env,
-    msg: QueryMsg,
-) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetDeposit { address, denom } => {
-            to_binary(
-                &query::get_balance(deps, address, denom)?)
+            to_binary(&query::get_balance(deps, address, denom)?)
         }
     }
 }
@@ -70,89 +77,10 @@ mod query {
     use super::*;
 
     pub fn get_balance(deps: Deps, address: String, denom: String) -> StdResult<Uint128> {
-        let balance = USER_PROFILES.load(deps.storage, (address, denom)).unwrap_or_else(|_| Uint128::zero());
+        let balance = USER_PROFILES
+            .load(deps.storage, (address, denom))
+            .unwrap_or_else(|_| Uint128::zero());
 
         Ok(balance)
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use cosmwasm_std::{Addr, coins};
-    use cw_multi_test::{App, ContractWrapper, Executor};
-    
-    use super::*;
-
-    #[test]
-    fn test_successfull_deposit() {
-        const INIT_BALANCE: u128 = 1000;
-        const DEPOSIT_AMOUNT: u128 = 200;
-
-        let mut app = App::new(|router, _, storage| {
-            router
-                .bank
-                .init_balance(storage, &Addr::unchecked("user"), coins(INIT_BALANCE, "eth"))
-                .unwrap()
-        });
-
-        let code = ContractWrapper::new(execute, instantiate, query);
-        let code_id = app.store_code(Box::new(code));
-
-        let addr = app
-            .instantiate_contract(
-                code_id,
-                Addr::unchecked("owner"),
-                &InstantiateMsg {
-                    vault: "vault_contract".to_owned(),
-                    denom: "eth".to_owned(),
-                },
-                &[],
-                "Contract",
-                None,
-            )
-            .unwrap();
-
-        app.execute_contract(
-            Addr::unchecked("user"),
-            addr.clone(),
-            &ExecuteMsg::Deposit {},
-            &coins(DEPOSIT_AMOUNT, "eth"),
-        )
-            .unwrap();
-
-        let user_deposited_balance : Uint128 = app.wrap()
-            .query_wasm_smart(addr.clone(), &QueryMsg::GetDeposit { address: "user".to_string(), denom: "eth".to_string()}).unwrap();
-
-        assert_eq!(user_deposited_balance.u128(), DEPOSIT_AMOUNT);
-
-
-        assert_eq!(
-            app.wrap()
-                .query_balance("user", "eth")
-                .unwrap()
-                .amount
-                .u128(),
-            INIT_BALANCE - DEPOSIT_AMOUNT
-        );
-
-        // as our contract don't store it, should be ZERO
-        assert_eq!(
-            app.wrap()
-                .query_balance(&addr, "eth")
-                .unwrap()
-                .amount
-                .u128(),
-            0
-        );
-
-        assert_eq!(
-            app.wrap()
-                .query_balance("vault_contract", "eth")
-                .unwrap()
-                .amount
-                .u128(),
-            DEPOSIT_AMOUNT
-        );
     }
 }
