@@ -2,16 +2,16 @@
 mod tests {
     use cosmwasm_std::{Addr};
     use cw_multi_test::{Executor};
-    
+
 
     use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, QueryMsg};
-    
 
-    use crate::utils::success_deposit_setup;
+
+    use crate::utils::success_deposit_of_one_token_setup;
 
     #[test]
-    fn test_succes_withdraw_one_token() {
+    fn test_success_withdraw_one_token_by_parts() {
         const INIT_USER_BALANCE: u128 = 1000;
         const CONTRACT_RESERVES: u128 = 1000000;
         const FIRST_DEPOSIT_AMOUNT: u128 = 200;
@@ -19,20 +19,20 @@ mod tests {
 
         // having 500 deposited we want to withdraw SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
-        let (mut app, addr) = success_deposit_setup();
+        let (mut app, addr) = success_deposit_of_one_token_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Withdraw {
                 denom: "eth".to_string(),
-                amount: Uint128::from(SECOND_DEPOSIT_AMOUNT),
+                amount: Uint128::from(FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT),
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
-        let user_deposited_balance: Uint128 = app
+        let user_deposited_balance_after_first_withdrawal: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -43,7 +43,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.u128(), FIRST_DEPOSIT_AMOUNT);
+        assert_eq!(user_deposited_balance_after_first_withdrawal.u128(), 0);
 
         assert_eq!(
             app.wrap()
@@ -51,7 +51,7 @@ mod tests {
                 .unwrap()
                 .amount
                 .u128(),
-            INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
-        );
+            INIT_USER_BALANCE
+        )
     }
 }
