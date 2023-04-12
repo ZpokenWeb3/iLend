@@ -1,16 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr};
-    use cw_multi_test::{Executor};
+    use cosmwasm_std::Addr;
+    use cw_multi_test::Executor;
 
-
+    use crate::utils::success_deposit_of_diff_token_setup;
     use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, QueryMsg};
-    use crate::utils::success_deposit_of_diff_token_setup;
 
     #[test]
     fn test_success_withdraw_diff_token() {
-
         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1000;
 
@@ -23,7 +21,6 @@ mod tests {
         const WITHDRAW_AMOUNT_FIRST_TOKEN: u128 = 100;
         const WITHDRAW_AMOUNT_SECOND_TOKEN: u128 = 150;
 
-
         let (mut app, addr) = success_deposit_of_diff_token_setup();
 
         app.execute_contract(
@@ -35,7 +32,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -46,7 +43,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance_of_first_token: Uint128 = app
             .wrap()
@@ -59,7 +56,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_of_first_token.u128(), DEPOSIT_OF_FIRST_TOKEN - WITHDRAW_AMOUNT_FIRST_TOKEN);
+        assert_eq!(
+            user_deposited_balance_of_first_token.u128(),
+            DEPOSIT_OF_FIRST_TOKEN - WITHDRAW_AMOUNT_FIRST_TOKEN
+        );
 
         assert_eq!(
             app.wrap()
@@ -69,7 +69,6 @@ mod tests {
                 .u128(),
             INIT_BALANCE_FIRST_TOKEN - DEPOSIT_OF_FIRST_TOKEN + WITHDRAW_AMOUNT_FIRST_TOKEN
         );
-
 
         let user_deposited_balance_of_second_token: Uint128 = app
             .wrap()
@@ -82,7 +81,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_of_second_token.u128(), DEPOSIT_OF_SECOND_TOKEN - WITHDRAW_AMOUNT_SECOND_TOKEN);
+        assert_eq!(
+            user_deposited_balance_of_second_token.u128(),
+            DEPOSIT_OF_SECOND_TOKEN - WITHDRAW_AMOUNT_SECOND_TOKEN
+        );
 
         assert_eq!(
             app.wrap()
@@ -92,7 +94,5 @@ mod tests {
                 .u128(),
             INIT_BALANCE_SECOND_TOKEN - DEPOSIT_OF_SECOND_TOKEN + WITHDRAW_AMOUNT_SECOND_TOKEN
         );
-
-
     }
 }

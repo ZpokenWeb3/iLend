@@ -24,7 +24,7 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::Withdraw {
                 denom: "eth".to_string(),
-                amount: Uint128::from(FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT),
+                amount: Uint128::from(SECOND_DEPOSIT_AMOUNT),
             },
             &[],
         )
@@ -41,7 +41,43 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_after_first_withdrawal.u128(), 0);
+        assert_eq!(
+            user_deposited_balance_after_first_withdrawal.u128(),
+            FIRST_DEPOSIT_AMOUNT
+        );
+
+        assert_eq!(
+            app.wrap()
+                .query_balance("user", "eth")
+                .unwrap()
+                .amount
+                .u128(),
+            INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
+        );
+
+        app.execute_contract(
+            Addr::unchecked("user"),
+            addr.clone(),
+            &ExecuteMsg::Withdraw {
+                denom: "eth".to_string(),
+                amount: Uint128::from(FIRST_DEPOSIT_AMOUNT),
+            },
+            &[],
+        )
+        .unwrap();
+
+        let user_deposited_balance_after_second_withdrawal: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetDeposit {
+                    address: "user".to_string(),
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(user_deposited_balance_after_second_withdrawal.u128(), 0);
 
         assert_eq!(
             app.wrap()
@@ -50,6 +86,6 @@ mod tests {
                 .amount
                 .u128(),
             INIT_USER_BALANCE
-        )
+        );
     }
 }

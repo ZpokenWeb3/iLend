@@ -55,7 +55,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: Uint128 = app
         .wrap()
@@ -94,7 +94,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: Uint128 = app
         .wrap()
@@ -132,7 +132,6 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
 
     (app, addr)
 }
-
 
 pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
     const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
@@ -197,7 +196,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -205,7 +204,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: Uint128 = app
         .wrap()
@@ -244,7 +243,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: Uint128 = app
         .wrap()
@@ -276,7 +275,6 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
             .u128(),
         CONTRACT_RESERVES_SECOND_TOKEN + DEPOSIT_OF_SECOND_TOKEN
     );
-
 
     (app, addr)
 }

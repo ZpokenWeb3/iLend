@@ -1,12 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{Addr};
-    use cw_multi_test::{Executor};
-
+    use cosmwasm_std::Addr;
+    use cw_multi_test::Executor;
 
     use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, QueryMsg};
-
 
     use crate::utils::success_deposit_of_one_token_setup;
 
@@ -29,7 +27,8 @@ mod tests {
                 amount: Uint128::from(WITHDRAW_AMOUNT),
             },
             &[],
-        ).unwrap();
+        )
+        .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
