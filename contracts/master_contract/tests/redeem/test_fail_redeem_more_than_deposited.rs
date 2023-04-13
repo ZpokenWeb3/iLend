@@ -10,19 +10,19 @@ mod tests {
 
     #[test]
     #[should_panic]
-    fn test_fail_more_than_deposited() {
+    fn test_fail_redeem_more_than_deposited() {
         const INIT_USER_BALANCE: u128 = 1000;
         const CONTRACT_RESERVES: u128 = 1000000;
         const TOTAL_DEPOSITED: u128 = 500;
         const WITHDRAW_AMOUNT: u128 = 700;
 
-        // having 500 deposited we want to withdraw WITHDRAW_AMOUNT
+        // having 500 deposited we want to redeem WITHDRAW_AMOUNT
         let (mut app, addr) = success_deposit_of_one_token_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::Withdraw {
+            &ExecuteMsg::Redeem {
                 denom: "eth".to_string(),
                 amount: Uint128::from(WITHDRAW_AMOUNT),
             },
