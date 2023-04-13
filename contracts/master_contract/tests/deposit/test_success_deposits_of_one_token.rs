@@ -44,12 +44,21 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
-                    supported_tokens: vec![("eth".to_string(), "ieth".to_string())],
+                    supported_tokens: vec![],
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],
                 "Contract",
                 Some("owner".to_string()), // contract that can execute migrations
             )
+            .unwrap();
+
+
+        app.execute_contract(
+            Addr::unchecked("user"),
+            addr.clone(),
+            &ExecuteMsg::AddMarkets { token: "eth".to_string(), mmtoken: "ieth".to_string() },
+            &[],
+        )
             .unwrap();
 
         app.execute_contract(
@@ -58,7 +67,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()
@@ -97,7 +106,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         let user_deposited_balance: Uint128 = app
             .wrap()

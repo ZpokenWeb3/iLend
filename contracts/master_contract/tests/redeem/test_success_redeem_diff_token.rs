@@ -8,7 +8,7 @@ mod tests {
     use master_contract::msg::{ExecuteMsg, QueryMsg};
 
     #[test]
-    fn test_success_withdraw_diff_token() {
+    fn test_success_redeem_diff_token() {
         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1000;
 
@@ -26,7 +26,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::Withdraw {
+            &ExecuteMsg::Redeem {
                 denom: "eth".to_string(),
                 amount: Uint128::from(WITHDRAW_AMOUNT_FIRST_TOKEN),
             },
@@ -37,7 +37,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::Withdraw {
+            &ExecuteMsg::Redeem {
                 denom: "atom".to_string(),
                 amount: Uint128::from(WITHDRAW_AMOUNT_SECOND_TOKEN),
             },

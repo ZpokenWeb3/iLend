@@ -40,6 +40,12 @@ pub fn execute(
     match msg {
         ExecuteMsg::Deposit {} => {
             // TODO add some checks for the corresponding underlying balances for user
+            if info.funds.is_empty() {
+                return Err(ContractError::CustomError {
+                    val: "No funds deposited!".to_string(),
+                });
+            }
+
             assert_eq!(
                 info.funds.len(),
                 1,
@@ -52,7 +58,7 @@ pub fn execute(
                 info.sender.to_string(),
                 allowed_coin.denom.clone(),
             )
-            .unwrap();
+                .unwrap();
             let new_balance = current_balance.u128() + allowed_coin.amount.u128();
             USER_PROFILES.save(
                 deps.storage,
@@ -62,26 +68,34 @@ pub fn execute(
 
             Ok(Response::default())
         }
-        ExecuteMsg::Withdraw { denom, amount } => {
+        ExecuteMsg::Redeem { denom, amount } => {
             // TODO have to have exact amount of itokens transfered in info.funds along the call
+
+            // if info.funds.is_empty() {
+            //     return Err(ContractError::CustomError {
+            //         val: "No LP tokens deposited!".to_string(),
+            //     });
+            // }
 
             assert!(amount.u128() > 0, "Amount should be a positive number");
 
-            let user_balance =
+            let current_balance =
                 query::get_balance(deps.as_ref(), info.sender.to_string(), denom.clone())?;
 
+
+            // the ratio of token an mmtoken
+            let xrate = 1u128;
+
+            let amount = amount.u128() * xrate;
+
             assert!(
-                user_balance.u128() >= amount.u128(),
+                current_balance.u128() >= amount,
                 "The account doesn't have enough digital tokens to do withdraw"
             );
 
             // TODO burn respective amount of itokens here
+            let remaining = current_balance.u128() - amount;
 
-            let current_balance =
-                get_balance(deps.as_ref(), info.sender.to_string(), denom.clone()).unwrap();
-
-            let remaining = current_balance.u128() - amount.u128();
-            assert!(remaining >= 0, "Remaining balance should be greater than 0");
             USER_PROFILES.save(
                 deps.storage,
                 (info.sender.to_string(), denom.clone()),
@@ -90,15 +104,26 @@ pub fn execute(
 
             Ok(Response::new().add_message(BankMsg::Send {
                 to_address: info.sender.to_string(),
-                amount: coins(amount.u128(), denom.clone()),
+                amount: coins(amount, denom.clone()),
             }))
         }
         ExecuteMsg::Fund {} => {
+            if info.funds.is_empty() {
+                return Err(ContractError::CustomError {
+                    val: "No funds deposited!".to_string(),
+                });
+            }
+
             assert_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
                 "This functionality is allowed for admin only"
             );
+
+            Ok(Response::default())
+        }
+        ExecuteMsg::AddMarkets { token, mmtoken } => {
+            SUPPORTED_TOKENS.save(deps.storage, token, &mmtoken)?;
 
             Ok(Response::default())
         }

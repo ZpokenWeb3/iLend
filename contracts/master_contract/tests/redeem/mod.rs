@@ -1,0 +1,4 @@
+mod test_fail_redeem_more_than_deposited;
+mod test_success_redeem_diff_token;
+mod test_success_redeem_one_token_by_parts;
+mod test_success_redeem_one_token_whole_deposit;

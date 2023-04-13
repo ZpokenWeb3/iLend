@@ -12,10 +12,11 @@ pub enum ExecuteMsg {
     // Admin-only functionality for funding contract with reserves
     // to be able to operate borrows and repayments
     Fund {},
+    AddMarkets { token: String, mmtoken: String},
 
     // Deposit / Withdraw functionality for users
     Deposit {},
-    Withdraw { denom: String, amount: Uint128 },
+    Redeem { denom: String, amount: Uint128 },
 }
 
 #[cw_serde]

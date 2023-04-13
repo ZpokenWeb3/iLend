@@ -9,20 +9,20 @@ mod tests {
     use crate::utils::success_deposit_of_one_token_setup;
 
     #[test]
-    fn test_success_withdraw_one_token_by_parts() {
+    fn test_success_redeem_one_token_by_parts() {
         const INIT_USER_BALANCE: u128 = 1000;
         const CONTRACT_RESERVES: u128 = 1000000;
         const FIRST_DEPOSIT_AMOUNT: u128 = 200;
         const SECOND_DEPOSIT_AMOUNT: u128 = 300;
 
-        // having 500 deposited we want to withdraw SECOND_DEPOSIT_AMOUNT
+        // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
         let (mut app, addr) = success_deposit_of_one_token_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::Withdraw {
+            &ExecuteMsg::Redeem {
                 denom: "eth".to_string(),
                 amount: Uint128::from(SECOND_DEPOSIT_AMOUNT),
             },
@@ -58,7 +58,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::Withdraw {
+            &ExecuteMsg::Redeem {
                 denom: "eth".to_string(),
                 amount: Uint128::from(FIRST_DEPOSIT_AMOUNT),
             },
