@@ -10,9 +10,10 @@ A="linux/${M/x86_64/amd64}"
 S=${M#x86_64}
 S=${S:+-$S}
 
-cd ../contracts
-
 docker run --platform $A --rm -v "$(pwd)":/code \
   --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
   --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
   $U/workspace-optimizer$S:$V
+
+
+# JUST COPY THAT AND PASTE INTO CLI TO RUN FROM ROOT DIRECTORY

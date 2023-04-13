@@ -1,9 +1,27 @@
-/contracts/master_contract/target
-/contracts/target
+# macOS
+.DS_Store
 
-/contracts/master_contract/Cargo.lock
-/contracts/Cargo.lock
-
-.idea
+# Text file backups
 **/*.rs.bk
-contracts/artifacts
+
+# Build results
+target/
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Auto-gen
+.cargo-ok
+
+# Build artifacts
+*.wasm
+hash.txt
+contracts.txt
+artifacts/
+
+# code coverage
+tarpaulin-report.*
+
+contracts/*/schema
