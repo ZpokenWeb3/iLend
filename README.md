@@ -1,4 +1,4 @@
-# Project Name
+# iLend Platform
 
 TODO: Write a project description
 
