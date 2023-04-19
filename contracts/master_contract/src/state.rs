@@ -1,8 +1,6 @@
 use {
-    cosmwasm_schema::cw_serde,
-    cosmwasm_std::{Addr, Uint128},
+    cosmwasm_std::Uint128,
     cw_storage_plus::{Item, Map},
-    pyth_sdk_cw::PriceIdentifier,
 };
 
 pub const USER_PROFILES: Map<(String, String), Uint128> = Map::new("user_profiles");

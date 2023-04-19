@@ -1,3 +1,3 @@
 mod deposit;
-pub mod utils;
 mod redeem;
+pub mod utils;

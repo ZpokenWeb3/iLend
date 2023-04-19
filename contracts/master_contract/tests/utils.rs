@@ -3,9 +3,9 @@ use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
 use std::vec;
 
 use cosmwasm_std::Uint128;
-use pyth_sdk_cw::PriceIdentifier;
 use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
 use master_contract::{execute, instantiate, query};
+use pyth_sdk_cw::PriceIdentifier;
 
 pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const INIT_USER_BALANCE: u128 = 1000;
@@ -59,7 +59,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -98,7 +98,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -202,7 +202,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -210,7 +210,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -223,7 +223,10 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_OF_FIRST_TOKEN);
+    assert_eq!(
+        user_deposited_balance.balance.u128(),
+        DEPOSIT_OF_FIRST_TOKEN
+    );
 
     assert_eq!(
         app.wrap()
@@ -249,7 +252,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -262,7 +265,10 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_OF_SECOND_TOKEN);
+    assert_eq!(
+        user_deposited_balance.balance.u128(),
+        DEPOSIT_OF_SECOND_TOKEN
+    );
 
     assert_eq!(
         app.wrap()

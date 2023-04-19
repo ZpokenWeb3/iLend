@@ -5,9 +5,9 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use pyth_sdk_cw::PriceIdentifier;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
+    use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_successful_deposits_of_diff_token() {
@@ -19,7 +19,6 @@ mod tests {
 
         const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
         const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
-
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -95,7 +94,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_OF_FIRST_TOKEN);
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            DEPOSIT_OF_FIRST_TOKEN
+        );
 
         assert_eq!(
             app.wrap()
@@ -134,7 +136,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_OF_SECOND_TOKEN);
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            DEPOSIT_OF_SECOND_TOKEN
+        );
 
         assert_eq!(
             app.wrap()

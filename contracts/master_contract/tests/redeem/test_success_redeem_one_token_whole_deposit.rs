@@ -41,7 +41,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_after_first_withdrawal.balance.u128(), 0);
+        assert_eq!(
+            user_deposited_balance_after_first_withdrawal.balance.u128(),
+            0
+        );
 
         assert_eq!(
             app.wrap()

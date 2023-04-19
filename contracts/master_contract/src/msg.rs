@@ -1,17 +1,10 @@
-use pyth_sdk_cw::{Price, PriceIdentifier};
-use {
-    cosmwasm_std::Uint128,
-};
+use cosmwasm_std::Uint128;
 
-use cosmwasm_schema::{
-    cw_serde,
-    QueryResponses,
-};
+use cosmwasm_schema::{cw_serde, QueryResponses};
 
 // cw_serde attribute is equivalent to
 // #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema)]
 // #[serde(rename_all = "snake_case")]
-
 
 #[cw_serde]
 pub struct InstantiateMsg {

@@ -1,18 +1,20 @@
 use cosmwasm_std::{CosmosMsg, WasmMsg};
-use pyth_sdk_cw::PriceIdentifier;
+
 use {
-    cosmwasm_std::{coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128},
-    cw20::Cw20ExecuteMsg,
     crate::contract::query::get_balance,
-    cw2::set_contract_version,
     crate::{
         error::ContractError,
         msg::InstantiateMsg,
         msg::{ExecuteMsg, QueryMsg},
         state::{ADMIN, SUPPORTED_TOKENS, USER_PROFILES},
     },
+    cosmwasm_std::{
+        coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+        Uint128,
+    },
+    cw2::set_contract_version,
+    cw20::Cw20ExecuteMsg,
 };
-
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:master_contract";
@@ -32,14 +34,12 @@ pub fn instantiate(
         SUPPORTED_TOKENS.save(deps.storage, tokens.0, &tokens.1)?;
     }
 
-    Ok(Response::new()
-        .add_attribute("method", "instantiate")
-    )
+    Ok(Response::new().add_attribute("method", "instantiate"))
 }
 
 pub fn execute(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
@@ -60,20 +60,24 @@ pub fn execute(
                 "You have to deposit one asset per time"
             );
 
-
             let allowed_coin = info.funds.first().unwrap();
 
             assert!(allowed_coin.amount.u128() > 0);
 
-            assert!(!SUPPORTED_TOKENS.load(deps.storage, allowed_coin.denom.clone()).unwrap().is_empty(), "There is no such supported token yet");
-
+            assert!(
+                !SUPPORTED_TOKENS
+                    .load(deps.storage, allowed_coin.denom.clone())
+                    .unwrap()
+                    .is_empty(),
+                "There is no such supported token yet"
+            );
 
             let current_balance = get_balance(
                 deps.as_ref(),
                 info.sender.to_string(),
                 allowed_coin.denom.clone(),
             )
-                .unwrap();
+            .unwrap();
             let new_balance = current_balance.balance.u128() + allowed_coin.amount.u128();
             USER_PROFILES.save(
                 deps.storage,
@@ -81,15 +85,19 @@ pub fn execute(
                 &Uint128::from(new_balance),
             )?;
 
+            let mint_binary_msg = to_binary(&Cw20ExecuteMsg::Mint {
+                recipient: info.sender.to_string(),
+                amount: allowed_coin.amount.clone(),
+            })?;
 
-            let mint_binary_msg = to_binary(&Cw20ExecuteMsg::Mint { recipient: info.sender.to_string(), amount: allowed_coin.amount.clone() })?;
-
-            Ok(Response::default()
-                   .add_message(CosmosMsg::Wasm(WasmMsg::Execute {
-                   contract_addr: SUPPORTED_TOKENS.load(deps.storage, allowed_coin.denom.clone()).unwrap(),
-                   msg: mint_binary_msg,
-                   funds: vec![],
-               }))
+            Ok(
+                Response::default().add_message(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: SUPPORTED_TOKENS
+                        .load(deps.storage, allowed_coin.denom.clone())
+                        .unwrap(),
+                    msg: mint_binary_msg,
+                    funds: vec![],
+                })),
             )
         }
         ExecuteMsg::Redeem { denom, amount } => {
@@ -103,8 +111,13 @@ pub fn execute(
 
             assert!(amount.u128() > 0, "Amount should be a positive number");
 
-            assert!(!SUPPORTED_TOKENS.load(deps.storage, denom.clone()).unwrap().is_empty(), "There is no such supported token yet");
-
+            assert!(
+                !SUPPORTED_TOKENS
+                    .load(deps.storage, denom.clone())
+                    .unwrap()
+                    .is_empty(),
+                "There is no such supported token yet"
+            );
 
             let current_balance =
                 query::get_balance(deps.as_ref(), info.sender.to_string(), denom.clone())?;
@@ -127,20 +140,23 @@ pub fn execute(
                 &Uint128::from(remaining),
             )?;
 
-            let burn_binary_msg = to_binary(&Cw20ExecuteMsg::Burn { amount: Uint128::from(current_balance.balance.u128() - amount) })?;
+            let burn_binary_msg = to_binary(&Cw20ExecuteMsg::Burn {
+                amount: Uint128::from(current_balance.balance.u128() - amount),
+            })?;
 
-            Ok(Response::new().add_message(BankMsg::Send {
-                to_address: info.sender.to_string(),
-                amount: coins(amount, denom.clone()),
-            })
-               .add_message(
-               // burning received amount of mmTokens
-               CosmosMsg::Wasm(WasmMsg::Execute {
-                   contract_addr: SUPPORTED_TOKENS.load(deps.storage, denom.clone()).unwrap(),
-                   msg: burn_binary_msg,
-                   funds: vec![],
-               }))
-            )
+            Ok(Response::new()
+                .add_message(BankMsg::Send {
+                    to_address: info.sender.to_string(),
+                    amount: coins(amount, denom.clone()),
+                })
+                .add_message(
+                    // burning received amount of mmTokens
+                    CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: SUPPORTED_TOKENS.load(deps.storage, denom.clone()).unwrap(),
+                        msg: burn_binary_msg,
+                        funds: vec![],
+                    }),
+                ))
         }
         ExecuteMsg::Fund {} => {
             if info.funds.is_empty() {
@@ -165,27 +181,26 @@ pub fn execute(
     }
 }
 
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetDeposit { address, denom } => {
-            to_binary(&get_balance(deps, address, denom)?)
-        }
+        QueryMsg::GetDeposit { address, denom } => to_binary(&get_balance(deps, address, denom)?),
     }
 }
 
 pub mod query {
-    use cosmwasm_std::StdError;
-    use pyth_sdk_cw::{PriceFeedResponse, query_price_feed};
-    use crate::msg::GetBalanceResponse;
-    use super::*;
 
-    pub fn get_balance(deps: Deps, address: String, denom: String) -> StdResult<GetBalanceResponse> {
+    use super::*;
+    use crate::msg::GetBalanceResponse;
+
+    pub fn get_balance(
+        deps: Deps,
+        address: String,
+        denom: String,
+    ) -> StdResult<GetBalanceResponse> {
         let balance = USER_PROFILES
             .load(deps.storage, (address, denom))
             .unwrap_or_else(|_| Uint128::zero());
 
-        Ok(GetBalanceResponse {
-            balance,
-        })
+        Ok(GetBalanceResponse { balance })
     }
 }
