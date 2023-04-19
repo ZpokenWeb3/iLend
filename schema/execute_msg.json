@@ -24,11 +24,11 @@
         "add_markets": {
           "type": "object",
           "required": [
-            "mmtoken",
+            "itoken",
             "token"
           ],
           "properties": {
-            "mmtoken": {
+            "itoken": {
               "type": "string"
             },
             "token": {
