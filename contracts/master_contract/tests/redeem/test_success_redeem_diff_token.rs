@@ -5,7 +5,7 @@ mod tests {
 
     use crate::utils::success_deposit_of_diff_token_setup;
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, QueryMsg};
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
 
     #[test]
     fn test_success_redeem_diff_token() {
@@ -45,7 +45,7 @@ mod tests {
         )
         .unwrap();
 
-        let user_deposited_balance_of_first_token: Uint128 = app
+        let user_deposited_balance_of_first_token: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -57,7 +57,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_deposited_balance_of_first_token.u128(),
+            user_deposited_balance_of_first_token.balance.u128(),
             DEPOSIT_OF_FIRST_TOKEN - WITHDRAW_AMOUNT_FIRST_TOKEN
         );
 
@@ -70,7 +70,7 @@ mod tests {
             INIT_BALANCE_FIRST_TOKEN - DEPOSIT_OF_FIRST_TOKEN + WITHDRAW_AMOUNT_FIRST_TOKEN
         );
 
-        let user_deposited_balance_of_second_token: Uint128 = app
+        let user_deposited_balance_of_second_token: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -82,7 +82,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_deposited_balance_of_second_token.u128(),
+            user_deposited_balance_of_second_token.balance.u128(),
             DEPOSIT_OF_SECOND_TOKEN - WITHDRAW_AMOUNT_SECOND_TOKEN
         );
 

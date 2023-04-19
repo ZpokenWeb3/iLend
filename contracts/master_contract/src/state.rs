@@ -1,5 +1,7 @@
-use cosmwasm_std::Uint128;
-use cw_storage_plus::{Item, Map};
+use {
+    cosmwasm_std::Uint128,
+    cw_storage_plus::{Item, Map},
+};
 
 pub const USER_PROFILES: Map<(String, String), Uint128> = Map::new("user_profiles");
 /*

@@ -5,8 +5,9 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
+    use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_successful_deposits_of_one_token() {
@@ -52,14 +53,16 @@ mod tests {
             )
             .unwrap();
 
-
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::AddMarkets { token: "eth".to_string(), mmtoken: "ieth".to_string() },
+            &ExecuteMsg::AddMarkets {
+                token: "eth".to_string(),
+                itoken: "ieth".to_string(),
+            },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -67,9 +70,9 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
-        let user_deposited_balance: Uint128 = app
+        let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -80,7 +83,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.u128(), FIRST_DEPOSIT_AMOUNT);
+        assert_eq!(user_deposited_balance.balance.u128(), FIRST_DEPOSIT_AMOUNT);
 
         assert_eq!(
             app.wrap()
@@ -106,9 +109,9 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
-        let user_deposited_balance: Uint128 = app
+        let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -120,7 +123,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_deposited_balance.u128(),
+            user_deposited_balance.balance.u128(),
             FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
 

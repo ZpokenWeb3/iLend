@@ -1,5 +1,5 @@
 [workspace]
-members = [ "contracts/master_contract"]
+members = ["contracts/master_contract"]
 
 [profile.release]
 rpath = false
