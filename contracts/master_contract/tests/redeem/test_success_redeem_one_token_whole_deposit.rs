@@ -4,7 +4,7 @@ mod tests {
     use cw_multi_test::Executor;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, QueryMsg};
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
 
     use crate::utils::success_deposit_of_one_token_setup;
 
@@ -30,7 +30,7 @@ mod tests {
         )
         .unwrap();
 
-        let user_deposited_balance_after_first_withdrawal: Uint128 = app
+        let user_deposited_balance_after_first_withdrawal: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -41,7 +41,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_after_first_withdrawal.u128(), 0);
+        assert_eq!(user_deposited_balance_after_first_withdrawal.balance.u128(), 0);
 
         assert_eq!(
             app.wrap()

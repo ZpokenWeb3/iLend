@@ -5,7 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use pyth_sdk_cw::PriceIdentifier;
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -56,7 +57,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
-            &ExecuteMsg::AddMarkets { token: "eth".to_string(), mmtoken: "ieth".to_string() },
+            &ExecuteMsg::AddMarkets { token: "eth".to_string(), itoken: "ieth".to_string() },
             &[],
         )
             .unwrap();
@@ -69,7 +70,7 @@ mod tests {
         )
             .unwrap();
 
-        let user_deposited_balance: Uint128 = app
+        let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -80,7 +81,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.u128(), FIRST_DEPOSIT_AMOUNT);
+        assert_eq!(user_deposited_balance.balance.u128(), FIRST_DEPOSIT_AMOUNT);
 
         assert_eq!(
             app.wrap()
@@ -108,7 +109,7 @@ mod tests {
         )
             .unwrap();
 
-        let user_deposited_balance: Uint128 = app
+        let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -120,7 +121,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_deposited_balance.u128(),
+            user_deposited_balance.balance.u128(),
             FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
 

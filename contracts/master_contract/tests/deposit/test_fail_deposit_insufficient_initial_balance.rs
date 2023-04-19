@@ -5,7 +5,8 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+    use pyth_sdk_cw::PriceIdentifier;
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -60,7 +61,7 @@ mod tests {
             )
             .is_err());
 
-        let user_deposited_balance: Uint128 = app
+        let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -72,6 +73,6 @@ mod tests {
             .unwrap();
 
         // there is no deposit executed, so have to be zero
-        assert_eq!(user_deposited_balance.u128(), 0);
+        assert_eq!(user_deposited_balance.balance.u128(), 0);
     }
 }

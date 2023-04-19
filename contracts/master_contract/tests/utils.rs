@@ -3,7 +3,8 @@ use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
 use std::vec;
 
 use cosmwasm_std::Uint128;
-use master_contract::msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use pyth_sdk_cw::PriceIdentifier;
+use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
 use master_contract::{execute, instantiate, query};
 
 pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
@@ -11,6 +12,9 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const CONTRACT_RESERVES: u128 = 1000000;
     const FIRST_DEPOSIT_AMOUNT: u128 = 200;
     const SECOND_DEPOSIT_AMOUNT: u128 = 300;
+
+    const PYTH_CONTRACT_ADDR: &str = "pyth_contract_addr";
+    const PRICE_ID: &str = "63f341689d98a12ef60a5cff1d7f85c70a9e17bf1575f0e7c0b2512d48b1c8b3";
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -55,9 +59,9 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
-    let user_deposited_balance: Uint128 = app
+    let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -68,7 +72,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.u128(), FIRST_DEPOSIT_AMOUNT);
+    assert_eq!(user_deposited_balance.balance.u128(), FIRST_DEPOSIT_AMOUNT);
 
     assert_eq!(
         app.wrap()
@@ -94,9 +98,9 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
-    let user_deposited_balance: Uint128 = app
+    let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -108,7 +112,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         .unwrap();
 
     assert_eq!(
-        user_deposited_balance.u128(),
+        user_deposited_balance.balance.u128(),
         FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
     );
 
@@ -142,6 +146,8 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
 
     const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
     const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
+
+    const PYTH_CONTRACT_ADDR: &str = "pyth_contract_addr";
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -196,7 +202,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -204,9 +210,9 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
-    let user_deposited_balance: Uint128 = app
+    let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -217,7 +223,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.u128(), DEPOSIT_OF_FIRST_TOKEN);
+    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_OF_FIRST_TOKEN);
 
     assert_eq!(
         app.wrap()
@@ -243,9 +249,9 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-    .unwrap();
+        .unwrap();
 
-    let user_deposited_balance: Uint128 = app
+    let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -256,7 +262,7 @@ pub fn success_deposit_of_diff_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.u128(), DEPOSIT_OF_SECOND_TOKEN);
+    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_OF_SECOND_TOKEN);
 
     assert_eq!(
         app.wrap()
