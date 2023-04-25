@@ -7,14 +7,15 @@ mod tests {
     use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
-    use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_successful_deposits_of_one_token() {
-        const INIT_USER_BALANCE: u128 = 1000;
-        const CONTRACT_RESERVES: u128 = 1000000;
-        const FIRST_DEPOSIT_AMOUNT: u128 = 200;
-        const SECOND_DEPOSIT_AMOUNT: u128 = 300;
+        const TOKEN_DECIMAL: u128 = 6;
+
+        const INIT_USER_BALANCE: u128 = 1000 * TOKEN_DECIMAL;
+        const CONTRACT_RESERVES: u128 = 1000000 * TOKEN_DECIMAL;
+        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * TOKEN_DECIMAL;
+        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * TOKEN_DECIMAL;
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -57,8 +58,10 @@ mod tests {
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::AddMarkets {
-                token: "eth".to_string(),
-                itoken: "ieth".to_string(),
+                denom: "eth".to_string(),
+                name: "ethereum".to_string(),
+                symbol: "ETH".to_string(),
+                decimals: TOKEN_DECIMAL,
             },
             &[],
         )

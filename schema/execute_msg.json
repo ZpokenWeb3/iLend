@@ -18,20 +18,57 @@
     {
       "type": "object",
       "required": [
+        "set_price"
+      ],
+      "properties": {
+        "set_price": {
+          "type": "object",
+          "required": [
+            "denom",
+            "price"
+          ],
+          "properties": {
+            "denom": {
+              "type": "string"
+            },
+            "price": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "add_markets"
       ],
       "properties": {
         "add_markets": {
           "type": "object",
           "required": [
-            "itoken",
-            "token"
+            "decimals",
+            "denom",
+            "name",
+            "symbol"
           ],
           "properties": {
-            "itoken": {
+            "decimals": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
+            },
+            "denom": {
               "type": "string"
             },
-            "token": {
+            "name": {
+              "type": "string"
+            },
+            "symbol": {
               "type": "string"
             }
           },
@@ -73,6 +110,44 @@
               "type": "string"
             }
           },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "borrow"
+      ],
+      "properties": {
+        "borrow": {
+          "type": "object",
+          "required": [
+            "amount",
+            "denom"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "repay"
+      ],
+      "properties": {
+        "repay": {
+          "type": "object",
           "additionalProperties": false
         }
       },

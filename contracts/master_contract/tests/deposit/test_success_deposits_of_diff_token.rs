@@ -7,7 +7,6 @@ mod tests {
     use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
-    use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_successful_deposits_of_diff_token() {
@@ -56,8 +55,18 @@ mod tests {
                 &InstantiateMsg {
                     admin: "owner".to_string(),
                     supported_tokens: vec![
-                        ("eth".to_string(), "ieth".to_string()),
-                        ("atom".to_string(), "iatom".to_string()),
+                        (
+                            "eth".to_string(),
+                            "ethereum".to_string(),
+                            "ETH".to_string(),
+                            18,
+                        ),
+                        (
+                            "atom".to_string(),
+                            "atom".to_string(),
+                            "ATOM".to_string(),
+                            18,
+                        ),
                     ],
                 },
                 &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],

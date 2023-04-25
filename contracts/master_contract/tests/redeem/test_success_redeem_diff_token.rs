@@ -3,7 +3,7 @@ mod tests {
     use cosmwasm_std::Addr;
     use cw_multi_test::Executor;
 
-    use crate::utils::success_deposit_of_diff_token_setup;
+    use crate::utils::success_deposit_of_diff_token_with_prices;
     use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
 
@@ -21,7 +21,7 @@ mod tests {
         const WITHDRAW_AMOUNT_FIRST_TOKEN: u128 = 100;
         const WITHDRAW_AMOUNT_SECOND_TOKEN: u128 = 150;
 
-        let (mut app, addr) = success_deposit_of_diff_token_setup();
+        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("user"),

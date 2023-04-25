@@ -9,7 +9,8 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin: String,
-    pub supported_tokens: Vec<(String, String)>,
+    // name, denom, symbol, decimals
+    pub supported_tokens: Vec<(String, String, String, u128)>,
 }
 
 #[cw_serde]
@@ -17,11 +18,30 @@ pub enum ExecuteMsg {
     // Admin-only functionality for funding contract with reserves
     // to be able to operate borrows and repayments
     Fund {},
-    AddMarkets { token: String, itoken: String },
+    SetPrice {
+        denom: String,
+        price: u128,
+    },
+    AddMarkets {
+        denom: String,
+        name: String,
+        symbol: String,
+        decimals: u128,
+    },
 
-    // Deposit / Withdraw functionality for users
+    // Deposit / Redeem functionality
     Deposit {},
-    Redeem { denom: String, amount: Uint128 },
+    Redeem {
+        denom: String,
+        amount: Uint128,
+    },
+
+    // Borrow / Repay functionality
+    Borrow {
+        denom: String,
+        amount: Uint128,
+    },
+    Repay {},
 }
 
 #[cw_serde]
@@ -29,9 +49,59 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     #[returns(GetBalanceResponse)]
     GetDeposit { address: String, denom: String },
+
+    #[returns(GetBorrowsResponse)]
+    GetBorrows { address: String, denom: String },
+
+    #[returns(RepayInfo)]
+    GetRepayInfo { address: String, denom: String },
+
+    #[returns(GetSupportedTokensResponse)]
+    GetSupportedTokens {},
+
+    #[returns(GetPriceResponse)]
+    GetPrice { denom: String },
+}
+
+#[cw_serde]
+pub struct GetPriceResponse {
+    pub price: u128,
 }
 
 #[cw_serde]
 pub struct GetBalanceResponse {
     pub balance: Uint128,
+}
+
+#[cw_serde]
+pub struct GetBorrowsResponse {
+    pub borrows: Uint128,
+}
+
+#[cw_serde]
+pub struct GetSupportedTokensResponse {
+    pub supported_tokens: Vec<TokenInfo>,
+}
+
+#[cw_serde]
+pub struct RepayInfo {
+    pub borrowed_amount: Uint128,
+    pub accumulated_interest: Uint128,
+}
+
+impl Default for RepayInfo {
+    fn default() -> Self {
+        RepayInfo {
+            borrowed_amount: Default::default(),
+            accumulated_interest: Default::default(),
+        }
+    }
+}
+
+#[cw_serde]
+pub struct TokenInfo {
+    pub denom: String,
+    pub name: String,
+    pub symbol: String,
+    pub decimals: u128,
 }

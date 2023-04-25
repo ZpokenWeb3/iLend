@@ -20,10 +20,18 @@
           },
           {
             "type": "string"
+          },
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
           }
         ],
-        "maxItems": 2,
-        "minItems": 2
+        "maxItems": 4,
+        "minItems": 4
       }
     }
   },
