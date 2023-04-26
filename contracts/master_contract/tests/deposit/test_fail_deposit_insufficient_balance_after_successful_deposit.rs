@@ -14,7 +14,7 @@ mod tests {
         const CONTRACT_RESERVES: u128 = 1000000;
         const FIRST_DEPOSIT_AMOUNT: u128 = 2000;
 
-        const INTEREST_RATE_DECIMALS: u32 = 15;
+        const INTEREST_RATE_DECIMALS: u32 = 18;
 
         const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);

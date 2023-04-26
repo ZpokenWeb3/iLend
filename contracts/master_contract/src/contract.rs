@@ -31,6 +31,10 @@ use {
 const CONTRACT_NAME: &str = "crates.io:master_contract";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+const PERCENT_DECIMALS: u32 = 5;
+const HUNDRED_PERCENT: u128 = 100 * 10u128.pow(PERCENT_DECIMALS);
+const UTILIZATION_LIMIT: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
+
 pub fn instantiate(
     deps: DepsMut,
     _env: Env,
@@ -367,8 +371,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query::get_repay_info(deps, address, denom)?)
         }
         QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
-        QueryMsg::GetTokensInterestRateModelParams {} => to_binary(&get_tokens_interest_rate_model_params(deps)?),
-        QueryMsg::GetInterestRate { denom } => to_binary(&get_interest_rate(deps, denom)?),
+        QueryMsg::GetTokensInterestRateModelParams {} => {
+            to_binary(&get_tokens_interest_rate_model_params(deps)?)
+        }
+        QueryMsg::GetInterestRate { denom } => {
+            to_binary(&get_interest_rate(deps, env, denom)?)
+        }
         QueryMsg::GetUserDepositedUsd { address } => {
             to_binary(&get_user_deposited_usd(deps, address)?)
         }
@@ -471,10 +479,14 @@ pub mod query {
         })
     }
 
-    pub fn get_interest_rate(deps: Deps, denom: String) -> StdResult<GetInterestRateResponse> {
-        let utilization_rate = 40 * 10u128.pow(15); // mock utilization_rate == 40%
-        const UTILIZATION_LIMIT: u128 = 80 * 10u128.pow(15); // 80%
-        const HUNDRED: u128 = 100 * 10u128.pow(15);
+    pub fn get_interest_rate(
+        deps: Deps,
+        env: Env,
+        denom: String
+    ) -> StdResult<GetInterestRateResponse> {
+        let utilization_rate = get_utilization_rate_by_token(deps, env.clone(), denom.clone())
+            .unwrap()
+            .u128();
 
         let min_interest_rate = TOKENS_INTEREST_RATE_MODEL_PARAMS.load(deps.storage, denom.clone()).unwrap().min_interest_rate;
         let safe_borrow_max_rate = TOKENS_INTEREST_RATE_MODEL_PARAMS.load(deps.storage, denom.clone()).unwrap().safe_borrow_max_rate;
@@ -486,7 +498,7 @@ pub mod query {
             })
         } else {
             Ok(GetInterestRateResponse {
-                interest_rate: safe_borrow_max_rate + rate_growth_factor * (utilization_rate - UTILIZATION_LIMIT)  / (HUNDRED - UTILIZATION_LIMIT)
+                interest_rate: safe_borrow_max_rate + rate_growth_factor * (utilization_rate - UTILIZATION_LIMIT)  / (HUNDRED_PERCENT - UTILIZATION_LIMIT)
             })
         }
     }
@@ -704,10 +716,14 @@ pub mod query {
             .unwrap()
             .u128();
 
-        let available_liquidity = get_available_liquidity_by_token(deps, env, denom.clone())
+        let borrowed_by_token = get_total_borrowed_by_token_usd(deps, denom.clone())
             .unwrap()
             .u128();
 
-        Ok(Uint128::from(available_liquidity / reserves_by_token * 100))
+        if reserves_by_token != 0 {
+            Ok(Uint128::from(borrowed_by_token * HUNDRED_PERCENT / reserves_by_token))
+        } else {
+            Ok(Uint128::from(0u128))
+        }
     }
 }

@@ -24,6 +24,12 @@ mod tests {
 
         const BORROW_SECOND_TOKEN: u128 = 300;
 
+        const INTEREST_RATE_DECIMALS: u32 = 18;
+
+        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
         let mut app = App::new(|router, _, storage| {
             router
                 .bank
@@ -72,6 +78,20 @@ mod tests {
                             "ATOM".to_string(),
                             18,
                         ),
+                    ],
+                    tokens_interest_rate_model_params: vec![
+                      (
+                          "eth".to_string(),
+                          MIN_INTEREST_RATE,
+                          SAFE_BORROW_MAX_RATE,
+                          RATE_GROWTH_FACTOR,
+                      ),
+                      (
+                          "atom".to_string(),
+                          MIN_INTEREST_RATE,
+                          SAFE_BORROW_MAX_RATE,
+                          RATE_GROWTH_FACTOR,
+                      ),
                     ],
                 },
                 &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],

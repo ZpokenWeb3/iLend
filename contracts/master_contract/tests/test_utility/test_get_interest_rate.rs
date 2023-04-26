@@ -33,8 +33,8 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(get_interest_rate_atom.interest_rate, 17500000000000000); // 17.5%
+        assert_eq!(get_interest_rate_atom.interest_rate, 5000000000000000000); // 5%
 
-        assert_eq!(get_interest_rate_eth.interest_rate, 17500000000000000); // 17.5%
+        assert_eq!(get_interest_rate_eth.interest_rate, 5000000000000000000); // 5%
     }
 }

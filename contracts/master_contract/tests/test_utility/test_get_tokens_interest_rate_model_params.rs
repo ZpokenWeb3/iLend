@@ -18,8 +18,8 @@ mod tests {
             format!("{:?}", tokens_interest_rate_model_params_response.tokens_interest_rate_model_params)
         );
 
-        assert_eq!(tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0].min_interest_rate, 5000000000000000); // 5%
-        assert_eq!(tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0].safe_borrow_max_rate, 30000000000000000); // 30%
-        assert_eq!(tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0].rate_growth_factor, 70000000000000000); // 70%
+        assert_eq!(tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0].min_interest_rate, 5000000000000000000); // 5%
+        assert_eq!(tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0].safe_borrow_max_rate, 30000000000000000000); // 30%
+        assert_eq!(tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0].rate_growth_factor, 70000000000000000000); // 70%
     }
 }
