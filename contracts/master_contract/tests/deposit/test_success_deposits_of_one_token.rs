@@ -5,7 +5,9 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
+    use master_contract::msg::{
+        ExecuteMsg, GetBalanceResponse, GetTotalDepositedUsdResponse, InstantiateMsg, QueryMsg,
+    };
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -147,5 +149,6 @@ mod tests {
                 .u128(),
             CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
+
     }
 }

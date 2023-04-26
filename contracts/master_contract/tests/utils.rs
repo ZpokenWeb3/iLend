@@ -489,6 +489,19 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     )
     .unwrap();
 
+    let available_to_redeem: Uint128 = app
+        .wrap()
+        .query_wasm_smart(
+            addr.clone(),
+            &QueryMsg::GetAvailableToRedeem {
+                address: "user".to_string(),
+                denom: "eth".to_string(),
+            },
+        )
+        .unwrap();
+
+    println!("{}", available_to_redeem.u128());
+
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
