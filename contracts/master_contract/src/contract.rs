@@ -512,16 +512,23 @@ pub mod query {
                 .user_deposited_usd
                 .u128();
 
+        let user_deposit_in_that_token = get_deposit(deps, user.clone(), denom.clone()).unwrap().balance.u128();
 
-        let sum_borrow_balance_usd = get_user_borrowed_usd(deps, user.clone()).unwrap().user_borrowed_usd.u128();
+        if user_deposit_in_that_token == 0 {
+            available_to_redeem = 0;
+        } else {
+            let sum_borrow_balance_usd = get_user_borrowed_usd(deps, user.clone()).unwrap().user_borrowed_usd.u128();
 
-        if sum_borrow_balance_usd <= sum_collateral_balance_usd * 8u128 / 10u128 {
-            let user_borrows = get_borrows(deps, user.clone(), denom.clone());
+            if sum_borrow_balance_usd <= sum_collateral_balance_usd * 8u128 / 10u128 {
+                let user_borrows = get_borrows(deps, user.clone(), denom.clone());
 
-            available_to_redeem = (sum_collateral_balance_usd - sum_borrow_balance_usd * 10u128 / 8u128) / get_price(deps, denom.clone()).unwrap().price - user_borrows.unwrap().borrows.u128();
-        } else if sum_borrow_balance_usd == 0 {
-            available_to_redeem = get_deposit(deps, user.clone(), denom.clone()).unwrap().balance.u128();
+                available_to_redeem = (sum_collateral_balance_usd - sum_borrow_balance_usd * 10u128 / 8u128) / get_price(deps, denom.clone()).unwrap().price - user_borrows.unwrap().borrows.u128();
+            } else if sum_borrow_balance_usd == 0 {
+                available_to_redeem = get_deposit(deps, user.clone(), denom.clone()).unwrap().balance.u128();
+            }
         }
+
+
 
         Ok(Uint128::from(available_to_redeem))
     }

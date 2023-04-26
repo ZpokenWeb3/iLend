@@ -127,6 +127,19 @@ mod tests {
             )
             .unwrap();
 
+        let available_to_redeem_another_token: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetAvailableToRedeem {
+                    address: "user".to_string(),
+                    denom: "atom".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(available_to_redeem_another_token.u128(), 0);
+
         assert_eq!(
             user_deposited_balance.balance.u128(),
             FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
