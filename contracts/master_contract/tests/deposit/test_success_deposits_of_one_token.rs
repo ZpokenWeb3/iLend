@@ -5,7 +5,9 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
+    use master_contract::msg::{
+        ExecuteMsg, GetBalanceResponse, GetTotalDepositedUsdResponse, InstantiateMsg, QueryMsg,
+    };
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -134,6 +136,19 @@ mod tests {
                 },
             )
             .unwrap();
+
+        let available_to_redeem_another_token: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetAvailableToRedeem {
+                    address: "user".to_string(),
+                    denom: "atom".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(available_to_redeem_another_token.u128(), 0);
 
         assert_eq!(
             user_deposited_balance.balance.u128(),

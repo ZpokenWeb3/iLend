@@ -72,6 +72,36 @@ pub enum QueryMsg {
 
     #[returns(GetInterestRateResponse)]
     GetInterestRate { denom: String },
+
+    #[returns(GetUserDepositedUsdResponse)]
+    GetUserDepositedUsd { address: String },
+
+    #[returns(GetUserBorrowedUsdResponse)]
+    GetUserBorrowedUsd { address: String },
+
+    #[returns(Uint128)]
+    GetContractBalance { denom: String },
+
+    #[returns(Uint128)]
+    GetAvailableToBorrow { address: String, denom: String },
+
+    #[returns(Uint128)]
+    GetAvailableToRedeem { address: String, denom: String },
+
+    #[returns(Uint128)]
+    GetTotalReservesByToken { denom: String },
+
+    #[returns(Uint128)]
+    GetTotalDepositedByToken { denom: String },
+
+    #[returns(Uint128)]
+    GetTotalBorrowedByToken { denom: String },
+
+    #[returns(Uint128)]
+    GetAvailableLiquidityByToken { denom: String },
+
+    #[returns(Uint128)]
+    GetUtilizationRateByToken { denom: String },
 }
 
 #[cw_serde]
@@ -87,6 +117,16 @@ pub struct GetBalanceResponse {
 #[cw_serde]
 pub struct GetBorrowsResponse {
     pub borrows: Uint128,
+}
+
+#[cw_serde]
+pub struct GetUserDepositedUsdResponse {
+    pub user_deposited_usd: Uint128,
+}
+
+#[cw_serde]
+pub struct GetUserBorrowedUsdResponse {
+    pub user_borrowed_usd: Uint128,
 }
 
 #[cw_serde]
@@ -117,6 +157,16 @@ impl Default for RepayInfo {
             accumulated_interest: Default::default(),
         }
     }
+}
+
+#[cw_serde]
+pub struct GetTotalDepositedUsdResponse {
+    pub total_deposited_usd: Uint128,
+}
+
+#[cw_serde]
+pub struct GetTotalBorrowedUsdResponse {
+    pub total_borrowed_usd: Uint128,
 }
 
 #[cw_serde]

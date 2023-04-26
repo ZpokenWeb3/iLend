@@ -4,7 +4,10 @@ mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
     use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetSupportedTokensResponse, QueryMsg, RepayInfo};
+    use master_contract::msg::{
+        ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetSupportedTokensResponse,
+        GetTotalBorrowedUsdResponse, GetTotalDepositedUsdResponse, QueryMsg, RepayInfo,
+    };
     use std::fmt::format;
 
     #[test]
@@ -37,7 +40,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance_after_redeeming: GetBalanceResponse = app
             .wrap()
@@ -70,7 +73,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_borrowed_balance: GetBorrowsResponse = app
             .wrap()
@@ -106,7 +109,13 @@ mod tests {
             .unwrap();
 
         // mocking interest rate
-        assert_eq!(repay_info_for_one_token.borrowed_amount.u128(), BORROW_SECOND_TOKEN);
-        assert_eq!(repay_info_for_one_token.accumulated_interest.u128(), BORROW_SECOND_TOKEN / 8);
+        assert_eq!(
+            repay_info_for_one_token.borrowed_amount.u128(),
+            BORROW_SECOND_TOKEN
+        );
+        assert_eq!(
+            repay_info_for_one_token.accumulated_interest.u128(),
+            BORROW_SECOND_TOKEN / 8
+        );
     }
 }

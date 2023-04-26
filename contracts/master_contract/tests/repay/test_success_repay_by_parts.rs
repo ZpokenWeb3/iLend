@@ -2,9 +2,12 @@
 mod tests {
     use super::*;
     use crate::utils::{success_borrow_setup, success_deposit_of_diff_token_with_prices};
-    use cosmwasm_std::{Addr, coins, Uint128};
+    use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg, GetBorrowsResponse, QueryMsg, RepayInfo};
+    use master_contract::msg::{
+        ExecuteMsg, GetBorrowsResponse, GetTotalBorrowedUsdResponse, GetUserBorrowedUsdResponse,
+        GetUserDepositedUsdResponse, QueryMsg, RepayInfo,
+    };
 
     #[test]
     fn test_success_repay() {
@@ -24,17 +27,22 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(repay_info.accumulated_interest.u128(), BORROW_OF_FIRST_TOKEN / 8);
+        assert_eq!(
+            repay_info.accumulated_interest.u128(),
+            BORROW_OF_FIRST_TOKEN / 8
+        );
         assert_eq!(repay_info.borrowed_amount.u128(), BORROW_OF_FIRST_TOKEN);
 
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Repay {},
-            &coins(repay_info.accumulated_interest.u128() + BORROW_OF_FIRST_TOKEN / 2, "eth"),
+            &coins(
+                repay_info.accumulated_interest.u128() + BORROW_OF_FIRST_TOKEN / 2,
+                "eth",
+            ),
         )
-            .unwrap();
-
+        .unwrap();
 
         let repay_info_after_repay: RepayInfo = app
             .wrap()
@@ -48,7 +56,10 @@ mod tests {
             .unwrap();
 
         assert_eq!(repay_info_after_repay.accumulated_interest.u128(), 0);
-        assert_eq!(repay_info_after_repay.borrowed_amount.u128(), BORROW_OF_FIRST_TOKEN / 2);
+        assert_eq!(
+            repay_info_after_repay.borrowed_amount.u128(),
+            BORROW_OF_FIRST_TOKEN / 2
+        );
 
         let user_borrowed_balance: GetBorrowsResponse = app
             .wrap()
@@ -61,8 +72,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.borrows.u128(), BORROW_OF_FIRST_TOKEN / 2);
-
+        assert_eq!(
+            user_borrowed_balance.borrows.u128(),
+            BORROW_OF_FIRST_TOKEN / 2
+        );
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -70,8 +83,7 @@ mod tests {
             &ExecuteMsg::Repay {},
             &coins(BORROW_OF_FIRST_TOKEN / 2, "eth"),
         )
-            .unwrap();
-
+        .unwrap();
 
         let repay_info_after_repay: RepayInfo = app
             .wrap()
