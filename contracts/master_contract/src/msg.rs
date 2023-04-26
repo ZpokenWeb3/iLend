@@ -11,6 +11,8 @@ pub struct InstantiateMsg {
     pub admin: String,
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
+    // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
+    pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
 }
 
 #[cw_serde]
@@ -27,6 +29,9 @@ pub enum ExecuteMsg {
         name: String,
         symbol: String,
         decimals: u128,
+        min_interest_rate: u128,
+        safe_borrow_max_rate: u128,
+        rate_growth_factor: u128,
     },
 
     // Deposit / Redeem functionality
@@ -59,8 +64,14 @@ pub enum QueryMsg {
     #[returns(GetSupportedTokensResponse)]
     GetSupportedTokens {},
 
+    #[returns(GetTokensInterestRateModelParamsResponse)]
+    GetTokensInterestRateModelParams {},
+
     #[returns(GetPriceResponse)]
     GetPrice { denom: String },
+
+    #[returns(GetInterestRateResponse)]
+    GetInterestRate { denom: String },
 }
 
 #[cw_serde]
@@ -84,6 +95,16 @@ pub struct GetSupportedTokensResponse {
 }
 
 #[cw_serde]
+pub struct GetTokensInterestRateModelParamsResponse {
+    pub tokens_interest_rate_model_params: Vec<TokenInterestRateModelParams>,
+}
+
+#[cw_serde]
+pub struct GetInterestRateResponse {
+    pub interest_rate: u128,
+}
+
+#[cw_serde]
 pub struct RepayInfo {
     pub borrowed_amount: Uint128,
     pub accumulated_interest: Uint128,
@@ -104,4 +125,12 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u128,
+}
+
+#[cw_serde]
+pub struct TokenInterestRateModelParams {
+    pub denom: String,
+    pub min_interest_rate: u128,
+    pub safe_borrow_max_rate: u128,
+    pub rate_growth_factor: u128,
 }

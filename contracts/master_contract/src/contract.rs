@@ -1,5 +1,5 @@
-use crate::contract::query::{get_borrows, get_deposited_amount_in_usd, get_price, get_repay_info, get_supported_tokens};
-use crate::msg::{RepayInfo, TokenInfo};
+use crate::contract::query::{get_borrows, get_deposited_amount_in_usd, get_price, get_repay_info, get_supported_tokens, get_tokens_interest_rate_model_params, get_interest_rate};
+use crate::msg::{RepayInfo, TokenInfo, TokenInterestRateModelParams};
 use crate::state::{PRICES, USER_BORROWED_BALANCE, USER_REPAY_INFO};
 use {
     crate::contract::query::get_deposit,
@@ -7,7 +7,12 @@ use {
         error::ContractError,
         msg::InstantiateMsg,
         msg::{ExecuteMsg, QueryMsg},
-        state::{ADMIN, SUPPORTED_TOKENS, USER_DEPOSITED_BALANCE},
+        state::{
+            ADMIN,
+            SUPPORTED_TOKENS,
+            TOKENS_INTEREST_RATE_MODEL_PARAMS,
+            USER_DEPOSITED_BALANCE
+        },
     },
     cosmwasm_std::{
         coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
@@ -39,6 +44,19 @@ pub fn instantiate(
                 name: tokens.1,
                 symbol: tokens.2,
                 decimals: tokens.3,
+            },
+        )?;
+    }
+
+    for params in msg.tokens_interest_rate_model_params {
+        TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
+            deps.storage,
+            params.0.clone(),
+            &TokenInterestRateModelParams {
+                denom: params.0,
+                min_interest_rate: params.1,
+                safe_borrow_max_rate: params.2,
+                rate_growth_factor: params.3,
             },
         )?;
     }
@@ -148,15 +166,29 @@ pub fn execute(
             name,
             symbol,
             decimals,
+            min_interest_rate,
+            safe_borrow_max_rate,
+            rate_growth_factor
         } => {
             SUPPORTED_TOKENS.save(
                 deps.storage,
                 denom.clone(),
                 &TokenInfo {
-                    denom,
+                    denom: denom.clone(),
                     name,
                     symbol,
                     decimals,
+                },
+            )?;
+
+            TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
+                deps.storage,
+                denom.clone(),
+                &TokenInterestRateModelParams {
+                    denom: denom.clone(),
+                    min_interest_rate,
+                    safe_borrow_max_rate,
+                    rate_growth_factor,
                 },
             )?;
 
@@ -168,7 +200,7 @@ pub fn execute(
                 "There is no such supported token yet"
             );
 
-            let mut deposited_amount_in_usd =
+            let deposited_amount_in_usd =
                 get_deposited_amount_in_usd(deps.as_ref(), info.sender.to_string().clone())
                     .unwrap()
                     .u128();
@@ -321,14 +353,21 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query::get_repay_info(deps, address, denom)?)
         }
         QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
+        QueryMsg::GetTokensInterestRateModelParams {} => to_binary(&get_tokens_interest_rate_model_params(deps)?),
+        QueryMsg::GetInterestRate { denom } => to_binary(&get_interest_rate(deps, denom)?),
     }
 }
 
 pub mod query {
     use super::*;
     use crate::msg::{
-        GetBalanceResponse, GetBorrowsResponse, GetPriceResponse, GetSupportedTokensResponse,
+        GetBalanceResponse,
+        GetBorrowsResponse,
+        GetPriceResponse,
+        GetSupportedTokensResponse,
+        GetTokensInterestRateModelParamsResponse,
         RepayInfo,
+        GetInterestRateResponse
     };
     use cosmwasm_std::Order;
 
@@ -367,6 +406,41 @@ pub mod query {
         Ok(GetSupportedTokensResponse {
             supported_tokens: result,
         })
+    }
+
+    pub fn get_tokens_interest_rate_model_params(deps: Deps) -> StdResult<GetTokensInterestRateModelParamsResponse> {
+        let mut result: Vec<TokenInterestRateModelParams> = vec![];
+
+        let all: StdResult<Vec<_>> = TOKENS_INTEREST_RATE_MODEL_PARAMS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
+        for el in all.unwrap() {
+            result.push(el.1)
+        }
+
+        Ok(GetTokensInterestRateModelParamsResponse {
+            tokens_interest_rate_model_params: result,
+        })
+    }
+
+    pub fn get_interest_rate(deps: Deps, denom: String) -> StdResult<GetInterestRateResponse> {
+        let utilization_rate = 40 * 10u128.pow(15); // mock utilization_rate == 40%
+        const UTILIZATION_LIMIT: u128 = 80 * 10u128.pow(15); // 80%
+        const HUNDRED: u128 = 100 * 10u128.pow(15);
+
+        let min_interest_rate = TOKENS_INTEREST_RATE_MODEL_PARAMS.load(deps.storage, denom.clone()).unwrap().min_interest_rate;
+        let safe_borrow_max_rate = TOKENS_INTEREST_RATE_MODEL_PARAMS.load(deps.storage, denom.clone()).unwrap().safe_borrow_max_rate;
+        let rate_growth_factor = TOKENS_INTEREST_RATE_MODEL_PARAMS.load(deps.storage, denom.clone()).unwrap().rate_growth_factor;
+
+        if utilization_rate <= UTILIZATION_LIMIT {
+            Ok(GetInterestRateResponse {
+                interest_rate: min_interest_rate + utilization_rate * (safe_borrow_max_rate - min_interest_rate) / UTILIZATION_LIMIT
+            })
+        } else {
+            Ok(GetInterestRateResponse {
+                interest_rate: safe_borrow_max_rate + rate_growth_factor * (utilization_rate - UTILIZATION_LIMIT)  / (HUNDRED - UTILIZATION_LIMIT)
+            })
+        }
     }
 
     pub fn get_token_decimal(deps: Deps, denom: String) -> StdResult<Uint128> {

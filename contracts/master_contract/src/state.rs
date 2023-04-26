@@ -1,5 +1,5 @@
-use crate::msg::{RepayInfo, TokenInfo};
-use cosmwasm_schema::cw_serde;
+use crate::msg::{RepayInfo, TokenInfo, TokenInterestRateModelParams};
+// use cosmwasm_schema::cw_serde;
 use {
     cosmwasm_std::Uint128,
     cw_storage_plus::{Item, Map},
@@ -42,3 +42,9 @@ Key: (user_address_1, token_A) -> Value: repay_info
 Key: (user_address_1, token_B) -> Value: repay_info
 Key: (user_address_2, token_A) -> Value: repay_info
  */
+
+pub const TOKENS_INTEREST_RATE_MODEL_PARAMS: Map<String, TokenInterestRateModelParams> = Map::new("token_interest_rate_model_params");
+/*
+TOKENS_INTEREST_RATE_MODEL_PARAMS STORAGE
+Key: token demon -> Value: TokenInterestRateModelParams
+*/

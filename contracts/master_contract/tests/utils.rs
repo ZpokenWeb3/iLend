@@ -14,6 +14,12 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const FIRST_DEPOSIT_AMOUNT: u128 = 200;
     const SECOND_DEPOSIT_AMOUNT: u128 = 300;
 
+    const INTEREST_RATE_DECIMALS: u32 = 15;
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
     let mut app = App::new(|router, _, storage| {
         router
             .bank
@@ -56,6 +62,20 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                         "ATOM".to_string(),
                         18,
                     ),
+                ],
+                tokens_interest_rate_model_params: vec![
+                  (
+                      "eth".to_string(),
+                      MIN_INTEREST_RATE,
+                      SAFE_BORROW_MAX_RATE,
+                      RATE_GROWTH_FACTOR,
+                  ),
+                  (
+                      "atom".to_string(),
+                      MIN_INTEREST_RATE,
+                      SAFE_BORROW_MAX_RATE,
+                      RATE_GROWTH_FACTOR,
+                  ),
                 ],
             },
             &[coin(CONTRACT_RESERVES, "eth")],
@@ -158,6 +178,12 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
     const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
 
+    const INTEREST_RATE_DECIMALS: u32 = 15;
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
     let mut app = App::new(|router, _, storage| {
         router
             .bank
@@ -206,6 +232,20 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                         "ATOM".to_string(),
                         18,
                     ),
+                ],
+                tokens_interest_rate_model_params: vec![
+                  (
+                      "eth".to_string(),
+                      MIN_INTEREST_RATE,
+                      SAFE_BORROW_MAX_RATE,
+                      RATE_GROWTH_FACTOR,
+                  ),
+                  (
+                      "atom".to_string(),
+                      MIN_INTEREST_RATE,
+                      SAFE_BORROW_MAX_RATE,
+                      RATE_GROWTH_FACTOR,
+                  ),
                 ],
             },
             &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],
@@ -370,6 +410,12 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     const BORROW_OF_FIRST_TOKEN: u128 = 50 * TOKEN_DECIMAL;
 
+    const INTEREST_RATE_DECIMALS: u32 = 15;
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
     let mut app = App::new(|router, _, storage| {
         router
             .bank
@@ -418,6 +464,20 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                         "ATOM".to_string(),
                         18,
                     ),
+                ],
+                tokens_interest_rate_model_params: vec![
+                  (
+                      "eth".to_string(),
+                      MIN_INTEREST_RATE,
+                      SAFE_BORROW_MAX_RATE,
+                      RATE_GROWTH_FACTOR,
+                  ),
+                  (
+                      "atom".to_string(),
+                      MIN_INTEREST_RATE,
+                      SAFE_BORROW_MAX_RATE,
+                      RATE_GROWTH_FACTOR,
+                  ),
                 ],
             },
             &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],

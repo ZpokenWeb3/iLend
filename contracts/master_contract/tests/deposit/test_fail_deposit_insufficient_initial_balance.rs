@@ -14,6 +14,12 @@ mod tests {
         const CONTRACT_RESERVES: u128 = 1000000;
         const FIRST_DEPOSIT_AMOUNT: u128 = 2000;
 
+        const INTEREST_RATE_DECIMALS: u32 = 15;
+
+        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
         let mut app = App::new(|router, _, storage| {
             router
                 .bank
@@ -48,6 +54,12 @@ mod tests {
                         "ethereum".to_string(),
                         "ETH".to_string(),
                         18,
+                    )],
+                    tokens_interest_rate_model_params: vec![(
+                        "eth".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
                     )],
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],

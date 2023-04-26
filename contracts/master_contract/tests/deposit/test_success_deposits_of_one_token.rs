@@ -10,12 +10,18 @@ mod tests {
 
     #[test]
     fn test_successful_deposits_of_one_token() {
-        const TOKEN_DECIMAL: u128 = 6;
+        const TOKEN_DECIMALS: u32 = 6;
 
-        const INIT_USER_BALANCE: u128 = 1000 * TOKEN_DECIMAL;
-        const CONTRACT_RESERVES: u128 = 1000000 * TOKEN_DECIMAL;
-        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * TOKEN_DECIMAL;
-        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * TOKEN_DECIMAL;
+        const INIT_USER_BALANCE: u128 = 1000u128 * 10u128.pow(TOKEN_DECIMALS);
+        const CONTRACT_RESERVES: u128 = 1000000u128 * 10u128.pow(TOKEN_DECIMALS);
+        const FIRST_DEPOSIT_AMOUNT: u128 = 200u128 * 10u128.pow(TOKEN_DECIMALS);
+        const SECOND_DEPOSIT_AMOUNT: u128 = 300u128 * 10u128.pow(TOKEN_DECIMALS);
+
+        const INTEREST_RATE_DECIMALS: u32 = 15;
+
+        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -47,6 +53,7 @@ mod tests {
                 &InstantiateMsg {
                     admin: "owner".to_string(),
                     supported_tokens: vec![],
+                    tokens_interest_rate_model_params: vec![],
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],
                 "Contract",
@@ -61,7 +68,10 @@ mod tests {
                 denom: "eth".to_string(),
                 name: "ethereum".to_string(),
                 symbol: "ETH".to_string(),
-                decimals: TOKEN_DECIMAL,
+                decimals: TOKEN_DECIMALS as u128,
+                min_interest_rate: MIN_INTEREST_RATE,
+                safe_borrow_max_rate: SAFE_BORROW_MAX_RATE,
+                rate_growth_factor: RATE_GROWTH_FACTOR,
             },
             &[],
         )
