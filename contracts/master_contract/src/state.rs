@@ -1,5 +1,5 @@
 use crate::msg::{RepayInfo, TokenInfo};
-use cosmwasm_schema::cw_serde;
+
 use {
     cosmwasm_std::Uint128,
     cw_storage_plus::{Item, Map},

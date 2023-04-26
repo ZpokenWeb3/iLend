@@ -93,7 +93,6 @@ pub enum QueryMsg {
     GetUtilizationRateByToken { denom: String },
 }
 
-
 #[cw_serde]
 pub struct GetPriceResponse {
     pub price: u128,

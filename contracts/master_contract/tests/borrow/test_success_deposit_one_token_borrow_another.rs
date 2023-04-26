@@ -89,7 +89,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -100,7 +100,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let get_price_eth: GetPriceResponse = app
             .wrap()
@@ -133,7 +133,7 @@ mod tests {
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -141,8 +141,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
         )
-            .unwrap();
-
+        .unwrap();
 
         let user_available_to_borrow_another_token: Uint128 = app
             .wrap()
@@ -155,7 +154,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_available_to_borrow_another_token.u128(), DEPOSIT_OF_FIRST_TOKEN * get_price_eth.price * 8 / 10 / get_price_atom.price);
+        assert_eq!(
+            user_available_to_borrow_another_token.u128(),
+            DEPOSIT_OF_FIRST_TOKEN * get_price_eth.price * 8 / 10 / get_price_atom.price
+        );
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -200,7 +202,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_borrowed_balance: GetBorrowsResponse = app
             .wrap()

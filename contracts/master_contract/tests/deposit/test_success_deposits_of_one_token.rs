@@ -162,6 +162,5 @@ mod tests {
                 .u128(),
             CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
-
     }
 }
