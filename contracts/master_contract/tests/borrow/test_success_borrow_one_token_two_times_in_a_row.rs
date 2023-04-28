@@ -5,7 +5,7 @@ mod tests {
     use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetSupportedTokensResponse, QueryMsg,
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetSupportedTokensResponse, QueryMsg,
     };
     use std::fmt::format;
 
@@ -76,11 +76,11 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
@@ -88,7 +88,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_borrowed_balance.borrows.u128(),
+            user_borrowed_balance.amount.u128(),
             BORROW_SECOND_TOKEN_FIRST_PART
         );
 
@@ -112,11 +112,11 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
@@ -124,7 +124,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_borrowed_balance.borrows.u128(),
+            user_borrowed_balance.amount.u128(),
             BORROW_SECOND_TOKEN_FIRST_PART + BORROW_SECOND_TOKEN_SECOND_PART
         );
 

@@ -1,12 +1,12 @@
 use crate::contract::query::{
     get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem,
-    get_borrows, get_contract_balance_by_token, get_price, get_repay_info, get_supported_tokens,
+    get_borrow_amount_with_interest, get_contract_balance_by_token, get_price, get_user_borrowing_info, get_supported_tokens,
     get_total_borrowed_by_token_usd, get_total_deposited_by_token_usd, get_total_reserves_by_token,
     get_user_borrowed_usd, get_user_deposited_usd, get_utilization_rate_by_token,
     get_tokens_interest_rate_model_params, get_interest_rate
 };
-use crate::msg::{RepayInfo, TokenInfo, TokenInterestRateModelParams};
-use crate::state::{PRICES, USER_BORROWED_BALANCE, USER_REPAY_INFO};
+use crate::msg::{UserBorrowingInfo, TokenInfo, TokenInterestRateModelParams};
+use crate::state::{PRICES, USER_BORROWED_BALANCE, USER_BORROWING_INFO};
 use {
     crate::contract::query::get_deposit,
     crate::{
@@ -34,6 +34,11 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 const PERCENT_DECIMALS: u32 = 5;
 const HUNDRED_PERCENT: u128 = 100 * 10u128.pow(PERCENT_DECIMALS);
 const UTILIZATION_LIMIT: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
+
+const INTEREST_RATE_DECIMALS: u32 = 18;
+const INTEREST_RATE_MULTIPLIER: u128 = 10u128.pow(INTEREST_RATE_DECIMALS);
+const HUNDRED: u128 = 100;
+const YEAR_IN_SECONDS: u128 = 31536000; // 365 days
 
 pub fn instantiate(
     deps: DepsMut,
@@ -207,7 +212,7 @@ pub fn execute(
             );
 
             let available_to_borrow_amount =
-                get_available_to_borrow(deps.as_ref(), info.sender.to_string(), denom.clone())
+                get_available_to_borrow(deps.as_ref(), env.clone(), info.sender.to_string(), denom.clone())
                     .unwrap()
                     .u128();
 
@@ -217,38 +222,50 @@ pub fn execute(
             );
 
             assert!(
-                get_contract_balance_by_token(deps.as_ref(), env, denom.clone())
+                get_contract_balance_by_token(deps.as_ref(), env.clone(), denom.clone())
                     .unwrap()
                     .u128()
                     >= amount.u128()
             );
 
-            let user_borrows = get_borrows(
+            let borrow_amount_with_interest = get_borrow_amount_with_interest(
+                deps.as_ref(),
+                env.clone(),
+                info.sender.to_string(),
+                denom.clone(),
+            )
+            .unwrap().amount.u128();
+
+            let user_borrowing_info = get_user_borrowing_info(
                 deps.as_ref(),
                 info.sender.to_string().clone(),
                 denom.clone(),
             )
-            .unwrap()
-            .borrows;
+            .unwrap_or_default();
 
-            let new_user_borrows: u128 = user_borrows.u128() + amount.u128();
+            let new_user_borrow_amount: u128 = borrow_amount_with_interest + amount.u128();
 
-            USER_BORROWED_BALANCE.save(
-                deps.storage,
-                (info.sender.to_string(), denom.clone()),
-                &Uint128::from(new_user_borrows.clone()),
-            )?;
+            let current_interest_rate = get_interest_rate(deps.as_ref(), env.clone(), denom.clone())
+                .unwrap()
+                .interest_rate;
 
-            // updating repay info
-            let new_user_repay_info = RepayInfo {
-                borrowed_amount: Uint128::from(new_user_borrows.clone()),
-                accumulated_interest: Uint128::from(new_user_borrows.clone() / 8),
+            let average_interest_rate = (
+                borrow_amount_with_interest * user_borrowing_info.average_interest_rate + 
+                    amount.u128() * current_interest_rate
+            ) / new_user_borrow_amount;
+
+            // updating user borrowing info
+            let new_user_borrowing_info = UserBorrowingInfo {
+                borrowed_amount: Uint128::from(new_user_borrow_amount.clone()),
+                accumulated_interest: Uint128::from(new_user_borrow_amount.clone() / 8),
+                average_interest_rate: average_interest_rate.clone(),
+                timestamp: env.block.time,
             };
 
-            USER_REPAY_INFO.save(
+            USER_BORROWING_INFO.save(
                 deps.storage,
                 (info.sender.to_string(), denom.clone()),
-                &new_user_repay_info,
+                &new_user_borrowing_info,
             )?;
 
             Ok(Response::new().add_message(BankMsg::Send {
@@ -284,48 +301,54 @@ pub fn execute(
                 SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
                 "There is no such token to repay yet"
             );
-            let current_repay_info = get_repay_info(
+            let current_borrowing_info = get_user_borrowing_info(
                 deps.as_ref(),
                 info.sender.to_string().clone(),
                 repay_token.denom.clone(),
             )
             .unwrap_or_default();
 
-            let current_borrows = get_borrows(
+            let borrow_amount_with_interest = get_borrow_amount_with_interest(
                 deps.as_ref(),
+                env.clone(),
                 info.sender.to_string(),
                 repay_token.denom.clone(),
             )
-            .unwrap();
-
-            if repay_token.amount.u128() < current_repay_info.accumulated_interest.u128() {
-                let new_user_repay_info = RepayInfo {
-                    borrowed_amount: current_borrows.borrows,
+            .unwrap()
+            .amount;
+            
+            if repay_token.amount.u128() < current_borrowing_info.accumulated_interest.u128() {
+                let new_user_borrowing_info = UserBorrowingInfo {
+                    borrowed_amount: current_borrowing_info.borrowed_amount,
                     accumulated_interest: Uint128::from(
-                        current_repay_info.accumulated_interest.u128() - repay_token.amount.u128(),
+                        current_borrowing_info.accumulated_interest.u128() - repay_token.amount.u128(),
                     ),
+                    average_interest_rate: current_borrowing_info.average_interest_rate,
+                    timestamp: env.block.time,
                 };
 
-                USER_REPAY_INFO.save(
+                USER_BORROWING_INFO.save(
                     deps.storage,
                     (info.sender.to_string(), repay_token.denom.clone()),
-                    &new_user_repay_info,
+                    &new_user_borrowing_info,
                 )?;
                 Ok(Response::default())
             } else if repay_token.amount.u128()
-                <= current_repay_info.accumulated_interest.u128() + current_borrows.borrows.u128()
+                <= current_borrowing_info.accumulated_interest.u128() + borrow_amount_with_interest.u128()
             {
-                let new_borrow_amount = current_borrows.borrows.u128()
-                    - (repay_token.amount.u128() - current_repay_info.accumulated_interest.u128());
-                let new_user_repay_info = RepayInfo {
+                let new_borrow_amount = borrow_amount_with_interest.u128()
+                    - (repay_token.amount.u128() - current_borrowing_info.accumulated_interest.u128());
+                let new_user_borrowing_info = UserBorrowingInfo {
                     borrowed_amount: Uint128::from(new_borrow_amount),
                     accumulated_interest: Default::default(),
+                    average_interest_rate: current_borrowing_info.average_interest_rate,
+                    timestamp: env.block.time,
                 };
 
-                USER_REPAY_INFO.save(
+                USER_BORROWING_INFO.save(
                     deps.storage,
                     (info.sender.to_string(), repay_token.denom.clone()),
-                    &new_user_repay_info,
+                    &new_user_borrowing_info,
                 )?;
 
                 USER_BORROWED_BALANCE.save(
@@ -335,10 +358,10 @@ pub fn execute(
                 )?;
                 Ok(Response::default())
             } else {
-                USER_REPAY_INFO.save(
+                USER_BORROWING_INFO.save(
                     deps.storage,
                     (info.sender.to_string(), repay_token.denom.clone()),
-                    &RepayInfo::default(),
+                    &UserBorrowingInfo::default(),
                 )?;
 
                 USER_BORROWED_BALANCE.save(
@@ -348,8 +371,8 @@ pub fn execute(
                 )?;
                 // send back if all borrowed was repaid
                 let remaining = repay_token.amount.u128()
-                    - current_repay_info.accumulated_interest.u128()
-                    - current_borrows.borrows.u128();
+                    - current_borrowing_info.accumulated_interest.u128()
+                    - borrow_amount_with_interest.u128();
 
                 Ok(Response::new().add_message(BankMsg::Send {
                     to_address: info.sender.to_string(),
@@ -364,11 +387,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetDeposit { address, denom } => to_binary(&get_deposit(deps, address, denom)?),
         QueryMsg::GetPrice { denom } => to_binary(&get_price(deps, denom)?),
-        QueryMsg::GetBorrows { address, denom } => {
-            to_binary(&query::get_borrows(deps, address, denom)?)
+        QueryMsg::GetBorrowAmountWithInterest { address, denom } => {
+            to_binary(&query::get_borrow_amount_with_interest(deps, env, address, denom)?)
         }
-        QueryMsg::GetRepayInfo { address, denom } => {
-            to_binary(&query::get_repay_info(deps, address, denom)?)
+        QueryMsg::GetUserBorrowingInfo { address, denom } => {
+            to_binary(&query::get_user_borrowing_info(deps, address, denom)?)
         }
         QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
         QueryMsg::GetTokensInterestRateModelParams {} => {
@@ -381,16 +404,16 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&get_user_deposited_usd(deps, address)?)
         }
         QueryMsg::GetUserBorrowedUsd { address } => {
-            to_binary(&get_user_borrowed_usd(deps, address)?)
+            to_binary(&get_user_borrowed_usd(deps, env, address)?)
         }
         QueryMsg::GetContractBalance { denom } => {
             to_binary(&get_contract_balance_by_token(deps, env, denom)?)
         }
         QueryMsg::GetAvailableToBorrow { address, denom } => {
-            to_binary(&get_available_to_borrow(deps, address, denom)?)
+            to_binary(&get_available_to_borrow(deps, env, address, denom)?)
         }
         QueryMsg::GetAvailableToRedeem { address, denom } => {
-            to_binary(&get_available_to_redeem(deps, address, denom)?)
+            to_binary(&get_available_to_redeem(deps, env, address, denom)?)
         }
         QueryMsg::GetTotalReservesByToken { denom } => {
             to_binary(&get_total_reserves_by_token(deps, env, denom)?)
@@ -416,13 +439,13 @@ pub mod query {
 
     use crate::msg::{
         GetBalanceResponse,
-        GetBorrowsResponse,
+        GetBorrowAmountWithInterestResponse,
         GetPriceResponse,
         GetSupportedTokensResponse,
         GetTokensInterestRateModelParamsResponse,
         GetUserBorrowedUsdResponse,
         GetUserDepositedUsdResponse,
-        RepayInfo,
+        UserBorrowingInfo,
         GetInterestRateResponse
     };
     use cosmwasm_std::{Coin, Order};
@@ -435,12 +458,26 @@ pub mod query {
         Ok(GetBalanceResponse { balance })
     }
 
-    pub fn get_borrows(deps: Deps, user: String, denom: String) -> StdResult<GetBorrowsResponse> {
-        let borrows = USER_BORROWED_BALANCE
-            .load(deps.storage, (user, denom))
-            .unwrap_or_else(|_| Uint128::zero());
+    pub fn get_borrow_amount_with_interest(
+        deps: Deps,
+        env: Env,
+        user: String,
+        denom: String
+    ) -> StdResult<GetBorrowAmountWithInterestResponse> {
+        let current_borrowing_info = get_user_borrowing_info(
+            deps.clone(),
+            user.clone(),
+            denom.clone(),
+        )
+        .unwrap_or_default();
 
-        Ok(GetBorrowsResponse { borrows })
+        let borrow_amount_with_interest = current_borrowing_info.borrowed_amount.u128() *
+                power(
+                    current_borrowing_info.average_interest_rate / HUNDRED + INTEREST_RATE_MULTIPLIER,
+                    u128::from(env.block.time.seconds() - current_borrowing_info.timestamp.seconds()) * INTEREST_RATE_MULTIPLIER / YEAR_IN_SECONDS
+                ).unwrap().u128() / INTEREST_RATE_MULTIPLIER;
+
+        Ok(GetBorrowAmountWithInterestResponse { amount: Uint128::from(borrow_amount_with_interest) })
     }
 
     pub fn get_price(deps: Deps, denom: String) -> StdResult<GetPriceResponse> {
@@ -510,8 +547,8 @@ pub mod query {
         ))
     }
 
-    pub fn get_repay_info(deps: Deps, user: String, denom: String) -> StdResult<RepayInfo> {
-        Ok(USER_REPAY_INFO
+    pub fn get_user_borrowing_info(deps: Deps, user: String, denom: String) -> StdResult<UserBorrowingInfo> {
+        Ok(USER_BORROWING_INFO
             .load(deps.storage, (user, denom))
             .unwrap_or_default())
     }
@@ -551,13 +588,14 @@ pub mod query {
 
     pub fn get_user_borrowed_usd(
         deps: Deps,
+        env: Env,
         user: String,
     ) -> StdResult<GetUserBorrowedUsdResponse> {
         let mut user_borrowed_usd = 0u128;
         for tokens in get_supported_tokens(deps).unwrap().supported_tokens {
-            let user_borrow = get_borrows(deps, user.clone(), tokens.denom.clone())
+            let user_borrow = get_borrow_amount_with_interest(deps, env.clone(), user.clone(), tokens.denom.clone())
                 .unwrap()
-                .borrows
+                .amount
                 .u128();
 
             match get_token_decimal(deps, tokens.denom.clone())
@@ -597,7 +635,12 @@ pub mod query {
         Ok(balance)
     }
 
-    pub fn get_available_to_borrow(deps: Deps, user: String, denom: String) -> StdResult<Uint128> {
+    pub fn get_available_to_borrow(
+        deps: Deps,
+        env: Env,
+        user: String,
+        denom: String
+    ) -> StdResult<Uint128> {
         let deposited_amount_in_usd = get_user_deposited_usd(deps, user.clone())
             .unwrap()
             .user_deposited_usd
@@ -610,11 +653,16 @@ pub mod query {
             available_to_borrow_usd / get_price(deps, denom.clone()).unwrap().price;
 
         Ok(Uint128::from(
-            available_to_borrow_amount - get_borrows(deps, user, denom).unwrap().borrows.u128(),
+            available_to_borrow_amount - get_borrow_amount_with_interest(deps, env, user, denom).unwrap().amount.u128(),
         ))
     }
 
-    pub fn get_available_to_redeem(deps: Deps, user: String, denom: String) -> StdResult<Uint128> {
+    pub fn get_available_to_redeem(
+        deps: Deps,
+        env: Env,
+        user: String,
+        denom: String
+    ) -> StdResult<Uint128> {
         let mut available_to_redeem = 0u128;
 
         let sum_collateral_balance_usd = get_user_deposited_usd(deps, user.clone())
@@ -630,18 +678,21 @@ pub mod query {
         if user_deposit_in_that_token == 0 {
             available_to_redeem = 0;
         } else {
-            let sum_borrow_balance_usd = get_user_borrowed_usd(deps, user.clone())
+            let sum_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
                 .unwrap()
                 .user_borrowed_usd
                 .u128();
 
             if sum_borrow_balance_usd <= sum_collateral_balance_usd * 8u128 / 10u128 {
-                let user_borrows = get_borrows(deps, user.clone(), denom.clone());
+                let borrow_amount_with_interest = get_borrow_amount_with_interest(deps, env.clone(), user.clone(), denom.clone())
+                    .unwrap()
+                    .amount
+                    .u128();
 
                 available_to_redeem = (sum_collateral_balance_usd
                     - sum_borrow_balance_usd * 10u128 / 8u128)
                     / get_price(deps, denom.clone()).unwrap().price
-                    - user_borrows.unwrap().borrows.u128();
+                    - borrow_amount_with_interest;
             } else if sum_borrow_balance_usd == 0 {
                 available_to_redeem = get_deposit(deps, user.clone(), denom.clone())
                     .unwrap()
@@ -725,5 +776,18 @@ pub mod query {
         } else {
             Ok(Uint128::from(0u128))
         }
+    }
+
+    pub fn power(base: u128, exp: u128) -> StdResult<Uint128> {
+        if exp == 0 {
+            return Ok(Uint128::from(1u128));
+        }
+
+        let mut result = base;
+        for _ in 1..exp {
+            result = result * base;
+        }
+
+        Ok(Uint128::from(result))
     }
 }

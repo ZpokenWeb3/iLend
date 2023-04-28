@@ -4,7 +4,7 @@ use std::vec;
 
 use cosmwasm_std::Uint128;
 use master_contract::msg::{
-    ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetPriceResponse, InstantiateMsg, QueryMsg,
+    ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse, InstantiateMsg, QueryMsg,
 };
 use master_contract::{execute, instantiate, query};
 
@@ -649,18 +649,18 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     )
     .unwrap();
 
-    let user_borrowed_balance: GetBorrowsResponse = app
+    let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
-            &QueryMsg::GetBorrows {
+            &QueryMsg::GetBorrowAmountWithInterest {
                 address: "user".to_string(),
                 denom: "eth".to_string(),
             },
         )
         .unwrap();
 
-    assert_eq!(user_borrowed_balance.borrows.u128(), BORROW_OF_FIRST_TOKEN);
+    assert_eq!(user_borrowed_balance.amount.u128(), BORROW_OF_FIRST_TOKEN);
 
     (app, addr)
 }

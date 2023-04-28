@@ -5,8 +5,8 @@ mod tests {
     use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetSupportedTokensResponse,
-        GetTotalBorrowedUsdResponse, GetTotalDepositedUsdResponse, QueryMsg, RepayInfo,
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetSupportedTokensResponse,
+        GetTotalBorrowedUsdResponse, GetTotalDepositedUsdResponse, QueryMsg, UserBorrowingInfo,
     };
     use std::fmt::format;
 
@@ -75,18 +75,18 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.borrows.u128(), BORROW_SECOND_TOKEN);
+        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
 
         assert_eq!(
             app.wrap()
@@ -97,11 +97,11 @@ mod tests {
             INIT_BALANCE_SECOND_TOKEN + BORROW_SECOND_TOKEN
         );
 
-        let repay_info_for_one_token: RepayInfo = app
+        let repay_info_for_one_token: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetRepayInfo {
+                &QueryMsg::GetUserBorrowingInfo {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },

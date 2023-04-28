@@ -7,7 +7,7 @@ mod tests {
     use cosmwasm_std::{coin, coins, Addr, Uint128};
     use cw_multi_test::{App, ContractWrapper, Executor};
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetPriceResponse, InstantiateMsg,
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse, InstantiateMsg,
         QueryMsg,
     };
     use master_contract::{execute, instantiate, query};
@@ -224,17 +224,17 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.borrows.u128(), BORROW_SECOND_TOKEN);
+        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
     }
 }

@@ -1,5 +1,5 @@
 use cosmwasm_std::Uint128;
-
+use cosmwasm_std::Timestamp;
 use cosmwasm_schema::{cw_serde, QueryResponses};
 
 // cw_serde attribute is equivalent to
@@ -55,11 +55,11 @@ pub enum QueryMsg {
     #[returns(GetBalanceResponse)]
     GetDeposit { address: String, denom: String },
 
-    #[returns(GetBorrowsResponse)]
-    GetBorrows { address: String, denom: String },
+    #[returns(GetBorrowAmountWithInterestResponse)]
+    GetBorrowAmountWithInterest { address: String, denom: String },
 
-    #[returns(RepayInfo)]
-    GetRepayInfo { address: String, denom: String },
+    #[returns(UserBorrowingInfo)]
+    GetUserBorrowingInfo { address: String, denom: String },
 
     #[returns(GetSupportedTokensResponse)]
     GetSupportedTokens {},
@@ -115,8 +115,8 @@ pub struct GetBalanceResponse {
 }
 
 #[cw_serde]
-pub struct GetBorrowsResponse {
-    pub borrows: Uint128,
+pub struct GetBorrowAmountWithInterestResponse {
+    pub amount: Uint128,
 }
 
 #[cw_serde]
@@ -145,16 +145,20 @@ pub struct GetInterestRateResponse {
 }
 
 #[cw_serde]
-pub struct RepayInfo {
+pub struct UserBorrowingInfo {
     pub borrowed_amount: Uint128,
     pub accumulated_interest: Uint128,
+    pub average_interest_rate: u128,
+    pub timestamp: Timestamp,
 }
 
-impl Default for RepayInfo {
+impl Default for UserBorrowingInfo {
     fn default() -> Self {
-        RepayInfo {
+        UserBorrowingInfo {
             borrowed_amount: Default::default(),
             accumulated_interest: Default::default(),
+            average_interest_rate: Default::default(),
+            timestamp: Default::default(),
         }
     }
 }

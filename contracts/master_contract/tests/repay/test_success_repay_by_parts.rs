@@ -5,8 +5,8 @@ mod tests {
     use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
     use master_contract::msg::{
-        ExecuteMsg, GetBorrowsResponse, GetTotalBorrowedUsdResponse, GetUserBorrowedUsdResponse,
-        GetUserDepositedUsdResponse, QueryMsg, RepayInfo,
+        ExecuteMsg, GetBorrowAmountWithInterestResponse, GetTotalBorrowedUsdResponse, GetUserBorrowedUsdResponse,
+        GetUserDepositedUsdResponse, QueryMsg, UserBorrowingInfo,
     };
 
     #[test]
@@ -16,11 +16,11 @@ mod tests {
 
         let (mut app, addr) = success_borrow_setup();
 
-        let repay_info: RepayInfo = app
+        let repay_info: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetRepayInfo {
+                &QueryMsg::GetUserBorrowingInfo {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
@@ -44,11 +44,11 @@ mod tests {
         )
         .unwrap();
 
-        let repay_info_after_repay: RepayInfo = app
+        let repay_info_after_repay: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetRepayInfo {
+                &QueryMsg::GetUserBorrowingInfo {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
@@ -61,11 +61,11 @@ mod tests {
             BORROW_OF_FIRST_TOKEN / 2
         );
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
@@ -73,7 +73,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_borrowed_balance.borrows.u128(),
+            user_borrowed_balance.amount.u128(),
             BORROW_OF_FIRST_TOKEN / 2
         );
 
@@ -85,11 +85,11 @@ mod tests {
         )
         .unwrap();
 
-        let repay_info_after_repay: RepayInfo = app
+        let repay_info_after_repay: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetRepayInfo {
+                &QueryMsg::GetUserBorrowingInfo {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
@@ -99,17 +99,17 @@ mod tests {
         assert_eq!(repay_info_after_repay.accumulated_interest.u128(), 0);
         assert_eq!(repay_info_after_repay.borrowed_amount.u128(), 0);
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.borrows.u128(), 0);
+        assert_eq!(user_borrowed_balance.amount.u128(), 0);
     }
 }
