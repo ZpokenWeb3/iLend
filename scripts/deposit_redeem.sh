@@ -3,10 +3,10 @@ readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
 
 sleep 1
 
-#DEPOSIT='{"deposit":{}}'
-## shellcheck disable=SC2046
-## shellcheck disable=SC2116
-#yes 12345678 | injectived tx wasm execute $CONTRACT "$DEPOSIT" --from=$(echo $INJ_ADDRESS) --amount="100peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
+DEPOSIT='{"deposit":{}}'
+# shellcheck disable=SC2046
+# shellcheck disable=SC2116
+yes 12345678 | injectived tx wasm execute $CONTRACT "$DEPOSIT" --from=$(echo $INJ_ADDRESS) --amount="100peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
 
 sleep 2
 

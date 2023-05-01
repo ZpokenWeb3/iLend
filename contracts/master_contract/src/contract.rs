@@ -368,8 +368,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub mod query {
-
     use super::*;
+    use std::cmp::min;
 
     use crate::msg::{
         GetBalanceResponse, GetBorrowsResponse, GetPriceResponse, GetSupportedTokensResponse,
@@ -508,7 +508,12 @@ pub mod query {
         Ok(balance)
     }
 
-    pub fn get_available_to_borrow(deps: Deps, user: String, denom: String) -> StdResult<Uint128> {
+    pub fn get_available_to_borrow(
+        deps: Deps,
+        env: Env,
+        user: String,
+        denom: String,
+    ) -> StdResult<Uint128> {
         let deposited_amount_in_usd = get_user_deposited_usd(deps, user.clone())
             .unwrap()
             .user_deposited_usd
@@ -520,9 +525,14 @@ pub mod query {
         let available_to_borrow_amount =
             available_to_borrow_usd / get_price(deps, denom.clone()).unwrap().price;
 
-        Ok(Uint128::from(
+        Ok(Uint128::from(min(
             available_to_borrow_amount - get_borrows(deps, user, denom).unwrap().borrows.u128(),
-        ))
+            get_contract_balance_by_token(deps, env, denom.clone())
+                .unwrap()
+                .u128()
+                * 8u128
+                / 10u128,
+        )))
     }
 
     pub fn get_available_to_redeem(deps: Deps, user: String, denom: String) -> StdResult<Uint128> {
