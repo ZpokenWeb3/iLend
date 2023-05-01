@@ -10,20 +10,20 @@ mod tests {
 
     #[test]
     fn test_successful_deposits_of_diff_token() {
-        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
-        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000;
+        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200;
-        const DEPOSIT_OF_SECOND_TOKEN: u128 = 300;
+        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
-        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
+        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+        const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
-        const INTEREST_RATE_DECIMALS: u32 = 18;
+        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -75,18 +75,18 @@ mod tests {
                         ),
                     ],
                     tokens_interest_rate_model_params: vec![
-                      (
-                          "eth".to_string(),
-                          MIN_INTEREST_RATE,
-                          SAFE_BORROW_MAX_RATE,
-                          RATE_GROWTH_FACTOR,
-                      ),
-                      (
-                          "atom".to_string(),
-                          MIN_INTEREST_RATE,
-                          SAFE_BORROW_MAX_RATE,
-                          RATE_GROWTH_FACTOR,
-                      ),
+                        (
+                            "eth".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                        ),
+                        (
+                            "atom".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                        ),
                     ],
                 },
                 &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],

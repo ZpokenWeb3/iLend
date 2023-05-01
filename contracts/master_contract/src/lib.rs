@@ -5,6 +5,7 @@ use msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 mod contract;
 mod error;
 pub mod msg;
+mod ratio;
 mod state;
 
 #[cfg_attr(not(feature = "library"), entry_point)]

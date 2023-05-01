@@ -10,16 +10,16 @@ mod tests {
 
     #[test]
     fn test_fail_deposit_insufficient_balance_after_successful_deposit() {
-        const INIT_USER_BALANCE: u128 = 1000;
-        const CONTRACT_RESERVES: u128 = 1000000;
-        const FIRST_DEPOSIT_AMOUNT: u128 = 2000;
+        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-        const INTEREST_RATE_DECIMALS: u32 = 18;
+        const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
+        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * DECIMAL_FRACTIONAL.u128();
 
-        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        
+        const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
+
         let mut app = App::new(|router, _, storage| {
             router
                 .bank

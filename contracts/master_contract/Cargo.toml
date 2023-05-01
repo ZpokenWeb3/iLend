@@ -48,6 +48,8 @@ cw2 = "1.0.1"
 thiserror = "1.0.40"
 cw20 = "1.0.1"
 cw20-base = "1.0.1"
+near-sdk = "4.0.0-pre.6"
+uint = "0.9.5"
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"

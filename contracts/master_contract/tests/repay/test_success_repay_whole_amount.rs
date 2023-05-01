@@ -4,7 +4,9 @@ mod tests {
     use crate::utils::{success_borrow_setup, success_deposit_of_diff_token_with_prices};
     use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg, GetBorrowAmountWithInterestResponse, QueryMsg, UserBorrowingInfo};
+    use master_contract::msg::{
+        ExecuteMsg, GetBorrowAmountWithInterestResponse, QueryMsg, UserBorrowingInfo,
+    };
 
     #[test]
     fn test_success_repay() {

@@ -1,4 +1,4 @@
-use crate::msg::{UserBorrowingInfo, TokenInfo, TokenInterestRateModelParams};
+use crate::msg::{TokenInfo, TokenInterestRateModelParams, UserBorrowingInfo};
 use {
     cosmwasm_std::Uint128,
     cw_storage_plus::{Item, Map},
@@ -34,7 +34,8 @@ pub const ADMIN: Item<String> = Item::new("admin");
 ADMIN that are eligible to fund contract with reserves [ contract itself by default ]
 */
 
-pub const USER_BORROWING_INFO: Map<(String, String), UserBorrowingInfo> = Map::new("user_borrowing_info");
+pub const USER_BORROWING_INFO: Map<(String, String), UserBorrowingInfo> =
+    Map::new("user_borrowing_info");
 /*
 USER_BORROWING_INFO STORAGE
 Key: (user_address_1, token_A) -> Value: user_borrowing_info
@@ -42,7 +43,8 @@ Key: (user_address_1, token_B) -> Value: user_borrowing_info
 Key: (user_address_2, token_A) -> Value: user_borrowing_info
  */
 
-pub const TOKENS_INTEREST_RATE_MODEL_PARAMS: Map<String, TokenInterestRateModelParams> = Map::new("token_interest_rate_model_params");
+pub const TOKENS_INTEREST_RATE_MODEL_PARAMS: Map<String, TokenInterestRateModelParams> =
+    Map::new("token_interest_rate_model_params");
 /*
 TOKENS_INTEREST_RATE_MODEL_PARAMS STORAGE
 Key: token demon -> Value: TokenInterestRateModelParams

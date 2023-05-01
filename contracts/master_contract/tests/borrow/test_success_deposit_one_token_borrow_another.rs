@@ -7,8 +7,8 @@ mod tests {
     use cosmwasm_std::{coin, coins, Addr, Uint128};
     use cw_multi_test::{App, ContractWrapper, Executor};
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse, InstantiateMsg,
-        QueryMsg,
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
+        InstantiateMsg, QueryMsg,
     };
     use master_contract::{execute, instantiate, query};
 
@@ -80,18 +80,18 @@ mod tests {
                         ),
                     ],
                     tokens_interest_rate_model_params: vec![
-                      (
-                          "eth".to_string(),
-                          MIN_INTEREST_RATE,
-                          SAFE_BORROW_MAX_RATE,
-                          RATE_GROWTH_FACTOR,
-                      ),
-                      (
-                          "atom".to_string(),
-                          MIN_INTEREST_RATE,
-                          SAFE_BORROW_MAX_RATE,
-                          RATE_GROWTH_FACTOR,
-                      ),
+                        (
+                            "eth".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                        ),
+                        (
+                            "atom".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                        ),
                     ],
                 },
                 &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],

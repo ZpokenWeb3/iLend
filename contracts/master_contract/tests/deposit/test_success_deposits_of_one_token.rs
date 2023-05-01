@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     fn test_successful_deposits_of_one_token() {
-        const TOKEN_DECIMALS: u32 = 6;
+        const TOKEN_DECIMALS: u32 = 18;
 
         const INIT_USER_BALANCE: u128 = 1000u128 * 10u128.pow(TOKEN_DECIMALS);
         const CONTRACT_RESERVES: u128 = 1000000u128 * 10u128.pow(TOKEN_DECIMALS);

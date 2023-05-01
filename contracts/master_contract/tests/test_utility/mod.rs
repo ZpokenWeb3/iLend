@@ -1,4 +1,4 @@
-mod test_get_supported_tokens;
-mod test_set_get_price;
 mod test_get_interest_rate;
+mod test_get_supported_tokens;
 mod test_get_tokens_interest_rate_model_params;
+mod test_set_get_price;

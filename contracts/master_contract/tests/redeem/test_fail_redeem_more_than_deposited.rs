@@ -11,10 +11,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_fail_redeem_more_than_deposited() {
-        const INIT_USER_BALANCE: u128 = 1000;
-        const CONTRACT_RESERVES: u128 = 1000000;
-        const TOTAL_DEPOSITED: u128 = 500;
-        const WITHDRAW_AMOUNT: u128 = 700;
+        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+
+        const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
+        const TOTAL_DEPOSITED: u128 = 500 * DECIMAL_FRACTIONAL.u128();
+        const WITHDRAW_AMOUNT: u128 = 700 * DECIMAL_FRACTIONAL.u128();
 
         // having 500 deposited we want to redeem WITHDRAW_AMOUNT
         let (mut app, addr) = success_deposit_of_one_token_setup();

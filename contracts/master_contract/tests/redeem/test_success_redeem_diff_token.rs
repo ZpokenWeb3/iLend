@@ -9,17 +9,19 @@ mod tests {
 
     #[test]
     fn test_success_redeem_diff_token() {
-        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
-        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000;
+        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200;
-        const DEPOSIT_OF_SECOND_TOKEN: u128 = 300;
+        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
-        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
+        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+        const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
-        const WITHDRAW_AMOUNT_FIRST_TOKEN: u128 = 100;
-        const WITHDRAW_AMOUNT_SECOND_TOKEN: u128 = 150;
+        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+
+        const WITHDRAW_AMOUNT_FIRST_TOKEN: u128 = 100 * DECIMAL_FRACTIONAL.u128();
+        const WITHDRAW_AMOUNT_SECOND_TOKEN: u128 = 150 * DECIMAL_FRACTIONAL.u128();
 
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
