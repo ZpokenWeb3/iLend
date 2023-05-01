@@ -441,6 +441,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub mod query {
     use super::*;
+    use std::cmp::min;
 
     use crate::msg::{
         GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetInterestRateResponse,
