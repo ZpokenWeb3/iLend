@@ -44,7 +44,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let user_deposited_balance_after_redeeming: GetBalanceResponse = app
             .wrap()
@@ -77,7 +77,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
@@ -90,9 +90,11 @@ mod tests {
             )
             .unwrap();
 
+
+
         assert_eq!(
-            user_borrowed_balance.amount,
-            Uint128::from(BORROW_SECOND_TOKEN)
+            user_borrowed_balance.amount.u128(),
+            BORROW_SECOND_TOKEN
         );
 
         assert_eq!(
