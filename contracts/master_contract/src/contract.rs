@@ -441,8 +441,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub mod query {
     use super::*;
-    use std::cmp::min;
-    use std::ops::Mul;
+    
+    
     use std::str::FromStr;
 
     use crate::msg::{
@@ -450,9 +450,9 @@ pub mod query {
         GetPriceResponse, GetSupportedTokensResponse, GetTokensInterestRateModelParamsResponse,
         GetUserBorrowedUsdResponse, GetUserDepositedUsdResponse, UserBorrowingInfo,
     };
-    use crate::ratio::{Ratio, U384};
-    use cosmwasm_std::{Coin, Decimal, Order};
-    use near_sdk::json_types::U128;
+    use crate::ratio::{Ratio};
+    use cosmwasm_std::{Coin, Order};
+    
 
     pub fn get_deposit(deps: Deps, user: String, denom: String) -> StdResult<GetBalanceResponse> {
         let balance = USER_DEPOSITED_BALANCE
