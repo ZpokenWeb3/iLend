@@ -24,17 +24,17 @@ mod tests {
         assert_eq!(
             tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0]
                 .min_interest_rate,
-            5000000000000000000
+            500000000
         ); // 5%
         assert_eq!(
             tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0]
                 .safe_borrow_max_rate,
-            30000000000000000000
+            3000000000
         ); // 30%
         assert_eq!(
             tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0]
                 .rate_growth_factor,
-            70000000000000000000
+            7000000000
         ); // 70%
     }
 }

@@ -8,6 +8,9 @@ use crate::contract::query::{
 use crate::msg::{TokenInfo, TokenInterestRateModelParams, UserBorrowingInfo};
 use crate::ratio::Ratio;
 use crate::state::{PRICES, USER_BORROWED_BALANCE, USER_BORROWING_INFO};
+use rust_decimal::prelude::MathematicalOps;
+use rust_decimal::Decimal;
+
 use {
     crate::contract::query::get_deposit,
     crate::{
@@ -114,7 +117,7 @@ pub fn execute(
                 info.sender.to_string(),
                 allowed_coin.denom.clone(),
             )
-                .unwrap();
+            .unwrap();
             let new_balance = current_balance.balance.u128() + allowed_coin.amount.u128();
             USER_DEPOSITED_BALANCE.save(
                 deps.storage,
@@ -215,8 +218,8 @@ pub fn execute(
                 info.sender.to_string(),
                 denom.clone(),
             )
-                .unwrap()
-                .u128();
+            .unwrap()
+            .u128();
 
             assert!(
                 available_to_borrow_amount >= amount.u128(),
@@ -236,16 +239,16 @@ pub fn execute(
                 info.sender.to_string(),
                 denom.clone(),
             )
-                .unwrap()
-                .amount
-                .u128();
+            .unwrap()
+            .amount
+            .u128();
 
             let user_borrowing_info = get_user_borrowing_info(
                 deps.as_ref(),
                 info.sender.to_string().clone(),
                 denom.clone(),
             )
-                .unwrap_or_default();
+            .unwrap_or_default();
 
             let new_user_borrow_amount: u128 = borrow_amount_with_interest + amount.u128();
 
@@ -311,7 +314,7 @@ pub fn execute(
                 info.sender.to_string().clone(),
                 repay_token.denom.clone(),
             )
-                .unwrap_or_default();
+            .unwrap_or_default();
 
             let borrow_amount_with_interest = get_borrow_amount_with_interest(
                 deps.as_ref(),
@@ -319,8 +322,8 @@ pub fn execute(
                 info.sender.to_string(),
                 repay_token.denom.clone(),
             )
-                .unwrap()
-                .amount;
+            .unwrap()
+            .amount;
 
             if repay_token.amount.u128() < current_borrowing_info.accumulated_interest.u128() {
                 let new_user_borrowing_info = UserBorrowingInfo {
@@ -341,11 +344,11 @@ pub fn execute(
                 Ok(Response::default())
             } else if repay_token.amount.u128()
                 <= current_borrowing_info.accumulated_interest.u128()
-                + borrow_amount_with_interest.u128()
+                    + borrow_amount_with_interest.u128()
             {
                 let new_borrow_amount = borrow_amount_with_interest.u128()
                     - (repay_token.amount.u128()
-                    - current_borrowing_info.accumulated_interest.u128());
+                        - current_borrowing_info.accumulated_interest.u128());
                 let new_user_borrowing_info = UserBorrowingInfo {
                     borrowed_amount: Uint128::from(new_borrow_amount),
                     accumulated_interest: Default::default(),
@@ -441,6 +444,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub mod query {
     use super::*;
+    use std::fmt::Debug;
+    use std::ops::{Div, Mul};
 
     use std::str::FromStr;
 
@@ -449,8 +454,10 @@ pub mod query {
         GetPriceResponse, GetSupportedTokensResponse, GetTokensInterestRateModelParamsResponse,
         GetUserBorrowedUsdResponse, GetUserDepositedUsdResponse, UserBorrowingInfo,
     };
-    use crate::ratio::Ratio;
+    use crate::ratio::{LowU128, Ratio};
     use cosmwasm_std::{Coin, Order};
+    use near_sdk::json_types::U128;
+    use rust_decimal::prelude::ToPrimitive;
 
     pub fn get_deposit(deps: Deps, user: String, denom: String) -> StdResult<GetBalanceResponse> {
         let balance = USER_DEPOSITED_BALANCE
@@ -469,23 +476,34 @@ pub mod query {
         let current_borrowing_info =
             get_user_borrowing_info(deps.clone(), user.clone(), denom.clone()).unwrap_or_default();
 
-        let borrow_amount_with_interest = current_borrowing_info.borrowed_amount.u128()
-            * Ratio::from_str(
-            &*(current_borrowing_info.average_interest_rate / HUNDRED).to_string(),
-        )
-            .unwrap()
-            .pow(
-                (env.block
-                    .time
-                    .minus_seconds(current_borrowing_info.timestamp.seconds())
-                    .seconds() as u128
-                    * INTEREST_RATE_MULTIPLIER
-                    / YEAR_IN_SECONDS) as u64,
-            )
-            .round_u128();
+        let current_borrowed_amount = Decimal::from_i128_with_scale(
+            current_borrowing_info.borrowed_amount.u128() as i128,
+            18,
+        );
+
+        let base_2 = Decimal::from_i128_with_scale(
+            ((current_borrowing_info.average_interest_rate / HUNDRED) + INTEREST_RATE_MULTIPLIER)
+                as i128,
+            18,
+        );
+
+        let exponent = Decimal::from_i128_with_scale(
+            ((env.block.time.seconds() - current_borrowing_info.timestamp.seconds()) as u128
+                * INTEREST_RATE_MULTIPLIER
+                / YEAR_IN_SECONDS) as i128,
+            18,
+        );
+
+        let base_pow = base_2.powd(exponent);
+
+        let borrow_amount_with_interest = current_borrowed_amount.mul(base_pow);
+        // .trunc_with_scale(18u32);
+
+        let multiplier = Decimal::new(10i64.pow(18), 0);
+        let borrow_amount_with_interest = borrow_amount_with_interest * multiplier;
 
         Ok(GetBorrowAmountWithInterestResponse {
-            amount: Uint128::from(borrow_amount_with_interest),
+            amount: Uint128::from(borrow_amount_with_interest.round().to_u128().unwrap()),
         })
     }
 
@@ -553,13 +571,13 @@ pub mod query {
             Ok(GetInterestRateResponse {
                 interest_rate: min_interest_rate
                     + utilization_rate * (safe_borrow_max_rate - min_interest_rate)
-                    / UTILIZATION_LIMIT,
+                        / UTILIZATION_LIMIT,
             })
         } else {
             Ok(GetInterestRateResponse {
                 interest_rate: safe_borrow_max_rate
                     + rate_growth_factor * (utilization_rate - UTILIZATION_LIMIT)
-                    / (HUNDRED_PERCENT - UTILIZATION_LIMIT),
+                        / (HUNDRED_PERCENT - UTILIZATION_LIMIT),
             })
         }
     }
@@ -627,9 +645,9 @@ pub mod query {
                 user.clone(),
                 tokens.denom.clone(),
             )
-                .unwrap()
-                .amount
-                .u128();
+            .unwrap()
+            .amount
+            .u128();
 
             match get_token_decimal(deps, tokens.denom.clone())
                 .unwrap()
@@ -688,9 +706,9 @@ pub mod query {
         Ok(Uint128::from(
             available_to_borrow_amount
                 - get_borrow_amount_with_interest(deps, env, user, denom)
-                .unwrap()
-                .amount
-                .u128(),
+                    .unwrap()
+                    .amount
+                    .u128(),
         ))
     }
 
@@ -749,9 +767,9 @@ pub mod query {
             .collect();
 
         for deposits in all_deposits_iter.unwrap() {
-            if deposits.0.1 == denom {
+            if deposits.0 .1 == denom {
                 all_deposits_usd +=
-                    deposits.1.u128() * get_price(deps, deposits.0.1).unwrap().price;
+                    deposits.1.u128() * get_price(deps, deposits.0 .1).unwrap().price;
             }
         }
 
@@ -765,8 +783,8 @@ pub mod query {
             .collect();
 
         for borrows in all_borrowed_iter.unwrap() {
-            if borrows.0.1 == denom {
-                all_borrowed_usd += borrows.1.u128() * get_price(deps, borrows.0.1).unwrap().price;
+            if borrows.0 .1 == denom {
+                all_borrowed_usd += borrows.1.u128() * get_price(deps, borrows.0 .1).unwrap().price;
             }
         }
 

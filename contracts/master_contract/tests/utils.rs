@@ -91,7 +91,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -130,7 +130,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -181,9 +181,11 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
     const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
-    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
-    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
+    const DECIMAL_FRACTIONAL_INT_RATE: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -262,7 +264,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -273,7 +275,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -284,7 +286,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let get_price_eth: GetPriceResponse = app
         .wrap()
@@ -316,7 +318,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -358,7 +360,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -492,7 +494,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -503,7 +505,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -514,7 +516,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let get_price_eth: GetPriceResponse = app
         .wrap()
@@ -546,7 +548,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let available_to_redeem: Uint128 = app
         .wrap()
@@ -601,7 +603,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -646,7 +648,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
         .wrap()

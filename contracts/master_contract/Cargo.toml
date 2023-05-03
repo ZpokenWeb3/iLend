@@ -50,6 +50,7 @@ cw20 = "1.0.1"
 cw20-base = "1.0.1"
 near-sdk = "4.0.0-pre.6"
 uint = "0.9.5"
+rust_decimal = {version = "1.29.1", features = ["maths"]}
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
