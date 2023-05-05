@@ -175,6 +175,7 @@ pub fn execute(
 
             let current_balance = get_deposit(
                 deps.as_ref(),
+                env.clone(),
                 info.sender.to_string(),
                 allowed_coin.denom.clone(),
             )
@@ -203,7 +204,7 @@ pub fn execute(
             )?;
 
             let current_balance =
-                query::get_deposit(deps.as_ref(), info.sender.to_string(), denom.clone())?;
+                query::get_deposit(deps.as_ref(), env.clone(), info.sender.to_string(), denom.clone())?;
 
             let amount = amount.u128();
 
@@ -598,7 +599,7 @@ pub fn execute_update_liquidity_index_data(
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetDeposit { address, denom } => to_binary(&get_deposit(deps, address, denom)?),
+        QueryMsg::GetDeposit { address, denom } => to_binary(&get_deposit(deps, env, address, denom)?),
         QueryMsg::GetPrice { denom } => to_binary(&get_price(deps, denom)?),
         QueryMsg::GetBorrowAmountWithInterest { address, denom } => to_binary(
             &query::get_borrow_amount_with_interest(deps, env, address, denom)?,
@@ -618,7 +619,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetCurrentLiquidityIndexLn { denom } => to_binary(&get_current_liquidity_index_ln(deps, env, denom)?),
         QueryMsg::GetMmTokenPrice { denom } => to_binary(&get_mm_token_price(deps, env, denom)?),
         QueryMsg::GetUserDepositedUsd { address } => {
-            to_binary(&get_user_deposited_usd(deps, address)?)
+            to_binary(&get_user_deposited_usd(deps, env, address)?)
         }
         QueryMsg::GetUserBorrowedUsd { address } => {
             to_binary(&get_user_borrowed_usd(deps, env, address)?)
@@ -672,12 +673,41 @@ pub mod query {
 //     use near_sdk::json_types::U128;
 //     use rust_decimal::prelude::ToPrimitive;
 
-    pub fn get_deposit(deps: Deps, user: String, denom: String) -> StdResult<GetBalanceResponse> {
-        let balance = USER_DEPOSITED_BALANCE
-            .load(deps.storage, (user, denom))
+    pub fn get_deposit(
+        deps: Deps,
+        env: Env,
+        user: String,
+        denom: String
+    ) -> StdResult<GetBalanceResponse> {
+        let token_decimals =
+            get_token_decimal(deps, denom.clone())
+                .unwrap()
+                .u128() as u32;
+
+        let user_mm_token_balance = USER_DEPOSITED_BALANCE
+            .load(deps.storage, (user, denom.clone()))
             .unwrap_or_else(|_| Uint128::zero());
 
-        Ok(GetBalanceResponse { balance })
+        let mm_token_price = 
+            get_mm_token_price(deps.clone(), env.clone(), denom.clone())
+                .unwrap()
+                .u128();
+
+        let user_token_balance = 
+            Decimal::from_i128_with_scale(
+                user_mm_token_balance.u128() as i128,
+                token_decimals,
+            )
+                .mul(
+                    Decimal::from_i128_with_scale(
+                        mm_token_price as i128,
+                        token_decimals,
+                    )
+                )
+                .to_u128_with_decimals()
+                .unwrap();
+
+        Ok(GetBalanceResponse { balance: Uint128::from(user_token_balance) })
     }
 
     pub fn get_borrow_amount_with_interest(
@@ -931,11 +961,12 @@ pub mod query {
 
     pub fn get_user_deposited_usd(
         deps: Deps,
+        env: Env,
         user: String,
     ) -> StdResult<GetUserDepositedUsdResponse> {
         let mut user_deposited_usd = 0u128;
         for tokens in get_supported_tokens(deps).unwrap().supported_tokens {
-            let user_deposit = get_deposit(deps, user.clone(), tokens.denom.clone())
+            let user_deposit = get_deposit(deps, env.clone(), user.clone(), tokens.denom.clone())
                 .unwrap()
                 .balance
                 .u128();
@@ -1022,7 +1053,7 @@ pub mod query {
         user: String,
         denom: String,
     ) -> StdResult<Uint128> {
-        let deposited_amount_in_usd = get_user_deposited_usd(deps, user.clone())
+        let deposited_amount_in_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
             .unwrap()
             .user_deposited_usd
             .u128();
@@ -1050,12 +1081,12 @@ pub mod query {
     ) -> StdResult<Uint128> {
         let mut available_to_redeem = 0u128;
 
-        let sum_collateral_balance_usd = get_user_deposited_usd(deps, user.clone())
+        let sum_collateral_balance_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
             .unwrap()
             .user_deposited_usd
             .u128();
 
-        let user_deposit_in_that_token = get_deposit(deps, user.clone(), denom.clone())
+        let user_deposit_in_that_token = get_deposit(deps, env.clone(), user.clone(), denom.clone())
             .unwrap()
             .balance
             .u128();
@@ -1080,7 +1111,7 @@ pub mod query {
                     / get_price(deps, denom.clone()).unwrap().price
                     - borrow_amount_with_interest;
             } else if sum_borrow_balance_usd == 0 {
-                available_to_redeem = get_deposit(deps, user.clone(), denom.clone())
+                available_to_redeem = get_deposit(deps, env.clone(), user.clone(), denom.clone())
                     .unwrap()
                     .balance
                     .u128();
