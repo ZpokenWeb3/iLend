@@ -60,7 +60,7 @@ pub enum QueryMsg {
 
     #[returns(UserBorrowingInfo)]
     GetUserBorrowingInfo { address: String, denom: String },
-    
+
     #[returns(TotalBorrowData)]
     GetTotalBorrowData { denom: String },
 
@@ -114,6 +114,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetUtilizationRateByToken { denom: String },
+
+    #[returns(Uint128)]
+    GetLiquidityIndexLastUpdate { denom: String },
 }
 
 #[cw_serde]
@@ -129,6 +132,9 @@ pub struct GetBalanceResponse {
 #[cw_serde]
 pub struct GetBorrowAmountWithInterestResponse {
     pub amount: Uint128,
+    pub base: Uint128,
+    pub exponent: Uint128,
+    pub avarage_interest_rate: Uint128,
 }
 
 #[cw_serde]
@@ -154,8 +160,7 @@ pub struct GetTokensInterestRateModelParamsResponse {
 #[cw_serde]
 pub struct UserBorrowingInfo {
     pub borrowed_amount: Uint128,
-    pub accumulated_interest: Uint128,
-    pub average_interest_rate: u128,
+    pub average_interest_rate: Uint128,
     pub timestamp: Timestamp,
 }
 
@@ -163,7 +168,6 @@ impl Default for UserBorrowingInfo {
     fn default() -> Self {
         UserBorrowingInfo {
             borrowed_amount: Default::default(),
-            accumulated_interest: Default::default(),
             average_interest_rate: Default::default(),
             timestamp: Default::default(),
         }
