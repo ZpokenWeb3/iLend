@@ -6,7 +6,11 @@ mod tests {
 
     use cosmwasm_std::Uint128;
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetTotalDepositedUsdResponse, InstantiateMsg, QueryMsg,
+        ExecuteMsg,
+        GetBalanceResponse,
+//         GetTotalDepositedUsdResponse,
+        InstantiateMsg,
+        QueryMsg,
     };
     use master_contract::{execute, instantiate, query};
 

@@ -60,6 +60,9 @@ pub enum QueryMsg {
 
     #[returns(UserBorrowingInfo)]
     GetUserBorrowingInfo { address: String, denom: String },
+    
+    #[returns(TotalBorrowData)]
+    GetTotalBorrowData { denom: String },
 
     #[returns(GetSupportedTokensResponse)]
     GetSupportedTokens {},
@@ -70,8 +73,17 @@ pub enum QueryMsg {
     #[returns(GetPriceResponse)]
     GetPrice { denom: String },
 
-    #[returns(GetInterestRateResponse)]
+    #[returns(Uint128)]
     GetInterestRate { denom: String },
+
+    #[returns(Uint128)]
+    GetLiquidityRate { denom: String },
+
+    #[returns(Uint128)]
+    GetCurrentLiquidityIndexLn { denom: String },
+
+    #[returns(Uint128)]
+    GetMmTokenPrice { denom: String },
 
     #[returns(GetUserDepositedUsdResponse)]
     GetUserDepositedUsd { address: String },
@@ -140,11 +152,6 @@ pub struct GetTokensInterestRateModelParamsResponse {
 }
 
 #[cw_serde]
-pub struct GetInterestRateResponse {
-    pub interest_rate: u128,
-}
-
-#[cw_serde]
 pub struct UserBorrowingInfo {
     pub borrowed_amount: Uint128,
     pub accumulated_interest: Uint128,
@@ -187,4 +194,19 @@ pub struct TokenInterestRateModelParams {
     pub min_interest_rate: u128,
     pub safe_borrow_max_rate: u128,
     pub rate_growth_factor: u128,
+}
+
+#[cw_serde]
+pub struct LiquidityIndexData {
+    pub denom: String,
+    pub liquidity_index_ln: u128,
+    pub timestamp: Timestamp,
+}
+
+#[cw_serde]
+#[derive(Default)]
+pub struct TotalBorrowData {
+    pub denom: String,
+    pub total_borrowed_amount: u128,
+    pub total_borrowed_interest: u128,
 }
