@@ -5,11 +5,7 @@ mod tests {
         success_borrow_setup,
 //         success_deposit_of_diff_token_with_prices
     };
-    use cosmwasm_std::{
-        coins,
-        Addr,
-//         Uint128
-    };
+    use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp};
     use cw_multi_test::Executor;
     use master_contract::msg::{
         ExecuteMsg,
@@ -28,48 +24,50 @@ mod tests {
 
         let (mut app, addr) = success_borrow_setup();
 
-        let repay_info: UserBorrowingInfo = app
+        app.set_block(BlockInfo {
+            height: 542,
+            time: Timestamp::from_seconds(3153600),
+            chain_id: "custom_chain_id".to_string(),
+        });
+
+        let get_borrow_amount_with_interest: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetUserBorrowingInfo {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(
-            repay_info.accumulated_interest.u128(),
-            BORROW_OF_FIRST_TOKEN / 8
-        );
-        assert_eq!(repay_info.borrowed_amount.u128(), BORROW_OF_FIRST_TOKEN);
+        println!("{:?}", get_borrow_amount_with_interest.amount.u128());
 
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Repay {},
             &coins(
-                repay_info.accumulated_interest.u128() + BORROW_OF_FIRST_TOKEN / 2,
+                get_borrow_amount_with_interest.amount.u128() + BORROW_OF_FIRST_TOKEN / 2,
                 "eth",
             ),
         )
         .unwrap();
 
-        let repay_info_after_repay: UserBorrowingInfo = app
+        let get_user_borrow_with_interest: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetUserBorrowingInfo {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(repay_info_after_repay.accumulated_interest.u128(), 0);
+        assert_eq!(get_user_borrow_with_interest.amount.u128(), 0);
         assert_eq!(
-            repay_info_after_repay.borrowed_amount.u128(),
+            get_user_borrow_with_interest.amount.u128(),
             BORROW_OF_FIRST_TOKEN / 2
         );
 
@@ -108,7 +106,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(repay_info_after_repay.accumulated_interest.u128(), 0);
+        assert_eq!(repay_info_after_repay.borrowed_amount.u128(), 0);
         assert_eq!(repay_info_after_repay.borrowed_amount.u128(), 0);
 
         let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app

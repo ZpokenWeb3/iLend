@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, coins, Addr};
+use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
 use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
 use std::vec;
 
@@ -542,6 +542,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     assert_eq!(get_price_eth.price, 2000);
 
+
+    app.set_block(BlockInfo {
+        height: 0,
+        time: Timestamp::from_seconds(0),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
     app.execute_contract(
         Addr::unchecked("user"),
         addr.clone(),
@@ -549,6 +556,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
         .unwrap();
+
+
+    app.set_block(BlockInfo {
+        height: 0,
+        time: Timestamp::from_seconds(1000),
+        chain_id: "custom_chain_id".to_string(),
+    });
 
     let available_to_redeem: Uint128 = app
         .wrap()
@@ -605,6 +619,14 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     )
         .unwrap();
 
+
+    app.set_block(BlockInfo {
+        height: 0,
+        time: Timestamp::from_seconds(2000),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
+
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
@@ -639,6 +661,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         CONTRACT_RESERVES_SECOND_TOKEN + DEPOSIT_OF_SECOND_TOKEN
     );
 
+
+    app.set_block(BlockInfo {
+        height: 542,
+        time: Timestamp::from_seconds(12332),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
     app.execute_contract(
         Addr::unchecked("user"),
         addr.clone(),
@@ -649,6 +678,12 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &[],
     )
         .unwrap();
+
+    app.set_block(BlockInfo {
+        height: 542,
+        time: Timestamp::from_seconds(3153600),
+        chain_id: "custom_chain_id".to_string(),
+    });
 
     let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
         .wrap()
@@ -661,7 +696,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_borrowed_balance.amount.u128(), BORROW_OF_FIRST_TOKEN);
+    assert_ne!(user_borrowed_balance.amount.u128(), BORROW_OF_FIRST_TOKEN);
 
     (app, addr)
 }

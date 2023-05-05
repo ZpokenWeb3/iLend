@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
+    //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
     use cosmwasm_std::{
         Addr,
@@ -27,10 +27,10 @@ mod tests {
     fn test_success_borrow_one_token() {
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-//         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        //         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-//         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+        //         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
         const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
         const BORROW_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
@@ -61,7 +61,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let user_deposited_balance_after_redeeming: GetBalanceResponse = app
             .wrap()
@@ -85,7 +85,9 @@ mod tests {
             INIT_BALANCE_SECOND_TOKEN
         );
 
-         app.execute_contract(
+
+
+        app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Borrow {
@@ -94,11 +96,11 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.set_block(BlockInfo {
-            height: 542,
-            time: Timestamp::from_seconds(1),
+            height: 2,
+            time: Timestamp::from_seconds(31536000),
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -115,36 +117,8 @@ mod tests {
 
         println!("{:?}", user_borrowed_balance);
 
-        // assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
-        //
-        // assert_eq!(
-        //     app.wrap()
-        //         .query_balance("user", "atom")
-        //         .unwrap()
-        //         .amount
-        //         .u128(),
-        //     INIT_BALANCE_SECOND_TOKEN + BORROW_SECOND_TOKEN
-        // );
-        //
-        // let repay_info_for_one_token: UserBorrowingInfo = app
-        //     .wrap()
-        //     .query_wasm_smart(
-        //         addr.clone(),
-        //         &QueryMsg::GetUserBorrowingInfo {
-        //             address: "user".to_string(),
-        //             denom: "atom".to_string(),
-        //         },
-        //     )
-        //     .unwrap();
-        //
-        // // mocking interest rate
-        // assert_eq!(
-        //     repay_info_for_one_token.borrowed_amount.u128(),
-        //     BORROW_SECOND_TOKEN
-        // );
-        // assert_eq!(
-        //     repay_info_for_one_token.accumulated_interest.u128(),
-        //     BORROW_SECOND_TOKEN / 8
-        // );
+
+        assert_ne!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
+        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN * 105 / 100);
     }
 }
