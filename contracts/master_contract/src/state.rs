@@ -1,4 +1,6 @@
-use crate::msg::{TokenInfo, TokenInterestRateModelParams, UserBorrowingInfo, LiquidityIndexData, TotalBorrowData};
+use crate::msg::{
+    LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
+};
 use {
     cosmwasm_std::Uint128,
     cw_storage_plus::{Item, Map},
@@ -50,15 +52,13 @@ TOKENS_INTEREST_RATE_MODEL_PARAMS STORAGE
 Key: token demon -> Value: TokenInterestRateModelParams
 */
 
-pub const LIQUIDITY_INDEX_DATA: Map<String, LiquidityIndexData> =
-    Map::new("liquidity_index_data");
+pub const LIQUIDITY_INDEX_DATA: Map<String, LiquidityIndexData> = Map::new("liquidity_index_data");
 /*
 LIQUIDITY_INDEX_DATA STORAGE
 Key: token demon -> Value: LiquidityIndexData
 */
 
-pub const TOTAL_BORROW_DATA: Map<String, TotalBorrowData> =
-    Map::new("total_borrow_data");
+pub const TOTAL_BORROW_DATA: Map<String, TotalBorrowData> = Map::new("total_borrow_data");
 /*
 TOTAL_BORROW_DATA STORAGE
 Key: token demon -> Value: TotalBorrowData

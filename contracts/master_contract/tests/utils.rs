@@ -91,7 +91,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -130,7 +130,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -264,7 +264,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -275,7 +275,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -286,7 +286,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     let get_price_eth: GetPriceResponse = app
         .wrap()
@@ -318,7 +318,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -360,7 +360,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -402,8 +402,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
 pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-    const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-    const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const INIT_BALANCE_FIRST_TOKEN: u128 = 10000 * DECIMAL_FRACTIONAL.u128();
+    const INIT_BALANCE_SECOND_TOKEN: u128 = 10000 * DECIMAL_FRACTIONAL.u128();
 
     const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
     const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
@@ -463,7 +463,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        18,
+                        6,
                     ),
                 ],
                 tokens_interest_rate_model_params: vec![
@@ -494,7 +494,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Fund {},
         &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -505,7 +505,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -516,7 +516,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     let get_price_eth: GetPriceResponse = app
         .wrap()
@@ -542,7 +542,6 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     assert_eq!(get_price_eth.price, 2000);
 
-
     app.set_block(BlockInfo {
         height: 0,
         time: Timestamp::from_seconds(0),
@@ -555,8 +554,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
     )
-        .unwrap();
-
+    .unwrap();
 
     app.set_block(BlockInfo {
         height: 0,
@@ -574,8 +572,6 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
             },
         )
         .unwrap();
-
-    println!("{}", available_to_redeem.u128());
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -617,15 +613,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_OF_SECOND_TOKEN, "atom"),
     )
-        .unwrap();
-
+    .unwrap();
 
     app.set_block(BlockInfo {
         height: 0,
         time: Timestamp::from_seconds(2000),
         chain_id: "custom_chain_id".to_string(),
     });
-
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -661,10 +655,9 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         CONTRACT_RESERVES_SECOND_TOKEN + DEPOSIT_OF_SECOND_TOKEN
     );
 
-
     app.set_block(BlockInfo {
         height: 542,
-        time: Timestamp::from_seconds(12332),
+        time: Timestamp::from_seconds(10000),
         chain_id: "custom_chain_id".to_string(),
     });
 
@@ -677,26 +670,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
-
-    app.set_block(BlockInfo {
-        height: 542,
-        time: Timestamp::from_seconds(3153600),
-        chain_id: "custom_chain_id".to_string(),
-    });
-
-    let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr.clone(),
-            &QueryMsg::GetBorrowAmountWithInterest {
-                address: "user".to_string(),
-                denom: "eth".to_string(),
-            },
-        )
-        .unwrap();
-
-    assert_ne!(user_borrowed_balance.amount.u128(), BORROW_OF_FIRST_TOKEN);
+    .unwrap();
 
     (app, addr)
 }

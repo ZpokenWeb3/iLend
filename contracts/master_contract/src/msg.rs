@@ -134,7 +134,7 @@ pub struct GetBorrowAmountWithInterestResponse {
     pub amount: Uint128,
     pub base: Uint128,
     pub exponent: Uint128,
-    pub avarage_interest_rate: Uint128,
+    pub average_interest_rate: Uint128,
 }
 
 #[cw_serde]
@@ -167,8 +167,8 @@ pub struct UserBorrowingInfo {
 impl Default for UserBorrowingInfo {
     fn default() -> Self {
         UserBorrowingInfo {
-            borrowed_amount: Default::default(),
-            average_interest_rate: Default::default(),
+            borrowed_amount: Uint128::zero(),
+            average_interest_rate: Uint128::zero(),
             timestamp: Default::default(),
         }
     }

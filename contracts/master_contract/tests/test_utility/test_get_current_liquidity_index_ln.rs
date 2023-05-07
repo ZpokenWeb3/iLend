@@ -1,17 +1,11 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
+    //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
-//     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-    use cosmwasm_std::{
-        Addr,
-        Uint128
-    };
+    //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
+    use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
 
     #[test]
     fn test_get_current_liquidity_index_ln() {

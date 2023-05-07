@@ -7,21 +7,21 @@ mod tests {
         BlockInfo,
         Timestamp,
         Uint128,
-//         Uint64
+        //         Uint64
     };
     use cw_multi_test::Executor;
     use master_contract::msg::{
         ExecuteMsg,
         GetBalanceResponse,
         GetBorrowAmountWithInterestResponse,
-//         GetSupportedTokensResponse,
-//         GetTotalBorrowedUsdResponse,
-//         GetTotalDepositedUsdResponse,
+        //         GetSupportedTokensResponse,
+        //         GetTotalBorrowedUsdResponse,
+        //         GetTotalDepositedUsdResponse,
         QueryMsg,
-//         UserBorrowingInfo,
+        //         UserBorrowingInfo,
     };
-//     use near_sdk::json_types::U128;
-//     use std::fmt::format;
+    //     use near_sdk::json_types::U128;
+    //     use std::fmt::format;
 
     #[test]
     fn test_success_borrow_one_token() {
@@ -61,7 +61,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance_after_redeeming: GetBalanceResponse = app
             .wrap()
@@ -85,8 +85,6 @@ mod tests {
             INIT_BALANCE_SECOND_TOKEN
         );
 
-
-
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
@@ -96,7 +94,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.set_block(BlockInfo {
             height: 2,
@@ -117,8 +115,10 @@ mod tests {
 
         println!("{:?}", user_borrowed_balance);
 
-
         assert_ne!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
-        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN * 105 / 100);
+        assert_eq!(
+            user_borrowed_balance.amount.u128(),
+            BORROW_SECOND_TOKEN * 105 / 100
+        );
     }
 }

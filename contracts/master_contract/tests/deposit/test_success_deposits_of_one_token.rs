@@ -8,7 +8,7 @@ mod tests {
     use master_contract::msg::{
         ExecuteMsg,
         GetBalanceResponse,
-//         GetTotalDepositedUsdResponse,
+        //         GetTotalDepositedUsdResponse,
         InstantiateMsg,
         QueryMsg,
     };
@@ -58,7 +58,20 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
-                    supported_tokens: vec![],
+                    supported_tokens: vec![
+                        (
+                            "eth".to_string(),
+                            "ethereum".to_string(),
+                            "ETH".to_string(),
+                            18,
+                        ),
+                        (
+                            "atom".to_string(),
+                            "atom".to_string(),
+                            "ATOM".to_string(),
+                            6,
+                        ),
+                    ],
                     tokens_interest_rate_model_params: vec![],
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],

@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
-//     use crate::utils::{
-//         success_deposit_of_diff_token_with_prices,
-//         success_deposit_of_one_token_setup,
-//     };
+    //     use super::*;
+    //     use crate::utils::{
+    //         success_deposit_of_diff_token_with_prices,
+    //         success_deposit_of_one_token_setup,
+    //     };
     use cosmwasm_std::{coin, coins, Addr, Uint128};
     use cw_multi_test::{App, ContractWrapper, Executor};
     use master_contract::msg::{

@@ -1,12 +1,9 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
+    //     use super::*;
     use crate::utils::success_deposit_of_one_token_setup;
-//     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-    use cosmwasm_std::{
-        Addr,
-//         Uint128
-    };
+    //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
+    use cosmwasm_std::Addr;
     use cw_multi_test::Executor;
     use master_contract::msg::{ExecuteMsg, GetPriceResponse, QueryMsg};
 

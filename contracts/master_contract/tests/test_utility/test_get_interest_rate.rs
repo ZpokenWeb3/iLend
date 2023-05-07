@@ -1,17 +1,11 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
+    //     use super::*;
     use crate::utils::success_deposit_of_one_token_setup;
-//     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-    use cosmwasm_std::{
-//         Addr,
-        Uint128
-    };
-//     use cw_multi_test::Executor;
-    use master_contract::msg::{
-//         ExecuteMsg,
-        QueryMsg
-    };
+    //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
+    use cosmwasm_std::Uint128;
+    //     use cw_multi_test::Executor;
+    use master_contract::msg::QueryMsg;
 
     #[test]
     fn test_get_interest_rate() {

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
+    //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
     use master_contract::msg::{GetSupportedTokensResponse, QueryMsg};
 
