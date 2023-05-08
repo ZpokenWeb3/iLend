@@ -24,7 +24,7 @@ use {
         msg::InstantiateMsg,
         msg::{ExecuteMsg, QueryMsg},
         state::{
-            ADMIN, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS, USER_DEPOSITED_BALANCE,
+            ADMIN, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS, USER_MM_TOKEN_BALANCE,
         },
     },
     cosmwasm_std::{
@@ -150,33 +150,47 @@ pub fn execute(
                 "You have to deposit one asset per time"
             );
 
-            let allowed_coin = info.funds.first().unwrap();
+            let deposited_token = info.funds.first().unwrap();
+            let deposited_token_amount = deposited_token.amount.u128();
 
-            assert!(allowed_coin.amount.u128() > 0);
+            assert!(deposited_token_amount > 0);
 
             assert!(
-                SUPPORTED_TOKENS.has(deps.storage, allowed_coin.denom.clone()),
+                SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
                 "There is no such supported token yet"
             );
 
             execute_update_liquidity_index_data(
                 &mut deps,
                 env.clone(),
-                allowed_coin.denom.clone(),
+                deposited_token.denom.clone(),
             )?;
 
-            let current_balance = get_deposit(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string(),
-                allowed_coin.denom.clone(),
-            )
-            .unwrap();
-            let new_balance = current_balance.balance.u128() + allowed_coin.amount.u128();
-            USER_DEPOSITED_BALANCE.save(
+            let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone()).unwrap().u128() as u32;
+
+            let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
+                .unwrap()
+                .u128();
+
+            let deposited_mm_token_amount =
+                Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
+                    .div(Decimal::from_i128_with_scale(
+                        mm_token_price as i128,
+                        token_decimals,
+                    ))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
+
+            let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
+                .load(deps.storage, (info.sender.to_string(), deposited_token.denom.clone()))
+                .unwrap_or_else(|_| Uint128::zero());
+
+            let new_user_mm_token_balance = user_current_mm_token_balance.u128() + deposited_mm_token_amount;
+
+            USER_MM_TOKEN_BALANCE.save(
                 deps.storage,
-                (info.sender.to_string(), allowed_coin.denom.clone()),
-                &Uint128::from(new_balance),
+                (info.sender.to_string(), deposited_token.denom.clone()),
+                &Uint128::from(new_user_mm_token_balance),
             )?;
 
             Ok(Response::default())
@@ -206,11 +220,26 @@ pub fn execute(
             );
 
             let remaining = current_balance.balance.u128() - amount;
+            
+            let token_decimals = get_token_decimal(deps.as_ref(), denom.clone()).unwrap().u128() as u32;
 
-            USER_DEPOSITED_BALANCE.save(
+            let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
+                .unwrap()
+                .u128();
+
+            let new_user_mm_token_balance =
+                Decimal::from_i128_with_scale(remaining as i128, token_decimals)
+                    .div(Decimal::from_i128_with_scale(
+                        mm_token_price as i128,
+                        token_decimals,
+                    ))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
+
+            USER_MM_TOKEN_BALANCE.save(
                 deps.storage,
                 (info.sender.to_string(), denom.clone()),
-                &Uint128::from(remaining),
+                &Uint128::from(new_user_mm_token_balance),
             )?;
 
             Ok(Response::new().add_message(BankMsg::Send {
@@ -631,7 +660,7 @@ pub mod query {
     ) -> StdResult<GetBalanceResponse> {
         let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
 
-        let user_mm_token_balance = USER_DEPOSITED_BALANCE
+        let user_mm_token_balance = USER_MM_TOKEN_BALANCE
             .load(deps.storage, (user, denom.clone()))
             .unwrap_or_else(|_| Uint128::zero());
 
@@ -754,14 +783,6 @@ pub mod query {
         Ok(Uint128::from(new_liquidity_index_ln))
     }
 
-    //     function cumulatedAmount(address _asset, uint256 _storedAmount) public view returns (uint256) {
-    //         return _storedAmount * getLiquidityIndexLog2(_asset).exp2() / DECIMALS_MULTIPLIER;
-    //     }
-    //
-    //     function storedAmount(address _asset, uint256 _cumulatedAmount) external view returns (uint256) {
-    //         return _cumulatedAmount * DECIMALS_MULTIPLIER / getLiquidityIndexLog2(_asset).exp2();
-    //     }
-
     pub fn get_liquidity_index_last_update(deps: Deps, denom: String) -> StdResult<Uint128> {
         Ok(Uint128::from(
             LIQUIDITY_INDEX_DATA
@@ -781,14 +802,11 @@ pub mod query {
                 .u128();
 
         let mm_token_price =
-            Decimal::from_i128_with_scale(10u128.pow(token_decimals) as i128, token_decimals)
-                .mul(
-                    Decimal::from_i128_with_scale(
-                        current_liquidity_index_ln as i128,
-                        INTEREST_RATE_DECIMALS,
-                    )
-                    .exp(),
-                )
+            Decimal::from_i128_with_scale(
+                current_liquidity_index_ln as i128,
+                INTEREST_RATE_DECIMALS,
+            )
+                .exp()
                 .to_u128_with_decimals(token_decimals)
                 .unwrap_or_default();
 
@@ -1054,7 +1072,7 @@ pub mod query {
 
     pub fn get_total_deposited_by_token_usd(deps: Deps, denom: String) -> StdResult<Uint128> {
         let mut all_deposits_usd = 0u128;
-        let all_deposits_iter: StdResult<Vec<_>> = USER_DEPOSITED_BALANCE
+        let all_deposits_iter: StdResult<Vec<_>> = USER_MM_TOKEN_BALANCE
             .range(deps.storage, None, None, Order::Ascending)
             .collect();
 

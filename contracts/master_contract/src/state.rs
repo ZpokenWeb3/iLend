@@ -6,10 +6,10 @@ use {
     cw_storage_plus::{Item, Map},
 };
 
-pub const USER_DEPOSITED_BALANCE: Map<(String, String), Uint128> =
-    Map::new("user_deposited_balance");
+pub const USER_MM_TOKEN_BALANCE: Map<(String, String), Uint128> =
+    Map::new("user_mm_token_balance");
 /*
-USER_DEPOSITED_BALANCE STORAGE
+USER_MM_TOKEN_BALANCE STORAGE
 Key: (user_address_1, token_A) -> Value: balance_for_token_A
 Key: (user_address_1, token_B) -> Value: balance_for_token_B
 Key: (user_address_2, token_A) -> Value: balance_for_token_A
