@@ -8,7 +8,7 @@ INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
 
 # shellcheck disable=SC2089
 #  supported tokens arguments denom, name, symbol, decimals
-INIT='{"admin":"inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd","supported_tokens": [["peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5", "Tether", "USDT", "6"], ["inj", "Injective", "INJ", "18"], ["peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7", "Ape Coin", "APE", "18"]],"tokens_interest_rate_model_params": [["peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5", "5000000000000000000", "40000000000000000000", "100000000000000000000"], ["inj", "5000000000000000000", "30000000000000000000", "70000000000000000000"], ["peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7", "5000000000000000000", "25000000000000000000", "50000000000000000000"]]}'
+INIT='{"admin":"inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd","supported_tokens": [["peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5", "Tether", "USDT", "6"], ["inj", "Injective", "INJ", "18"], ["peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7", "Ape Coin", "APE", "18"]],"tokens_interest_rate_model_params": [["peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5", "5000000000000000000", "20000000000000000000", "100000000000000000000"], ["inj", "5000000000000000000", "40000000000000000000", "70000000000000000000"], ["peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7", "5000000000000000000", "50000000000000000000", "60000000000000000000"]]}'
 
 
 # shellcheck disable=SC2046
