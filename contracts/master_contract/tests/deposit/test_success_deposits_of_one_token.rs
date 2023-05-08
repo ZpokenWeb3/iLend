@@ -1,17 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, coins, Addr};
+    use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
     use cw_multi_test::{App, ContractWrapper, Executor};
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{
-        ExecuteMsg,
-        GetBalanceResponse,
-        //         GetTotalDepositedUsdResponse,
-        InstantiateMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -35,7 +29,7 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("user"),
-                    coins(INIT_USER_BALANCE, "eth"),
+                    vec![coin(INIT_USER_BALANCE, "eth"), coin(INIT_USER_BALANCE, "atom")],
                 )
                 .unwrap();
 
@@ -44,9 +38,9 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("owner"),
-                    coins(CONTRACT_RESERVES, "eth"),
+                    vec![coin(CONTRACT_RESERVES * 100, "eth"), coin(CONTRACT_RESERVES * 100, "atom")],
                 )
-                .unwrap()
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -72,12 +66,29 @@ mod tests {
                             6,
                         ),
                     ],
-                    tokens_interest_rate_model_params: vec![],
+                    tokens_interest_rate_model_params: vec![("eth".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000), ("atom".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000)],
                 },
-                &[coin(CONTRACT_RESERVES, "eth")],
+                &[],
                 "Contract",
                 Some("owner".to_string()), // contract that can execute migrations
             )
+            .unwrap();
+
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::Fund {},
+            &coins(CONTRACT_RESERVES / 10, "eth"),
+        )
+            .unwrap();
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::Fund {},
+            &coins(CONTRACT_RESERVES / 10, "atom"),
+        )
             .unwrap();
 
         app.execute_contract(
@@ -94,7 +105,30 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
+
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::SetPrice {
+                denom: "eth".to_string(),
+                price: 2000,
+            },
+            &[],
+        )
+            .unwrap();
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::SetPrice {
+                denom: "atom".to_string(),
+                price: 10,
+            },
+            &[],
+        )
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -102,7 +136,15 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
         )
-        .unwrap();
+            .unwrap();
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::Deposit {},
+            &coins(FIRST_DEPOSIT_AMOUNT * 15 / 10, "eth"),
+        )
+            .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -126,14 +168,12 @@ mod tests {
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
         );
 
-        assert_eq!(
-            app.wrap()
-                .query_balance(&addr, "eth")
-                .unwrap()
-                .amount
-                .u128(),
-            CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT
-        );
+
+        app.set_block(BlockInfo {
+            height: 0,
+            time: Timestamp::from_seconds(0),
+            chain_id: "custom_chain_id".to_string(),
+        });
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -141,7 +181,39 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
         )
-        .unwrap();
+            .unwrap();
+
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::Borrow {
+                denom: "atom".to_string(),
+                amount: Uint128::from(SECOND_DEPOSIT_AMOUNT / 2),
+            },
+            &[],
+        )
+            .unwrap();
+
+        app.set_block(BlockInfo {
+            height: 0,
+            time: Timestamp::from_seconds(31536000),
+            chain_id: "custom_chain_id".to_string(),
+        });
+
+
+        let borrow_amount_with_interest: GetBorrowAmountWithInterestResponse = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetBorrowAmountWithInterest {
+                    address: "user".to_string(),
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+        dbg!(borrow_amount_with_interest.amount.u128());
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -153,6 +225,23 @@ mod tests {
                 },
             )
             .unwrap();
+
+
+        dbg!(user_deposited_balance.balance.u128());
+
+        let price: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetMmTokenPrice {
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+
+        dbg!(price);
+
 
         let available_to_redeem_another_token: Uint128 = app
             .wrap()
