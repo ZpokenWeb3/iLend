@@ -12,7 +12,7 @@ mod tests {
 
         app.set_block(BlockInfo {
             height: 542,
-            time: Timestamp::from_seconds(3153600 + 10000),
+            time: Timestamp::from_seconds(31536000 + 10000),
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -29,13 +29,33 @@ mod tests {
 
         let amount_to_repay_with_interest = get_amount_with_interest_data.amount.u128();
 
+        let underlying_balance_before_repay = app
+            .wrap()
+            .query_balance(&addr, "eth")
+            .unwrap()
+            .amount
+            .u128();
+
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Repay {},
-            &coins(amount_to_repay_with_interest, "eth"),
+            &coins(amount_to_repay_with_interest * 2, "eth"),
         )
         .unwrap();
+
+        let underlying_balance_after_repay = app
+            .wrap()
+            .query_balance(&addr, "eth")
+            .unwrap()
+            .amount
+            .u128();
+
+        // paying only what we supposed to, not twice as much
+        assert_eq!(
+            underlying_balance_after_repay - amount_to_repay_with_interest,
+            underlying_balance_before_repay
+        );
 
         let get_borrow_amount_with_interest_response: GetBorrowAmountWithInterestResponse = app
             .wrap()

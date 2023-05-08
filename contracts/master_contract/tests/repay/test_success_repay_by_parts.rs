@@ -23,7 +23,7 @@ mod tests {
 
         app.set_block(BlockInfo {
             height: 542,
-            time: Timestamp::from_seconds(3153600 + 5000),
+            time: Timestamp::from_seconds(31536000 + 10000),
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -38,7 +38,10 @@ mod tests {
             )
             .unwrap();
 
-        println!("{}", borrow_info_before_first_repay.amount.u128());
+        assert_eq!(
+            borrow_info_before_first_repay.amount.u128(),
+            BORROW_OF_FIRST_TOKEN * 105 / 100
+        );
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -59,13 +62,11 @@ mod tests {
             )
             .unwrap();
 
-        println!("{}", borrow_info_after_first_repay.amount.u128());
-
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Repay {},
-            &coins(borrow_info_before_first_repay.amount.u128() / 2, "eth"),
+            &coins(borrow_info_before_first_repay.amount.u128(), "eth"),
         )
         .unwrap();
 
@@ -79,7 +80,7 @@ mod tests {
                 },
             )
             .unwrap();
-        // 52065639950985158186
+
         assert_eq!(user_borrowed_balance.amount.u128(), 0);
     }
 }

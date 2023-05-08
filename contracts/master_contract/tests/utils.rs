@@ -562,7 +562,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         chain_id: "custom_chain_id".to_string(),
     });
 
-    let available_to_redeem: Uint128 = app
+    let _available_to_redeem: Uint128 = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),

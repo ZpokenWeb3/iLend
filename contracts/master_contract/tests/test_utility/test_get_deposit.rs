@@ -1,17 +1,17 @@
 #[cfg(test)]
 mod tests {
-//     use super::*;
+    //     use super::*;
     use crate::utils::success_deposit_of_one_token_setup;
-//     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-//     use cosmwasm_std::{
-//         Addr,
-//         Uint128
-//     };
-//     use cw_multi_test::Executor;
+    //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
+    //     use cosmwasm_std::{
+    //         Addr,
+    //         Uint128
+    //     };
+    //     use cw_multi_test::Executor;
     use master_contract::msg::{
-//         ExecuteMsg,
+        //         ExecuteMsg,
         GetBalanceResponse,
-        QueryMsg
+        QueryMsg,
     };
 
     #[test]
@@ -43,6 +43,9 @@ mod tests {
             .unwrap();
 
         assert_eq!(user_deposit_amount_atom.balance.u128(), 0); // 0
-        assert_eq!(user_deposit_amount_eth.balance.u128(), 500000000000000000000); // 500
+        assert_eq!(
+            user_deposit_amount_eth.balance.u128(),
+            500000000000000000000
+        ); // 500
     }
 }
