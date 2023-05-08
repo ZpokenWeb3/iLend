@@ -6,3 +6,4 @@ mod test_get_mm_token_price;
 mod test_get_supported_tokens;
 mod test_get_tokens_interest_rate_model_params;
 mod test_set_get_price;
+mod test_get_available_to_redeem;

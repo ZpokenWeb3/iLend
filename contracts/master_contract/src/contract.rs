@@ -1052,42 +1052,42 @@ pub mod query {
     ) -> StdResult<Uint128> {
         let mut available_to_redeem = 0u128;
 
-        let sum_collateral_balance_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
-            .unwrap()
-            .user_deposited_usd
-            .u128();
-
-        let user_deposit_in_that_token =
+        let user_token_balance =
             get_deposit(deps, env.clone(), user.clone(), denom.clone())
                 .unwrap()
                 .balance
                 .u128();
 
-        if user_deposit_in_that_token == 0 {
-            available_to_redeem = 0;
-        } else {
+        if user_token_balance != 0 {
+            let sum_collateral_balance_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
+                .unwrap()
+                .user_deposited_usd
+                .u128();
+
             let sum_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
                 .unwrap()
                 .user_borrowed_usd
                 .u128();
 
-            if sum_borrow_balance_usd <= sum_collateral_balance_usd * 8u128 / 10u128 {
-                let borrow_amount_with_interest =
-                    get_borrow_amount_with_interest(deps, env.clone(), user.clone(), denom.clone())
-                        .unwrap()
-                        .amount
-                        .u128();
+            let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;
 
-                available_to_redeem = (sum_collateral_balance_usd
-                    - sum_borrow_balance_usd * 10u128 / 8u128)
-                    / get_price(deps, denom.clone()).unwrap().price
-                    - borrow_amount_with_interest;
-            } else if sum_borrow_balance_usd == 0 {
-                available_to_redeem = get_deposit(deps, env.clone(), user.clone(), denom.clone())
-                    .unwrap()
-                    .balance
-                    .u128();
-            }
+            let token_liquidity = get_contract_balance_by_token(deps, env.clone(), denom.clone())
+                .unwrap()
+                .u128();
+
+            if sum_collateral_balance_usd >= required_collateral_balance_usd {
+                available_to_redeem =
+                    (sum_collateral_balance_usd - required_collateral_balance_usd)
+                        / get_price(deps, denom.clone()).unwrap().price;
+
+                if available_to_redeem > user_token_balance {
+                    available_to_redeem = user_token_balance
+                }
+
+                if available_to_redeem > token_liquidity {
+                    available_to_redeem = token_liquidity
+                }
+            } 
         }
 
         Ok(Uint128::from(available_to_redeem))
