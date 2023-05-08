@@ -53,7 +53,10 @@
           "required": [
             "decimals",
             "denom",
+            "min_interest_rate",
             "name",
+            "rate_growth_factor",
+            "safe_borrow_max_rate",
             "symbol"
           ],
           "properties": {
@@ -65,8 +68,23 @@
             "denom": {
               "type": "string"
             },
+            "min_interest_rate": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
+            },
             "name": {
               "type": "string"
+            },
+            "rate_growth_factor": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
+            },
+            "safe_borrow_max_rate": {
+              "type": "integer",
+              "format": "uint128",
+              "minimum": 0.0
             },
             "symbol": {
               "type": "string"

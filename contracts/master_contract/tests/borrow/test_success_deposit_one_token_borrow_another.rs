@@ -1,14 +1,15 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::utils::{
-        success_deposit_of_diff_token_with_prices, success_deposit_of_one_token_setup,
-    };
+    //     use super::*;
+    //     use crate::utils::{
+    //         success_deposit_of_diff_token_with_prices,
+    //         success_deposit_of_one_token_setup,
+    //     };
     use cosmwasm_std::{coin, coins, Addr, Uint128};
     use cw_multi_test::{App, ContractWrapper, Executor};
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetPriceResponse, InstantiateMsg,
-        QueryMsg,
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
+        InstantiateMsg, QueryMsg,
     };
     use master_contract::{execute, instantiate, query};
 
@@ -23,6 +24,12 @@ mod tests {
         const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
 
         const BORROW_SECOND_TOKEN: u128 = 300;
+
+        const INTEREST_RATE_DECIMALS: u32 = 18;
+
+        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -71,6 +78,20 @@ mod tests {
                             "atom".to_string(),
                             "ATOM".to_string(),
                             18,
+                        ),
+                    ],
+                    tokens_interest_rate_model_params: vec![
+                        (
+                            "eth".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                        ),
+                        (
+                            "atom".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
                         ),
                     ],
                 },
@@ -204,17 +225,17 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowsResponse = app
+        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrows {
+                &QueryMsg::GetBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.borrows.u128(), BORROW_SECOND_TOKEN);
+        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
     }
 }
