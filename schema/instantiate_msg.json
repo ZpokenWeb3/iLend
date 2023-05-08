@@ -4,7 +4,8 @@
   "type": "object",
   "required": [
     "admin",
-    "supported_tokens"
+    "supported_tokens",
+    "tokens_interest_rate_model_params"
   ],
   "properties": {
     "admin": {
@@ -23,6 +24,34 @@
           },
           {
             "type": "string"
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          }
+        ],
+        "maxItems": 4,
+        "minItems": 4
+      }
+    },
+    "tokens_interest_rate_model_params": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
           },
           {
             "type": "integer",

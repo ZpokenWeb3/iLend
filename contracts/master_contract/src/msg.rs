@@ -1,6 +1,6 @@
-use cosmwasm_std::Uint128;
-
 use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::Timestamp;
+use cosmwasm_std::Uint128;
 
 // cw_serde attribute is equivalent to
 // #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema)]
@@ -11,6 +11,8 @@ pub struct InstantiateMsg {
     pub admin: String,
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
+    // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
+    pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
 }
 
 #[cw_serde]
@@ -27,6 +29,9 @@ pub enum ExecuteMsg {
         name: String,
         symbol: String,
         decimals: u128,
+        min_interest_rate: u128,
+        safe_borrow_max_rate: u128,
+        rate_growth_factor: u128,
     },
 
     // Deposit / Redeem functionality
@@ -50,17 +55,35 @@ pub enum QueryMsg {
     #[returns(GetBalanceResponse)]
     GetDeposit { address: String, denom: String },
 
-    #[returns(GetBorrowsResponse)]
-    GetBorrows { address: String, denom: String },
+    #[returns(GetBorrowAmountWithInterestResponse)]
+    GetBorrowAmountWithInterest { address: String, denom: String },
 
-    #[returns(RepayInfo)]
-    GetRepayInfo { address: String, denom: String },
+    #[returns(UserBorrowingInfo)]
+    GetUserBorrowingInfo { address: String, denom: String },
+
+    #[returns(TotalBorrowData)]
+    GetTotalBorrowData { denom: String },
 
     #[returns(GetSupportedTokensResponse)]
     GetSupportedTokens {},
 
+    #[returns(GetTokensInterestRateModelParamsResponse)]
+    GetTokensInterestRateModelParams {},
+
     #[returns(GetPriceResponse)]
     GetPrice { denom: String },
+
+    #[returns(Uint128)]
+    GetInterestRate { denom: String },
+
+    #[returns(Uint128)]
+    GetLiquidityRate { denom: String },
+
+    #[returns(Uint128)]
+    GetCurrentLiquidityIndexLn { denom: String },
+
+    #[returns(Uint128)]
+    GetMmTokenPrice { denom: String },
 
     #[returns(GetUserDepositedUsdResponse)]
     GetUserDepositedUsd { address: String },
@@ -91,6 +114,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetUtilizationRateByToken { denom: String },
+
+    #[returns(Uint128)]
+    GetLiquidityIndexLastUpdate { denom: String },
 }
 
 #[cw_serde]
@@ -104,8 +130,11 @@ pub struct GetBalanceResponse {
 }
 
 #[cw_serde]
-pub struct GetBorrowsResponse {
-    pub borrows: Uint128,
+pub struct GetBorrowAmountWithInterestResponse {
+    pub amount: Uint128,
+    pub base: Uint128,
+    pub exponent: Uint128,
+    pub average_interest_rate: Uint128,
 }
 
 #[cw_serde]
@@ -124,16 +153,23 @@ pub struct GetSupportedTokensResponse {
 }
 
 #[cw_serde]
-pub struct RepayInfo {
-    pub borrowed_amount: Uint128,
-    pub accumulated_interest: Uint128,
+pub struct GetTokensInterestRateModelParamsResponse {
+    pub tokens_interest_rate_model_params: Vec<TokenInterestRateModelParams>,
 }
 
-impl Default for RepayInfo {
+#[cw_serde]
+pub struct UserBorrowingInfo {
+    pub borrowed_amount: Uint128,
+    pub average_interest_rate: Uint128,
+    pub timestamp: Timestamp,
+}
+
+impl Default for UserBorrowingInfo {
     fn default() -> Self {
-        RepayInfo {
-            borrowed_amount: Default::default(),
-            accumulated_interest: Default::default(),
+        UserBorrowingInfo {
+            borrowed_amount: Uint128::zero(),
+            average_interest_rate: Uint128::zero(),
+            timestamp: Default::default(),
         }
     }
 }
@@ -154,4 +190,27 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u128,
+}
+
+#[cw_serde]
+pub struct TokenInterestRateModelParams {
+    pub denom: String,
+    pub min_interest_rate: u128,
+    pub safe_borrow_max_rate: u128,
+    pub rate_growth_factor: u128,
+}
+
+#[cw_serde]
+pub struct LiquidityIndexData {
+    pub denom: String,
+    pub liquidity_index_ln: u128,
+    pub timestamp: Timestamp,
+}
+
+#[cw_serde]
+#[derive(Default)]
+pub struct TotalBorrowData {
+    pub denom: String,
+    pub total_borrowed_amount: u128,
+    pub total_borrowed_interest: u128,
 }

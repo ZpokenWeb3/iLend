@@ -2,7 +2,7 @@ use cosmwasm_std::{entry_point, Binary, Deps, DepsMut, Env, MessageInfo, Respons
 use error::ContractError;
 use msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 
-mod contract;
+pub mod contract;
 mod error;
 pub mod msg;
 mod state;

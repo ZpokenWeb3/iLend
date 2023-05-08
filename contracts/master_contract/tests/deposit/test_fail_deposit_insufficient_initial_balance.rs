@@ -10,9 +10,15 @@ mod tests {
 
     #[test]
     fn test_fail_deposit_insufficient_initial_balance() {
-        const INIT_USER_BALANCE: u128 = 1000;
-        const CONTRACT_RESERVES: u128 = 1000000;
-        const FIRST_DEPOSIT_AMOUNT: u128 = 2000;
+        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+
+        const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
+        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * DECIMAL_FRACTIONAL.u128();
+
+        const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
+        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
+        const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -48,6 +54,12 @@ mod tests {
                         "ethereum".to_string(),
                         "ETH".to_string(),
                         18,
+                    )],
+                    tokens_interest_rate_model_params: vec![(
+                        "eth".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
                     )],
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],

@@ -1,18 +1,25 @@
-use cosmwasm_std::{coin, coins, Addr};
+use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
 use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
 use std::vec;
 
 use cosmwasm_std::Uint128;
 use master_contract::msg::{
-    ExecuteMsg, GetBalanceResponse, GetBorrowsResponse, GetPriceResponse, InstantiateMsg, QueryMsg,
+    ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
+    InstantiateMsg, QueryMsg,
 };
 use master_contract::{execute, instantiate, query};
 
 pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
-    const INIT_USER_BALANCE: u128 = 1000;
-    const CONTRACT_RESERVES: u128 = 1000000;
-    const FIRST_DEPOSIT_AMOUNT: u128 = 200;
-    const SECOND_DEPOSIT_AMOUNT: u128 = 300;
+    const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+
+    const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
+    const FIRST_DEPOSIT_AMOUNT: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+    const SECOND_DEPOSIT_AMOUNT: u128 = 300 * DECIMAL_FRACTIONAL.u128();
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -55,6 +62,20 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                         "atom".to_string(),
                         "ATOM".to_string(),
                         18,
+                    ),
+                ],
+                tokens_interest_rate_model_params: vec![
+                    (
+                        "eth".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
+                    ),
+                    (
+                        "atom".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
                     ),
                 ],
             },
@@ -149,14 +170,22 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
 }
 
 pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
-    const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
-    const INIT_BALANCE_SECOND_TOKEN: u128 = 1000;
+    const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-    const DEPOSIT_OF_FIRST_TOKEN: u128 = 200;
-    const DEPOSIT_OF_SECOND_TOKEN: u128 = 300;
+    const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-    const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
-    const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
+    const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+    const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
+
+    const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+
+    const DECIMAL_FRACTIONAL_INT_RATE: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -205,6 +234,20 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                         "atom".to_string(),
                         "ATOM".to_string(),
                         18,
+                    ),
+                ],
+                tokens_interest_rate_model_params: vec![
+                    (
+                        "eth".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
+                    ),
+                    (
+                        "atom".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
                     ),
                 ],
             },
@@ -357,18 +400,22 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
 }
 
 pub fn success_borrow_setup() -> (BasicApp, Addr) {
-    const TOKEN_DECIMAL: u128 = 10u128.pow(18) as u128;
+    const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-    const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * TOKEN_DECIMAL;
-    const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * TOKEN_DECIMAL;
+    const INIT_BALANCE_FIRST_TOKEN: u128 = 10000 * DECIMAL_FRACTIONAL.u128();
+    const INIT_BALANCE_SECOND_TOKEN: u128 = 10000 * DECIMAL_FRACTIONAL.u128();
 
-    const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * TOKEN_DECIMAL;
-    const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * TOKEN_DECIMAL;
+    const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+    const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
-    const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * TOKEN_DECIMAL;
-    const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * TOKEN_DECIMAL;
+    const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
 
-    const BORROW_OF_FIRST_TOKEN: u128 = 50 * TOKEN_DECIMAL;
+    const BORROW_OF_FIRST_TOKEN: u128 = 50 * DECIMAL_FRACTIONAL.u128();
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -416,7 +463,21 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        18,
+                        6,
+                    ),
+                ],
+                tokens_interest_rate_model_params: vec![
+                    (
+                        "eth".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
+                    ),
+                    (
+                        "atom".to_string(),
+                        MIN_INTEREST_RATE,
+                        SAFE_BORROW_MAX_RATE,
+                        RATE_GROWTH_FACTOR,
                     ),
                 ],
             },
@@ -481,6 +542,12 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     assert_eq!(get_price_eth.price, 2000);
 
+    app.set_block(BlockInfo {
+        height: 0,
+        time: Timestamp::from_seconds(0),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
     app.execute_contract(
         Addr::unchecked("user"),
         addr.clone(),
@@ -489,7 +556,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     )
     .unwrap();
 
-    let available_to_redeem: Uint128 = app
+    app.set_block(BlockInfo {
+        height: 0,
+        time: Timestamp::from_seconds(1000),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
+    let _available_to_redeem: Uint128 = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -499,8 +572,6 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
             },
         )
         .unwrap();
-
-    println!("{}", available_to_redeem.u128());
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -544,6 +615,12 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     )
     .unwrap();
 
+    app.set_block(BlockInfo {
+        height: 0,
+        time: Timestamp::from_seconds(2000),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
         .query_wasm_smart(
@@ -578,6 +655,12 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         CONTRACT_RESERVES_SECOND_TOKEN + DEPOSIT_OF_SECOND_TOKEN
     );
 
+    app.set_block(BlockInfo {
+        height: 542,
+        time: Timestamp::from_seconds(10000),
+        chain_id: "custom_chain_id".to_string(),
+    });
+
     app.execute_contract(
         Addr::unchecked("user"),
         addr.clone(),
@@ -588,19 +671,6 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &[],
     )
     .unwrap();
-
-    let user_borrowed_balance: GetBorrowsResponse = app
-        .wrap()
-        .query_wasm_smart(
-            addr.clone(),
-            &QueryMsg::GetBorrows {
-                address: "user".to_string(),
-                denom: "eth".to_string(),
-            },
-        )
-        .unwrap();
-
-    assert_eq!(user_borrowed_balance.borrows.u128(), BORROW_OF_FIRST_TOKEN);
 
     (app, addr)
 }

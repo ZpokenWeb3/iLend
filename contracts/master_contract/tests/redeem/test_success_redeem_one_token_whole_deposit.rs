@@ -10,10 +10,12 @@ mod tests {
 
     #[test]
     fn test_success_redeem_one_token_whole_deposit() {
-        const INIT_USER_BALANCE: u128 = 1000;
-        const CONTRACT_RESERVES: u128 = 1000000;
-        const FIRST_DEPOSIT_AMOUNT: u128 = 200;
-        const SECOND_DEPOSIT_AMOUNT: u128 = 300;
+        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+
+        const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        //         const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
+        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * DECIMAL_FRACTIONAL.u128();
+        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
         // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
