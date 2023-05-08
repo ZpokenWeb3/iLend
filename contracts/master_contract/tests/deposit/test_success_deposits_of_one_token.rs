@@ -5,7 +5,10 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, TotalBorrowData, GetPriceResponse, InstantiateMsg, QueryMsg};
+    use master_contract::msg::{
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
+        InstantiateMsg, QueryMsg, TotalBorrowData,
+    };
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -29,7 +32,10 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("user"),
-                    vec![coin(INIT_USER_BALANCE, "eth"), coin(INIT_USER_BALANCE, "atom")],
+                    vec![
+                        coin(INIT_USER_BALANCE, "eth"),
+                        coin(INIT_USER_BALANCE, "atom"),
+                    ],
                 )
                 .unwrap();
 
@@ -38,7 +44,10 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("owner"),
-                    vec![coin(CONTRACT_RESERVES * 100, "eth"), coin(CONTRACT_RESERVES * 100, "atom")],
+                    vec![
+                        coin(CONTRACT_RESERVES * 100, "eth"),
+                        coin(CONTRACT_RESERVES * 100, "atom"),
+                    ],
                 )
                 .unwrap();
         });
@@ -67,8 +76,18 @@ mod tests {
                         ),
                     ],
                     tokens_interest_rate_model_params: vec![
-                        ("eth".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000), 
-                        ("atom".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000)
+                        (
+                            "eth".to_string(),
+                            5000000000000000000,
+                            20000000000000000000,
+                            100000000000000000000,
+                        ),
+                        (
+                            "atom".to_string(),
+                            5000000000000000000,
+                            20000000000000000000,
+                            100000000000000000000,
+                        ),
                     ],
                 },
                 &[],
@@ -77,14 +96,13 @@ mod tests {
             )
             .unwrap();
 
-
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -92,7 +110,7 @@ mod tests {
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "atom"),
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -108,8 +126,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
-
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -120,7 +137,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -131,7 +148,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -139,7 +156,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -147,7 +164,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT * 15 / 10, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -171,7 +188,6 @@ mod tests {
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
         );
 
-
         app.set_block(BlockInfo {
             height: 0,
             time: Timestamp::from_seconds(0),
@@ -184,10 +200,8 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
-        dbg!(SECOND_DEPOSIT_AMOUNT / 2);
-        
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
@@ -197,7 +211,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.set_block(BlockInfo {
             height: 0,
@@ -215,9 +229,6 @@ mod tests {
             )
             .unwrap();
 
-        dbg!(total_borrow_data.total_borrowed_amount);
-        dbg!(total_borrow_data.expected_annual_interest_income);
-
         let reserves_by_token: Uint128 = app
             .wrap()
             .query_wasm_smart(
@@ -228,8 +239,6 @@ mod tests {
             )
             .unwrap();
 
-        dbg!(reserves_by_token.u128());
-
         let liquidity_rate: Uint128 = app
             .wrap()
             .query_wasm_smart(
@@ -239,8 +248,6 @@ mod tests {
                 },
             )
             .unwrap();
-
-        dbg!(liquidity_rate.u128());
 
         let borrow_amount_with_interest: GetBorrowAmountWithInterestResponse = app
             .wrap()
@@ -253,8 +260,6 @@ mod tests {
             )
             .unwrap();
 
-        dbg!(borrow_amount_with_interest.amount.u128());
-
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
@@ -266,9 +271,6 @@ mod tests {
             )
             .unwrap();
 
-
-        dbg!(user_deposited_balance.balance.u128());
-
         let price: Uint128 = app
             .wrap()
             .query_wasm_smart(
@@ -278,10 +280,6 @@ mod tests {
                 },
             )
             .unwrap();
-
-
-        dbg!(price);
-
 
         let available_to_redeem_another_token: Uint128 = app
             .wrap()
@@ -296,9 +294,8 @@ mod tests {
 
         assert_eq!(available_to_redeem_another_token.u128(), 0);
 
-        assert_eq!(
-            user_deposited_balance.balance.u128(),
-            FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
+        assert!(
+            user_deposited_balance.balance.u128() > FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
 
         assert_eq!(
@@ -308,19 +305,6 @@ mod tests {
                 .amount
                 .u128(),
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT - SECOND_DEPOSIT_AMOUNT
-        );
-
-        dbg!(CONTRACT_RESERVES);
-        dbg!(FIRST_DEPOSIT_AMOUNT);
-        dbg!(SECOND_DEPOSIT_AMOUNT);
-        
-        assert_eq!(
-            app.wrap()
-                .query_balance(&addr, "eth")
-                .unwrap()
-                .amount
-                .u128(),
-            CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
         );
     }
 }

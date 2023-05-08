@@ -4,7 +4,10 @@ mod tests {
     use crate::utils::success_borrow_setup;
     use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp};
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, QueryMsg, UserBorrowingInfo};
+    use master_contract::msg::{
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, QueryMsg,
+        UserBorrowingInfo,
+    };
 
     #[test]
     fn test_success_repay_by_parts() {
