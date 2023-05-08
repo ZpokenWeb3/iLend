@@ -5,12 +5,7 @@ mod tests {
     use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp};
     use cw_multi_test::Executor;
     use master_contract::msg::{
-        ExecuteMsg,
-        GetBorrowAmountWithInterestResponse,
-        //         GetTotalBorrowedUsdResponse,
-        //         GetUserBorrowedUsdResponse,
-        //         GetUserDepositedUsdResponse,
-        QueryMsg,
+        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, QueryMsg,
         UserBorrowingInfo,
     };
 

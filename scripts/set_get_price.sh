@@ -1,5 +1,5 @@
 # get the contract address from explorer tx of instantiating
-CONTRACT="inj1zhsfj8jzcz30rz678354vafe46vfwlezg9fz7z"
+CONTRACT="inj1vjvhnl4szj8twhaqc5ke6x20kzrecs6semyjnr"
 readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
 
 GET_SUPPORTED_TOKENS_QUERY='{"get_supported_tokens": {}}'

@@ -2,8 +2,7 @@
 
 
 ## iLend contract deployed at 
-https://testnet.explorer.injective.network/contract/inj1zhsfj8jzcz30rz678354vafe46vfwlezg9fz7z/
-
+https://testnet.explorer.injective.network/contract/inj1vjvhnl4szj8twhaqc5ke6x20kzrecs6semyjnr/
 
 ## Main features
 
