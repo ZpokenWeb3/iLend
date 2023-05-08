@@ -212,5 +212,5 @@ pub struct LiquidityIndexData {
 pub struct TotalBorrowData {
     pub denom: String,
     pub total_borrowed_amount: u128,
-    pub total_borrowed_interest: u128,
+    pub expected_annual_interest_income: u128,
 }

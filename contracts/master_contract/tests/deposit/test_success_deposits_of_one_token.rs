@@ -5,7 +5,7 @@ mod tests {
     use std::vec;
 
     use cosmwasm_std::Uint128;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse, InstantiateMsg, QueryMsg};
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, TotalBorrowData, GetPriceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -66,7 +66,10 @@ mod tests {
                             6,
                         ),
                     ],
-                    tokens_interest_rate_model_params: vec![("eth".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000), ("atom".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000)],
+                    tokens_interest_rate_model_params: vec![
+                        ("eth".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000), 
+                        ("atom".to_string(), 5000000000000000000, 20000000000000000000, 100000000000000000000)
+                    ],
                 },
                 &[],
                 "Contract",
@@ -183,12 +186,13 @@ mod tests {
         )
             .unwrap();
 
-
+        dbg!(SECOND_DEPOSIT_AMOUNT / 2);
+        
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::Borrow {
-                denom: "atom".to_string(),
+                denom: "eth".to_string(),
                 amount: Uint128::from(SECOND_DEPOSIT_AMOUNT / 2),
             },
             &[],
@@ -201,13 +205,49 @@ mod tests {
             chain_id: "custom_chain_id".to_string(),
         });
 
+        let total_borrow_data: TotalBorrowData = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetTotalBorrowData {
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+        dbg!(total_borrow_data.total_borrowed_amount);
+        dbg!(total_borrow_data.expected_annual_interest_income);
+
+        let reserves_by_token: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetTotalReservesByToken {
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+        dbg!(reserves_by_token.u128());
+
+        let liquidity_rate: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetLiquidityRate {
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+        dbg!(liquidity_rate.u128());
 
         let borrow_amount_with_interest: GetBorrowAmountWithInterestResponse = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
                 &QueryMsg::GetBorrowAmountWithInterest {
-                    address: "user".to_string(),
+                    address: "owner".to_string(),
                     denom: "eth".to_string(),
                 },
             )
@@ -270,6 +310,10 @@ mod tests {
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT - SECOND_DEPOSIT_AMOUNT
         );
 
+        dbg!(CONTRACT_RESERVES);
+        dbg!(FIRST_DEPOSIT_AMOUNT);
+        dbg!(SECOND_DEPOSIT_AMOUNT);
+        
         assert_eq!(
             app.wrap()
                 .query_balance(&addr, "eth")
