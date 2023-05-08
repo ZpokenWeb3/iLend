@@ -5,3 +5,4 @@ mod test_set_get_price;
 mod test_get_liquidity_rate;
 mod test_get_mm_token_price;
 mod test_get_current_liquidity_index_ln;
+mod test_get_deposit;
