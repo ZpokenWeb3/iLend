@@ -5,31 +5,45 @@ mod tests {
     //         success_deposit_of_diff_token_with_prices,
     //         success_deposit_of_one_token_setup,
     //     };
-    use cosmwasm_std::{coin, coins, Addr, Uint128};
+    use cosmwasm_std::{
+        coin,
+        coins,
+        Addr,
+        Uint128
+    };
     use cw_multi_test::{App, ContractWrapper, Executor};
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
-        InstantiateMsg, QueryMsg,
+        ExecuteMsg,
+        GetBalanceResponse,
+        GetBorrowAmountWithInterestResponse,
+        InstantiateMsg,
+        QueryMsg,
     };
     use master_contract::{execute, instantiate, query};
 
     #[test]
     fn test_success_deposit_one_token_borrow_another() {
-        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000;
-        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000;
+        const ETH_DECIMALS: u32 = 18;
+        const ATOM_DECIMALS: u32 = 18;
 
-        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200;
+        const INIT_BALANCE_ETH: u128 = 1000u128 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
+        const INIT_BALANCE_ATOM: u128 = 1000u128 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
 
-        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000;
-        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000;
+        const DEPOSIT_AMOUNT_ETH: u128 = 200u128 * 10u128.pow(ETH_DECIMALS); // 200 ETH
 
-        const BORROW_SECOND_TOKEN: u128 = 300;
+        const CONTRACT_RESERVES_ETH: u128 = 1000u128 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
+        const CONTRACT_RESERVES_ATOM: u128 = 1000u128 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
+
+        const BORROW_AMOUNT_ATOM: u128 = 300u128 * 10u128.pow(ATOM_DECIMALS); // 300 ATOM
 
         const INTEREST_RATE_DECIMALS: u32 = 18;
-
         const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
+        const PRICE_DECIMALS: u32 = 8;
+        const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS); // 2000$/1ETH
+        const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS); // 10$/1ATOM
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -38,8 +52,8 @@ mod tests {
                     storage,
                     &Addr::unchecked("user"),
                     vec![
-                        coin(INIT_BALANCE_FIRST_TOKEN, "eth"),
-                        coin(INIT_BALANCE_SECOND_TOKEN, "atom"),
+                        coin(INIT_BALANCE_ETH, "eth"),
+                        coin(INIT_BALANCE_ATOM, "atom"),
                     ],
                 )
                 .unwrap();
@@ -50,8 +64,8 @@ mod tests {
                     storage,
                     &Addr::unchecked("owner"),
                     vec![
-                        coin(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
-                        coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom"),
+                        coin(CONTRACT_RESERVES_ETH, "eth"),
+                        coin(CONTRACT_RESERVES_ATOM, "atom"),
                     ],
                 )
                 .unwrap();
@@ -95,7 +109,7 @@ mod tests {
                         ),
                     ],
                 },
-                &[coin(CONTRACT_RESERVES_SECOND_TOKEN, "atom")],
+                &[coin(CONTRACT_RESERVES_ATOM, "atom")],
                 "Contract",
                 Some("owner".to_string()), // contract that can execute migrations
             )
@@ -106,7 +120,7 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::SetPrice {
                 denom: "eth".to_string(),
-                price: 2000,
+                price: PRICE_ETH,
             },
             &[],
         )
@@ -117,13 +131,13 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::SetPrice {
                 denom: "atom".to_string(),
-                price: 10,
+                price: PRICE_ATOM,
             },
             &[],
         )
         .unwrap();
 
-        let get_price_eth: GetPriceResponse = app
+        let get_price_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -133,7 +147,7 @@ mod tests {
             )
             .unwrap();
 
-        let get_price_atom: GetPriceResponse = app
+        let get_price_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -143,16 +157,15 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(get_price_atom.price, 10);
-
-        assert_eq!(get_price_eth.price, 2000);
+        assert_eq!(get_price_atom.u128(), 1000000000); // 10$/1ATOM
+        assert_eq!(get_price_eth.u128(), 200000000000); // 2000$/1ETH
 
         // funding contract with second reserve
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::Fund {},
-            &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
+            &coins(CONTRACT_RESERVES_ETH, "eth"),
         )
         .unwrap();
 
@@ -160,11 +173,22 @@ mod tests {
             Addr::unchecked("user"),
             addr.clone(),
             &ExecuteMsg::Deposit {},
-            &coins(DEPOSIT_OF_FIRST_TOKEN, "eth"),
+            &coins(DEPOSIT_AMOUNT_ETH, "eth"),
         )
         .unwrap();
 
-        let user_available_to_borrow_another_token: Uint128 = app
+        let user_available_to_borrow_eth: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetAvailableToBorrow {
+                    address: "user".to_string(),
+                    denom: "eth".to_string(),
+                },
+            )
+            .unwrap();
+
+        let user_available_to_borrow_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -175,9 +199,19 @@ mod tests {
             )
             .unwrap();
 
+        // sum_collateral_balance_usd = DEPOSIT_AMOUNT_ETH * PRICE_ETH = 200 ETH * 2000 = 400000$
+        // max_allowed_borrow_amount_usd = sum_collateral_balance_usd * 0.8 = 400000$ * 0.8 = 320000$
+        // user_available_to_borrow_eth = max_allowed_borrow_amount_usd / PRICE_ETH = 320000$ / 2000 = 160 ETH
         assert_eq!(
-            user_available_to_borrow_another_token.u128(),
-            DEPOSIT_OF_FIRST_TOKEN * get_price_eth.price * 8 / 10 / get_price_atom.price
+            user_available_to_borrow_eth.u128(),
+            160000000000000000000 // 160 ETH
+        );
+
+        // user_available_to_borrow_atom = max_allowed_borrow_amount_usd / PRICE_ATOM = 320000$ / 10 = 32000 ATOM
+        // But not enough liquidity!! => user_available_to_borrow_atom = CONTRACT_RESERVES_ATOM == 1000 ATOM
+        assert_eq!(
+            user_available_to_borrow_atom.u128(),
+            1000000000000000000000 // 1000 ATOM
         );
 
         let user_deposited_balance: GetBalanceResponse = app
@@ -193,7 +227,7 @@ mod tests {
 
         assert_eq!(
             user_deposited_balance.balance.u128(),
-            DEPOSIT_OF_FIRST_TOKEN
+            DEPOSIT_AMOUNT_ETH
         );
 
         assert_eq!(
@@ -202,7 +236,7 @@ mod tests {
                 .unwrap()
                 .amount
                 .u128(),
-            INIT_BALANCE_FIRST_TOKEN - DEPOSIT_OF_FIRST_TOKEN
+            INIT_BALANCE_ETH - DEPOSIT_AMOUNT_ETH
         );
 
         assert_eq!(
@@ -211,7 +245,7 @@ mod tests {
                 .unwrap()
                 .amount
                 .u128(),
-            CONTRACT_RESERVES_FIRST_TOKEN + DEPOSIT_OF_FIRST_TOKEN
+            CONTRACT_RESERVES_ETH + DEPOSIT_AMOUNT_ETH
         );
 
         app.execute_contract(
@@ -219,7 +253,7 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "atom".to_string(),
-                amount: Uint128::from(BORROW_SECOND_TOKEN),
+                amount: Uint128::from(BORROW_AMOUNT_ATOM),
             },
             &[],
         )
@@ -236,6 +270,6 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
+        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_AMOUNT_ATOM);
     }
 }

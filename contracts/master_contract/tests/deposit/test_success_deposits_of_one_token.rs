@@ -1,13 +1,27 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
-    use cw_multi_test::{App, ContractWrapper, Executor};
+    use cosmwasm_std::{
+        coin,
+        coins,
+        Addr,
+        BlockInfo,
+        Timestamp
+    };
+    use cw_multi_test::{
+        App,
+        ContractWrapper,
+        Executor
+    };
     use std::vec;
 
     use cosmwasm_std::Uint128;
     use master_contract::msg::{
-        ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
-        InstantiateMsg, QueryMsg, TotalBorrowData,
+        ExecuteMsg,
+        GetBalanceResponse,
+        GetBorrowAmountWithInterestResponse,
+        InstantiateMsg,
+        QueryMsg,
+        TotalBorrowData,
     };
     use master_contract::{execute, instantiate, query};
 
@@ -25,6 +39,10 @@ mod tests {
         const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
+        const PRICE_DECIMALS: u32 = 8;
+        const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
+        const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS);
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -133,7 +151,7 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::SetPrice {
                 denom: "eth".to_string(),
-                price: 2000,
+                price: PRICE_ETH,
             },
             &[],
         )
@@ -144,7 +162,7 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::SetPrice {
                 denom: "atom".to_string(),
-                price: 10,
+                price: PRICE_ATOM,
             },
             &[],
         )
