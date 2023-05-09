@@ -47,6 +47,9 @@ const INTEREST_RATE_MULTIPLIER: u128 = 10u128.pow(INTEREST_RATE_DECIMALS);
 const HUNDRED: u128 = 100;
 const YEAR_IN_SECONDS: u128 = 31536000; // 365 days
 
+const USD_DECIMALS: u32 = 8;
+// const USD_MULTIPLIER: u128 = 10u128.pow(USD_DECIMALS);
+
 pub trait DecimalExt {
     fn to_u128_with_decimals(&self, decimals: u32) -> StdResult<u128>;
 }
@@ -628,7 +631,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&get_total_reserves_by_token(deps, env, denom)?)
         }
         QueryMsg::GetTotalDepositedByToken { denom } => {
-            to_binary(&get_total_deposited_by_token_usd(deps, denom)?)
+            to_binary(&get_total_deposited_by_token_usd(deps, env, denom)?)
         }
         QueryMsg::GetTotalBorrowedByToken { denom } => {
             to_binary(&get_total_borrowed_by_token_usd(deps, denom)?)
@@ -653,7 +656,7 @@ pub mod query {
     //     use std::str::FromStr;
 
     use crate::msg::{
-        GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
+        GetBalanceResponse, GetBorrowAmountWithInterestResponse,
         GetSupportedTokensResponse, GetTokensInterestRateModelParamsResponse,
         GetUserBorrowedUsdResponse, GetUserDepositedUsdResponse, TotalBorrowData,
         UserBorrowingInfo,
@@ -668,7 +671,9 @@ pub mod query {
         user: String,
         denom: String,
     ) -> StdResult<GetBalanceResponse> {
-        let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
+        let token_decimals = get_token_decimal(deps, denom.clone())
+            .unwrap()
+            .u128() as u32;
 
         let user_mm_token_balance = USER_MM_TOKEN_BALANCE
             .load(deps.storage, (user, denom.clone()))
@@ -701,7 +706,9 @@ pub mod query {
         let current_borrowing_info =
             get_user_borrowing_info(deps.clone(), user.clone(), denom.clone()).unwrap_or_default();
 
-        let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
+        let token_decimals = get_token_decimal(deps, denom.clone())
+            .unwrap()
+            .u128() as u32;
 
         let current_borrowed_amount = Decimal::from_i128_with_scale(
             current_borrowing_info.borrowed_amount.u128() as i128,
@@ -748,7 +755,9 @@ pub mod query {
             .unwrap()
             .u128();
 
-        let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
+        let token_decimals = get_token_decimal(deps, denom.clone())
+            .unwrap()
+            .u128() as u32;
 
         if reserves_by_token == 0 {
             Ok(Uint128::from(0u128))
@@ -818,7 +827,9 @@ pub mod query {
 
     // number of tokens that correspond to one mmToken
     pub fn get_mm_token_price(deps: Deps, env: Env, denom: String) -> StdResult<Uint128> {
-        let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
+        let token_decimals = get_token_decimal(deps, denom.clone())
+            .unwrap()
+            .u128() as u32;
 
         let current_liquidity_index_ln =
             get_current_liquidity_index_ln(deps, env.clone(), denom.clone())
@@ -836,10 +847,10 @@ pub mod query {
         Ok(Uint128::from(mm_token_price))
     }
 
-    pub fn get_price(deps: Deps, denom: String) -> StdResult<GetPriceResponse> {
+    pub fn get_price(deps: Deps, denom: String) -> StdResult<Uint128> {
         let price = PRICES.load(deps.storage, denom).unwrap_or(0u128);
 
-        Ok(GetPriceResponse { price })
+        Ok(Uint128::from(price))
     }
 
     pub fn get_supported_tokens(deps: Deps) -> StdResult<GetSupportedTokensResponse> {
@@ -936,27 +947,32 @@ pub mod query {
         user: String,
     ) -> StdResult<GetUserDepositedUsdResponse> {
         let mut user_deposited_usd = 0u128;
+
         for tokens in get_supported_tokens(deps).unwrap().supported_tokens {
             let user_deposit = get_deposit(deps, env.clone(), user.clone(), tokens.denom.clone())
                 .unwrap()
                 .balance
                 .u128();
 
-            match get_token_decimal(deps, tokens.denom.clone())
+            let token_decimals = get_token_decimal(deps, tokens.denom.clone())
                 .unwrap()
-                .u128()
-            {
-                18 => {
-                    user_deposited_usd +=
-                        user_deposit * get_price(deps, tokens.denom).unwrap().price;
-                }
-                6 => {
-                    let user_deposit = user_deposit / 10u128.pow(6) * 10u128.pow(18);
-                    user_deposited_usd +=
-                        user_deposit * get_price(deps, tokens.denom.clone()).unwrap().price;
-                }
-                _ => {}
-            }
+                .u128() as u32;
+
+            let price = get_price(deps, tokens.denom.clone())
+                .unwrap()
+                .u128();
+
+            user_deposited_usd += 
+                Decimal::from_i128_with_scale(
+                    user_deposit as i128,
+                    token_decimals,
+                )
+                    .mul(Decimal::from_i128_with_scale(
+                        price as i128,
+                        USD_DECIMALS,
+                    ))
+                    .to_u128_with_decimals(USD_DECIMALS)
+                    .unwrap()
         }
 
         Ok(GetUserDepositedUsdResponse {
@@ -977,24 +993,29 @@ pub mod query {
                 user.clone(),
                 tokens.denom.clone(),
             )
-            .unwrap()
-            .amount
-            .u128();
-
-            match get_token_decimal(deps, tokens.denom.clone())
                 .unwrap()
-                .u128()
-            {
-                18 => {
-                    user_borrowed_usd += user_borrow * get_price(deps, tokens.denom).unwrap().price;
-                }
-                6 => {
-                    let user_borrow = user_borrow / 10u128.pow(6) * 10u128.pow(18);
-                    user_borrowed_usd +=
-                        user_borrow * get_price(deps, tokens.denom.clone()).unwrap().price;
-                }
-                _ => {}
-            }
+                .amount
+                .u128();
+
+            let token_decimals = get_token_decimal(deps, tokens.denom.clone())
+                .unwrap()
+                .u128() as u32;
+
+            let price = get_price(deps, tokens.denom.clone())
+                .unwrap()
+                .u128();
+
+            user_borrowed_usd += 
+                Decimal::from_i128_with_scale(
+                    user_borrow as i128,
+                    token_decimals,
+                )
+                    .mul(Decimal::from_i128_with_scale(
+                        price as i128,
+                        USD_DECIMALS,
+                    ))
+                    .to_u128_with_decimals(USD_DECIMALS)
+                    .unwrap()
         }
 
         Ok(GetUserBorrowedUsdResponse {
@@ -1024,24 +1045,53 @@ pub mod query {
         user: String,
         denom: String,
     ) -> StdResult<Uint128> {
-        let deposited_amount_in_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
+        let mut available_to_borrow = 0u128;
+        
+        let sum_collateral_balance_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
             .unwrap()
             .user_deposited_usd
             .u128();
 
-        // amount available to borrow
-        let available_to_borrow_usd = deposited_amount_in_usd * 8u128 / 10u128;
+        // maximum amount allowed for borrowing
+        let max_allowed_borrow_amount_usd = sum_collateral_balance_usd * 8u128 / 10u128;
 
-        let available_to_borrow_amount =
-            available_to_borrow_usd / get_price(deps, denom.clone()).unwrap().price;
+        let sum_user_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
+            .unwrap()
+            .user_borrowed_usd
+            .u128();
 
-        Ok(Uint128::from(
-            available_to_borrow_amount
-                - get_borrow_amount_with_interest(deps, env, user, denom)
-                    .unwrap()
-                    .amount
-                    .u128(),
-        ))
+        if max_allowed_borrow_amount_usd > sum_user_borrow_balance_usd {
+            let token_decimals = get_token_decimal(deps, denom.clone())
+                .unwrap()
+                .u128() as u32;
+
+            let price = get_price(deps, denom.clone())
+                .unwrap()
+                .u128();
+
+            available_to_borrow = 
+                Decimal::from_i128_with_scale(
+                    (max_allowed_borrow_amount_usd
+                        - sum_user_borrow_balance_usd) as i128,
+                    USD_DECIMALS,
+                )
+                    .div(Decimal::from_i128_with_scale(
+                        price as i128,
+                        USD_DECIMALS,
+                    ))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
+
+            let token_liquidity = get_contract_balance_by_token(deps, env.clone(), denom.clone())
+                .unwrap()
+                .u128();
+
+            if available_to_borrow > token_liquidity {
+                available_to_borrow = token_liquidity
+            }
+        }
+
+        Ok(Uint128::from(available_to_borrow))
     }
 
     pub fn get_available_to_redeem(
@@ -1076,9 +1126,26 @@ pub mod query {
                 .u128();
 
             if sum_collateral_balance_usd >= required_collateral_balance_usd {
-                available_to_redeem =
-                    (sum_collateral_balance_usd - required_collateral_balance_usd)
-                        / get_price(deps, denom.clone()).unwrap().price;
+                let token_decimals = get_token_decimal(deps, denom.clone())
+                    .unwrap()
+                    .u128() as u32;
+
+                let price = get_price(deps, denom.clone())
+                    .unwrap()
+                    .u128();
+
+                available_to_redeem = 
+                    Decimal::from_i128_with_scale(
+                        (sum_collateral_balance_usd
+                            - required_collateral_balance_usd) as i128,
+                        USD_DECIMALS,
+                    )
+                        .div(Decimal::from_i128_with_scale(
+                            price as i128,
+                            USD_DECIMALS,
+                        ))
+                        .to_u128_with_decimals(token_decimals)
+                        .unwrap();
 
                 if available_to_redeem > user_token_balance {
                     available_to_redeem = user_token_balance
@@ -1093,35 +1160,85 @@ pub mod query {
         Ok(Uint128::from(available_to_redeem))
     }
 
-    pub fn get_total_deposited_by_token_usd(deps: Deps, denom: String) -> StdResult<Uint128> {
-        let mut all_deposits_usd = 0u128;
-        let all_deposits_iter: StdResult<Vec<_>> = USER_MM_TOKEN_BALANCE
+    pub fn get_total_deposited_by_token_usd(
+        deps: Deps,
+        env: Env,
+        denom: String
+    ) -> StdResult<Uint128> {
+        let users_mm_token_balances_iter: StdResult<Vec<_>> = USER_MM_TOKEN_BALANCE
             .range(deps.storage, None, None, Order::Ascending)
             .collect();
 
-        for deposits in all_deposits_iter.unwrap() {
-            if deposits.0 .1 == denom {
-                all_deposits_usd +=
-                    deposits.1.u128() * get_price(deps, deposits.0 .1).unwrap().price;
+        let mut sum_mm_token_balance = 0u128;
+        for users_mm_token_balances in users_mm_token_balances_iter.unwrap() {
+            if users_mm_token_balances.0 .1 == denom {
+                sum_mm_token_balance += users_mm_token_balances.1.u128();
             }
         }
 
-        Ok(Uint128::from(all_deposits_usd))
+        let mm_token_price = get_mm_token_price(deps.clone(), env.clone(), denom.clone())
+            .unwrap()
+            .u128();
+
+        let token_decimals = get_token_decimal(deps, denom.clone())
+            .unwrap()
+            .u128() as u32;
+
+        let sum_token_balance =
+            Decimal::from_i128_with_scale(sum_mm_token_balance as i128, token_decimals)
+                .mul(Decimal::from_i128_with_scale(
+                    mm_token_price as i128,
+                    token_decimals,
+                ))
+                .to_u128_with_decimals(token_decimals)
+                .unwrap();
+
+        let price = get_price(deps, denom.clone())
+            .unwrap()
+            .u128();
+
+        let sum_token_balance_usd = 
+            Decimal::from_i128_with_scale(
+                sum_token_balance as i128,
+                token_decimals,
+            )
+                .mul(Decimal::from_i128_with_scale(
+                    price as i128,
+                    USD_DECIMALS,
+                ))
+                .to_u128_with_decimals(USD_DECIMALS)
+                .unwrap();
+
+        Ok(Uint128::from(sum_token_balance_usd))
     }
 
     pub fn get_total_borrowed_by_token_usd(deps: Deps, denom: String) -> StdResult<Uint128> {
-        let mut all_borrowed_usd = 0u128;
-        let all_borrowed_iter: StdResult<Vec<_>> = USER_BORROWED_BALANCE
-            .range(deps.storage, None, None, Order::Ascending)
-            .collect();
+        let total_borrowed_amount = TOTAL_BORROW_DATA
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .total_borrowed_amount;
 
-        for borrows in all_borrowed_iter.unwrap() {
-            if borrows.0 .1 == denom {
-                all_borrowed_usd += borrows.1.u128() * get_price(deps, borrows.0 .1).unwrap().price;
-            }
-        }
+        let token_decimals = get_token_decimal(deps, denom.clone())
+            .unwrap()
+            .u128() as u32;
 
-        Ok(Uint128::from(all_borrowed_usd))
+        let price = get_price(deps, denom.clone())
+            .unwrap()
+            .u128();
+
+        let total_borrowed_amount_usd = 
+            Decimal::from_i128_with_scale(
+                total_borrowed_amount as i128,
+                token_decimals,
+            )
+                .mul(Decimal::from_i128_with_scale(
+                    price as i128,
+                    USD_DECIMALS,
+                ))
+                .to_u128_with_decimals(USD_DECIMALS)
+                .unwrap();
+
+        Ok(Uint128::from(total_borrowed_amount_usd))
     }
 
     pub fn get_total_reserves_by_token(deps: Deps, env: Env, denom: String) -> StdResult<Uint128> {
