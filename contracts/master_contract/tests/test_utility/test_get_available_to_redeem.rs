@@ -35,7 +35,7 @@ mod tests {
 
         assert_eq!(
             user_deposited_usd.user_deposited_usd.u128(),
-            403000000000000000000000 // 300 ATOM * 10$ + 200 ETH * 2000$ = 403000$
+            40300000000000 // 300 ATOM * 10$ + 200 ETH * 2000$ = 403000$
         );
 
         let available_to_redeem_eth: Uint128 = app

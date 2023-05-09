@@ -70,7 +70,7 @@ pub enum QueryMsg {
     #[returns(GetTokensInterestRateModelParamsResponse)]
     GetTokensInterestRateModelParams {},
 
-    #[returns(GetPriceResponse)]
+    #[returns(Uint128)]
     GetPrice { denom: String },
 
     #[returns(Uint128)]
@@ -117,11 +117,6 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetLiquidityIndexLastUpdate { denom: String },
-}
-
-#[cw_serde]
-pub struct GetPriceResponse {
-    pub price: u128,
 }
 
 #[cw_serde]
