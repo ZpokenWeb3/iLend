@@ -3,9 +3,15 @@ mod tests {
     //     use super::*;
     use crate::utils::success_deposit_of_one_token_setup;
     //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-    use cosmwasm_std::Addr;
+    use cosmwasm_std::{
+        Addr,
+        Uint128
+    };
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg, GetPriceResponse, QueryMsg};
+    use master_contract::msg::{
+        ExecuteMsg,
+        QueryMsg
+    };
 
     #[test]
     fn test_set_get_price() {
@@ -13,12 +19,16 @@ mod tests {
         // so that FIRST_DEPOSIT_AMOUNT is remaining
         let (mut app, addr) = success_deposit_of_one_token_setup();
 
+        const PRICE_DECIMALS: u32 = 8;
+        const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
+        const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS);
+
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::SetPrice {
                 denom: "eth".to_string(),
-                price: 2000,
+                price: PRICE_ETH,
             },
             &[],
         )
@@ -29,13 +39,13 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::SetPrice {
                 denom: "atom".to_string(),
-                price: 10,
+                price: PRICE_ATOM,
             },
             &[],
         )
         .unwrap();
 
-        let get_price_eth: GetPriceResponse = app
+        let get_price_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -45,7 +55,7 @@ mod tests {
             )
             .unwrap();
 
-        let get_price_atom: GetPriceResponse = app
+        let get_price_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -55,8 +65,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(get_price_atom.price, 10);
-
-        assert_eq!(get_price_eth.price, 2000);
+        assert_eq!(get_price_atom.u128(), 1000000000); // 10$
+        assert_eq!(get_price_eth.u128(), 200000000000); // 2000$
     }
 }

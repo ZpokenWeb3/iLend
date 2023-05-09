@@ -4,8 +4,10 @@ use std::vec;
 
 use cosmwasm_std::Uint128;
 use master_contract::msg::{
-    ExecuteMsg, GetBalanceResponse, GetBorrowAmountWithInterestResponse, GetPriceResponse,
-    InstantiateMsg, QueryMsg,
+    ExecuteMsg,
+    GetBalanceResponse,
+    InstantiateMsg,
+    QueryMsg,
 };
 use master_contract::{execute, instantiate, query};
 
@@ -187,6 +189,10 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
     const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
 
+    const PRICE_DECIMALS: u32 = 8;
+    const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
+    const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS);
+
     let mut app = App::new(|router, _, storage| {
         router
             .bank
@@ -271,7 +277,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         addr.clone(),
         &ExecuteMsg::SetPrice {
             denom: "eth".to_string(),
-            price: 2000,
+            price: PRICE_ETH,
         },
         &[],
     )
@@ -282,13 +288,13 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         addr.clone(),
         &ExecuteMsg::SetPrice {
             denom: "atom".to_string(),
-            price: 10,
+            price: PRICE_ATOM,
         },
         &[],
     )
     .unwrap();
 
-    let get_price_eth: GetPriceResponse = app
+    let get_price_eth: Uint128 = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -298,7 +304,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    let get_price_atom: GetPriceResponse = app
+    let get_price_atom: Uint128 = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -308,9 +314,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(get_price_atom.price, 10);
-
-    assert_eq!(get_price_eth.price, 2000);
+    assert_eq!(get_price_atom.u128(), 1000000000); // 10$
+    assert_eq!(get_price_eth.u128(), 200000000000); // 2000$
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -417,6 +422,10 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
     const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
 
+    const PRICE_DECIMALS: u32 = 8;
+    const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
+    const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS);
+
     let mut app = App::new(|router, _, storage| {
         router
             .bank
@@ -501,7 +510,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         addr.clone(),
         &ExecuteMsg::SetPrice {
             denom: "eth".to_string(),
-            price: 2000,
+            price: PRICE_ETH,
         },
         &[],
     )
@@ -512,13 +521,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         addr.clone(),
         &ExecuteMsg::SetPrice {
             denom: "atom".to_string(),
-            price: 10,
+            price: PRICE_ATOM,
         },
         &[],
     )
     .unwrap();
 
-    let get_price_eth: GetPriceResponse = app
+    let get_price_eth: Uint128 = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -528,7 +537,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    let get_price_atom: GetPriceResponse = app
+    let get_price_atom: Uint128 = app
         .wrap()
         .query_wasm_smart(
             addr.clone(),
@@ -538,9 +547,8 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(get_price_atom.price, 10);
-
-    assert_eq!(get_price_eth.price, 2000);
+    assert_eq!(get_price_atom.u128(), 1000000000); // 10$
+    assert_eq!(get_price_eth.u128(), 200000000000); // 2000$
 
     app.set_block(BlockInfo {
         height: 0,
