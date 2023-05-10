@@ -1,5 +1,10 @@
 use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
-use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
+use cw_multi_test::{
+    App,
+    BasicApp,
+    ContractWrapper,
+    Executor
+};
 use std::vec;
 
 use cosmwasm_std::Uint128;
@@ -12,16 +17,19 @@ use master_contract::msg::{
 use master_contract::{execute, instantiate, query};
 
 pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
-    const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+    const TOKENS_DECIMALS: u32 = 18;
 
-    const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-    const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
-    const FIRST_DEPOSIT_AMOUNT: u128 = 200 * DECIMAL_FRACTIONAL.u128();
-    const SECOND_DEPOSIT_AMOUNT: u128 = 300 * DECIMAL_FRACTIONAL.u128();
+    const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
-    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
-    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
-    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
+    const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
+    const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
+    const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
+
+    const INTEREST_RATE_DECIMALS: u32 = 18;
+
+    const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
     let mut app = App::new(|router, _, storage| {
         router
@@ -172,22 +180,22 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
 }
 
 pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
-    const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+    const TOKENS_DECIMALS: u32 = 18;
 
-    const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-    const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+    const INIT_BALANCE_ATOM: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
 
-    const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
-    const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
+    const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
+    const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
-    const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-    const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+    const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+    const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
-    const DECIMAL_FRACTIONAL_INT_RATE: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+    const INTEREST_RATE_DECIMALS: u32 = 18;
 
-    const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
-    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
-    const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL_INT_RATE.u128();
+    const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+    const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
     const PRICE_DECIMALS: u32 = 8;
     const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
@@ -201,7 +209,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                 &Addr::unchecked("user"),
                 vec![
                     coin(INIT_BALANCE_FIRST_TOKEN, "eth"),
-                    coin(INIT_BALANCE_SECOND_TOKEN, "atom"),
+                    coin(INIT_BALANCE_ATOM, "atom"),
                 ],
             )
             .unwrap();
@@ -389,7 +397,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
             .unwrap()
             .amount
             .u128(),
-        INIT_BALANCE_SECOND_TOKEN - DEPOSIT_OF_SECOND_TOKEN
+        INIT_BALANCE_ATOM - DEPOSIT_OF_SECOND_TOKEN
     );
 
     assert_eq!(
