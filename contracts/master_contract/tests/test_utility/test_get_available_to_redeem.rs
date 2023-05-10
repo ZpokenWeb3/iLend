@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     //     use super::*;
-    use crate::utils::success_deposit_of_diff_token_with_prices;
+    use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
     //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
     use cosmwasm_std::{
         Addr,
@@ -18,7 +18,7 @@ mod tests {
     fn test_get_available_to_redeem() {
         // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
         const BORROW_AMOUNT_ATOM: u128 = 1000 * DECIMAL_FRACTIONAL.u128();

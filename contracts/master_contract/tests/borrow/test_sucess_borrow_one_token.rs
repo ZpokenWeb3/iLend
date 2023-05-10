@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     //     use super::*;
-    use crate::utils::success_deposit_of_diff_token_with_prices;
+    use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
     use cosmwasm_std::{
         Addr,
         BlockInfo,
@@ -44,7 +44,7 @@ mod tests {
         borrowed atom 300 * 10 = 3_000 $
         */
 
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
         app.set_block(BlockInfo {
             height: 0,

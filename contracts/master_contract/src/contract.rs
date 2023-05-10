@@ -1,11 +1,28 @@
 use crate::contract::query::{
-    get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem,
-    get_borrow_amount_with_interest, get_contract_balance_by_token, get_current_liquidity_index_ln,
-    get_interest_rate, get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price,
-    get_price, get_supported_tokens, get_token_decimal, get_tokens_interest_rate_model_params,
-    get_total_borrow_data, get_total_borrowed_by_token_usd, get_total_deposited_by_token_usd,
-    get_total_reserves_by_token, get_user_borrowed_usd, get_user_borrowing_info,
-    get_user_deposited_usd, get_utilization_rate_by_token, user_deposit_as_collateral,
+    get_available_liquidity_by_token,
+    get_available_to_borrow,
+    get_available_to_redeem,
+    get_borrow_amount_with_interest,
+    get_contract_balance_by_token,
+    get_current_liquidity_index_ln,
+    get_interest_rate,
+    get_liquidity_index_last_update,
+    get_liquidity_rate,
+    get_mm_token_price,
+    get_price,
+    get_supported_tokens,
+    get_token_decimal,
+    get_tokens_interest_rate_model_params,
+    get_total_borrow_data,
+    get_total_borrowed_by_token_usd,
+    get_total_deposited_by_token_usd,
+    get_total_reserves_by_token,
+    get_user_borrowed_usd,
+    get_user_borrowing_info,
+    get_user_deposited_usd,
+    get_utilization_rate_by_token,
+    get_user_collateral_usd,
+    user_deposit_as_collateral
 };
 use crate::msg::{
     LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
@@ -86,23 +103,23 @@ pub fn instantiate(
 
     ADMIN.save(deps.storage, &msg.admin)?;
 
-    for tokens in msg.supported_tokens {
+    for token in msg.supported_tokens {
         SUPPORTED_TOKENS.save(
             deps.storage,
-            tokens.0.clone(),
+            token.0.clone(),
             &TokenInfo {
-                denom: tokens.0.clone(),
-                name: tokens.1,
-                symbol: tokens.2,
-                decimals: tokens.3,
+                denom: token.0.clone(),
+                name: token.1,
+                symbol: token.2,
+                decimals: token.3,
             },
         )?;
 
         TOTAL_BORROW_DATA.save(
             deps.storage,
-            tokens.0.clone(),
+            token.0.clone(),
             &TotalBorrowData {
-                denom: tokens.0.clone(),
+                denom: token.0.clone(),
                 total_borrowed_amount: 0u128,
                 expected_annual_interest_income: 0u128,
             },
@@ -110,9 +127,9 @@ pub fn instantiate(
 
         LIQUIDITY_INDEX_DATA.save(
             deps.storage,
-            tokens.0.clone(),
+            token.0.clone(),
             &LiquidityIndexData {
-                denom: tokens.0.clone(),
+                denom: token.0.clone(),
                 liquidity_index_ln: 0u128,
                 timestamp: env.block.time,
             },
@@ -665,6 +682,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetUserDepositedUsd { address } => {
             to_binary(&get_user_deposited_usd(deps, env, address)?)
         }
+        QueryMsg::GetUserCollateralUsd { address } => {
+            to_binary(&get_user_collateral_usd(deps, env, address)?)
+        }
         QueryMsg::GetUserBorrowedUsd { address } => {
             to_binary(&get_user_borrowed_usd(deps, env, address)?)
         }
@@ -1013,17 +1033,17 @@ pub mod query {
     ) -> StdResult<GetUserDepositedUsdResponse> {
         let mut user_deposited_usd = 0u128;
 
-        for tokens in get_supported_tokens(deps).unwrap().supported_tokens {
-            let user_deposit = get_deposit(deps, env.clone(), user.clone(), tokens.denom.clone())
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
+            let user_deposit = get_deposit(deps, env.clone(), user.clone(), token.denom.clone())
                 .unwrap()
                 .balance
                 .u128();
 
-            let token_decimals = get_token_decimal(deps, tokens.denom.clone())
+            let token_decimals = get_token_decimal(deps, token.denom.clone())
                 .unwrap()
                 .u128() as u32;
 
-            let price = get_price(deps, tokens.denom.clone())
+            let price = get_price(deps, token.denom.clone())
                 .unwrap()
                 .u128();
 
@@ -1045,28 +1065,74 @@ pub mod query {
         })
     }
 
+    pub fn get_user_collateral_usd(
+        deps: Deps,
+        env: Env,
+        user: String,
+    ) -> StdResult<Uint128> {
+        let mut user_collateral_usd = 0u128;
+
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
+            let use_user_deposit_as_collateral = user_deposit_as_collateral(
+                deps,
+                user.clone(),
+                token.denom.clone(),
+            )
+                .unwrap();
+        
+            if use_user_deposit_as_collateral {
+                let user_deposit = get_deposit(deps, env.clone(), user.clone(), token.denom.clone())
+                    .unwrap()
+                    .balance
+                    .u128();
+
+                let token_decimals = get_token_decimal(deps, token.denom.clone())
+                    .unwrap()
+                    .u128() as u32;
+
+                let price = get_price(deps, token.denom.clone())
+                    .unwrap()
+                    .u128();
+
+                user_collateral_usd += 
+                    Decimal::from_i128_with_scale(
+                        user_deposit as i128,
+                        token_decimals,
+                    )
+                        .mul(Decimal::from_i128_with_scale(
+                            price as i128,
+                            USD_DECIMALS,
+                        ))
+                        .to_u128_with_decimals(USD_DECIMALS)
+                        .unwrap()
+            }
+        }
+
+        Ok(Uint128::from(user_collateral_usd))
+    }
+
     pub fn get_user_borrowed_usd(
         deps: Deps,
         env: Env,
         user: String,
     ) -> StdResult<GetUserBorrowedUsdResponse> {
         let mut user_borrowed_usd = 0u128;
-        for tokens in get_supported_tokens(deps).unwrap().supported_tokens {
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
             let user_borrow = get_borrow_amount_with_interest(
                 deps,
                 env.clone(),
                 user.clone(),
-                tokens.denom.clone(),
+                token.denom.clone(),
             )
                 .unwrap()
                 .amount
                 .u128();
 
-            let token_decimals = get_token_decimal(deps, tokens.denom.clone())
+            let token_decimals = get_token_decimal(deps, token.denom.clone())
                 .unwrap()
                 .u128() as u32;
 
-            let price = get_price(deps, tokens.denom.clone())
+            let price = get_price(deps, token.denom.clone())
                 .unwrap()
                 .u128();
 
@@ -1112,9 +1178,8 @@ pub mod query {
     ) -> StdResult<Uint128> {
         let mut available_to_borrow = 0u128;
         
-        let sum_collateral_balance_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
+        let sum_collateral_balance_usd = get_user_collateral_usd(deps, env.clone(), user.clone())
             .unwrap()
-            .user_deposited_usd
             .u128();
 
         // maximum amount allowed for borrowing
@@ -1173,53 +1238,63 @@ pub mod query {
                 .balance
                 .u128();
 
-        if user_token_balance != 0 {
-            let sum_collateral_balance_usd = get_user_deposited_usd(deps, env.clone(), user.clone())
-                .unwrap()
-                .user_deposited_usd
-                .u128();
+        let use_user_deposit_as_collateral = user_deposit_as_collateral(
+            deps,
+            user.clone(),
+            denom.clone(),
+        )
+            .unwrap();
 
-            let sum_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
-                .unwrap()
-                .user_borrowed_usd
-                .u128();
-
-            let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;
-
-            let token_liquidity = get_contract_balance_by_token(deps, env.clone(), denom.clone())
-                .unwrap()
-                .u128();
-
-            if sum_collateral_balance_usd >= required_collateral_balance_usd {
-                let token_decimals = get_token_decimal(deps, denom.clone())
-                    .unwrap()
-                    .u128() as u32;
-
-                let price = get_price(deps, denom.clone())
+        if use_user_deposit_as_collateral {
+            if user_token_balance != 0 {
+                let sum_collateral_balance_usd = get_user_collateral_usd(deps, env.clone(), user.clone())
                     .unwrap()
                     .u128();
 
-                available_to_redeem = 
-                    Decimal::from_i128_with_scale(
-                        (sum_collateral_balance_usd
-                            - required_collateral_balance_usd) as i128,
-                        USD_DECIMALS,
-                    )
-                        .div(Decimal::from_i128_with_scale(
-                            price as i128,
+                let sum_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
+                    .unwrap()
+                    .user_borrowed_usd
+                    .u128();
+
+                let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;
+
+                let token_liquidity = get_contract_balance_by_token(deps, env.clone(), denom.clone())
+                    .unwrap()
+                    .u128();
+
+                if sum_collateral_balance_usd >= required_collateral_balance_usd {
+                    let token_decimals = get_token_decimal(deps, denom.clone())
+                        .unwrap()
+                        .u128() as u32;
+
+                    let price = get_price(deps, denom.clone())
+                        .unwrap()
+                        .u128();
+
+                    available_to_redeem = 
+                        Decimal::from_i128_with_scale(
+                            (sum_collateral_balance_usd
+                                - required_collateral_balance_usd) as i128,
                             USD_DECIMALS,
-                        ))
-                        .to_u128_with_decimals(token_decimals)
-                        .unwrap();
+                        )
+                            .div(Decimal::from_i128_with_scale(
+                                price as i128,
+                                USD_DECIMALS,
+                            ))
+                            .to_u128_with_decimals(token_decimals)
+                            .unwrap();
 
-                if available_to_redeem > user_token_balance {
-                    available_to_redeem = user_token_balance
-                }
+                    if available_to_redeem > user_token_balance {
+                        available_to_redeem = user_token_balance;
+                    }
 
-                if available_to_redeem > token_liquidity {
-                    available_to_redeem = token_liquidity
+                    if available_to_redeem > token_liquidity {
+                        available_to_redeem = token_liquidity;
+                    }
                 }
-            } 
+            }
+        } else {
+            available_to_redeem = user_token_balance;
         }
 
         Ok(Uint128::from(available_to_redeem))

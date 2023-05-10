@@ -97,10 +97,9 @@ mod tests {
         const ETH_DECIMALS: u32 = 18;
 
         const DEPOSIT_AMOUNT_ATOM: u128 = 500000u128 * 10u128.pow(ATOM_DECIMALS); // 500000 ATOM
-        const BORROW_AMOUNT_ETH: u128 = 1200u128 * 10u128.pow(ETH_DECIMALS); // 1200 ETH
+        const BORROW_AMOUNT_ETH: u128 = 160u128 * 10u128.pow(ETH_DECIMALS); // 160 ETH
 
-        // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
-        // so that FIRST_DEPOSIT_AMOUNT is remaining
+        // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
@@ -170,7 +169,8 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(available_to_borrow_eth.u128(), 1200000000000000000000); // 1200 ETH == 2400000$
+        // Only the ether deposit counts as collateral => 200 ETH * 0.8 = 160 ETH
+        assert_eq!(available_to_borrow_eth.u128(), 160000000000000000000); // 160 ETH == 320_000$
 
         app.execute_contract(
             Addr::unchecked("user"),

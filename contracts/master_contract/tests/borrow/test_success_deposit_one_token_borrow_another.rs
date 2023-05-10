@@ -177,6 +177,16 @@ mod tests {
         )
         .unwrap();
 
+        app.execute_contract(
+            Addr::unchecked("user"),
+            addr.clone(),
+            &ExecuteMsg::ToggleCollateralSetting {
+                denom: "eth".to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
         let user_available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(

@@ -94,6 +94,9 @@ pub enum QueryMsg {
     #[returns(GetUserDepositedUsdResponse)]
     GetUserDepositedUsd { address: String },
 
+    #[returns(Uint128)]
+    GetUserCollateralUsd { address: String },
+
     #[returns(GetUserBorrowedUsdResponse)]
     GetUserBorrowedUsd { address: String },
 
