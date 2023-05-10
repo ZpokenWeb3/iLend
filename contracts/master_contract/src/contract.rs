@@ -478,17 +478,11 @@ pub fn execute(
             Ok(Response::new())
         }
         ExecuteMsg::ToggleCollateralSetting { denom } => {
-            assert_eq!(
+            let use_user_deposit_as_collateral = user_deposit_as_collateral(
+                deps.as_ref(),
                 info.sender.to_string(),
-                ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
-            );
-
-            let use_user_deposit_as_collateral = USER_DEPOSIT_AS_COLLATERAL
-                .load(
-                    deps.storage,
-                    (info.sender.to_string(), denom.clone()),
-                )
+                denom.clone(),
+            )
                 .unwrap();
 
             if use_user_deposit_as_collateral == true {
@@ -763,7 +757,7 @@ pub mod query {
                 deps.storage,
                 (user, denom.clone()),
             )
-            .unwrap();
+            .unwrap_or_default();
 
         Ok(use_user_deposit_as_collateral)
     }
