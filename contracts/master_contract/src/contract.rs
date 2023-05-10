@@ -5,13 +5,18 @@ use crate::contract::query::{
     get_price, get_supported_tokens, get_token_decimal, get_tokens_interest_rate_model_params,
     get_total_borrow_data, get_total_borrowed_by_token_usd, get_total_deposited_by_token_usd,
     get_total_reserves_by_token, get_user_borrowed_usd, get_user_borrowing_info,
-    get_user_deposited_usd, get_utilization_rate_by_token,
+    get_user_deposited_usd, get_utilization_rate_by_token, user_deposit_as_collateral,
 };
 use crate::msg::{
     LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
 };
 use crate::state::{
-    LIQUIDITY_INDEX_DATA, PRICES, TOTAL_BORROW_DATA, USER_BORROWED_BALANCE, USER_BORROWING_INFO,
+    LIQUIDITY_INDEX_DATA,
+    PRICES,
+    TOTAL_BORROW_DATA,
+    USER_BORROWED_BALANCE,
+    USER_BORROWING_INFO,
+    USER_DEPOSIT_AS_COLLATERAL
 };
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 // use rust_decimal::Decimal;
@@ -472,6 +477,54 @@ pub fn execute(
 
             Ok(Response::new())
         }
+        ExecuteMsg::ToggleCollateralSetting { denom } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            let use_user_deposit_as_collateral = USER_DEPOSIT_AS_COLLATERAL
+                .load(
+                    deps.storage,
+                    (info.sender.to_string(), denom.clone()),
+                )
+                .unwrap();
+
+            if use_user_deposit_as_collateral == true {
+                let available_to_redeem = get_available_to_redeem(
+                    deps.as_ref(),
+                    env.clone(),
+                    info.sender.to_string(),
+                    denom.clone(),
+                )
+                    .unwrap()
+                    .u128();
+
+                let current_user_deposit = get_deposit(
+                    deps.as_ref(),
+                    env.clone(),
+                    info.sender.to_string(),
+                    denom.clone(),
+                )
+                    .unwrap()
+                    .balance
+                    .u128();
+
+                assert!(
+                    available_to_redeem >= current_user_deposit,
+                    "The collateral has already using to collateralise the borrowing. Not enough available balance"
+                );
+            }
+
+            USER_DEPOSIT_AS_COLLATERAL.save(
+                deps.storage,
+                (info.sender.to_string(), denom.clone()),
+                &!use_user_deposit_as_collateral,
+            )?;
+
+            Ok(Response::new())
+        }
         ExecuteMsg::Repay {} => {
             if info.funds.is_empty() {
                 return Err(ContractError::CustomError {
@@ -592,6 +645,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetDeposit { address, denom } => {
             to_binary(&get_deposit(deps, env, address, denom)?)
         }
+        QueryMsg::UserDepositAsCollateral { address, denom } => {
+            to_binary(&user_deposit_as_collateral(deps, address, denom)?)
+        }
         QueryMsg::GetPrice { denom } => to_binary(&get_price(deps, denom)?),
         QueryMsg::GetBorrowAmountWithInterest { address, denom } => to_binary(
             &query::get_borrow_amount_with_interest(deps, env, address, denom)?,
@@ -695,6 +751,21 @@ pub mod query {
         Ok(GetBalanceResponse {
             balance: Uint128::from(user_token_balance),
         })
+    }
+
+    pub fn user_deposit_as_collateral(
+        deps: Deps,
+        user: String,
+        denom: String,
+    ) -> StdResult<bool> {
+        let use_user_deposit_as_collateral = USER_DEPOSIT_AS_COLLATERAL
+            .load(
+                deps.storage,
+                (user, denom.clone()),
+            )
+            .unwrap();
+
+        Ok(use_user_deposit_as_collateral)
     }
 
     pub fn get_borrow_amount_with_interest(

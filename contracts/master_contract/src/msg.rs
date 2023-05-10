@@ -47,6 +47,9 @@ pub enum ExecuteMsg {
         amount: Uint128,
     },
     Repay {},
+    ToggleCollateralSetting {
+        denom: String,
+    },
 }
 
 #[cw_serde]
@@ -54,6 +57,9 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     #[returns(GetBalanceResponse)]
     GetDeposit { address: String, denom: String },
+
+    #[returns(bool)]
+    UserDepositAsCollateral { address: String, denom: String },
 
     #[returns(GetBorrowAmountWithInterestResponse)]
     GetBorrowAmountWithInterest { address: String, denom: String },
