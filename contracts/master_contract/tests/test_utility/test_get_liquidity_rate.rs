@@ -47,7 +47,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(get_liquidity_rate_atom.u128(), 1499999999550000000);
+        assert_eq!(get_liquidity_rate_atom.u128(), 1153846153846153846); // ~1.154%
         assert_eq!(get_liquidity_rate_eth.u128(), 0);
     }
 }

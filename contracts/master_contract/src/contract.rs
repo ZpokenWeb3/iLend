@@ -3,7 +3,6 @@ use crate::contract::query::{
     get_available_to_borrow,
     get_available_to_redeem,
     get_borrow_amount_with_interest,
-    get_contract_balance_by_token,
     get_current_liquidity_index_ln,
     get_interest_rate,
     get_liquidity_index_last_update,
@@ -14,8 +13,8 @@ use crate::contract::query::{
     get_token_decimal,
     get_tokens_interest_rate_model_params,
     get_total_borrow_data,
-    get_total_borrowed_by_token_usd,
-    get_total_deposited_by_token_usd,
+    get_total_borrowed_by_token,
+    get_total_deposited_by_token,
     get_total_reserves_by_token,
     get_user_borrowed_usd,
     get_user_borrowing_info,
@@ -370,7 +369,7 @@ pub fn execute(
             );
 
             assert!(
-                get_contract_balance_by_token(deps.as_ref(), env.clone(), denom.clone())
+                get_available_liquidity_by_token(deps.as_ref(), env.clone(), denom.clone())
                     .unwrap()
                     .u128()
                     >= amount.u128()
@@ -688,9 +687,6 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetUserBorrowedUsd { address } => {
             to_binary(&get_user_borrowed_usd(deps, env, address)?)
         }
-        QueryMsg::GetContractBalance { denom } => {
-            to_binary(&get_contract_balance_by_token(deps, env, denom)?)
-        }
         QueryMsg::GetAvailableToBorrow { address, denom } => {
             to_binary(&get_available_to_borrow(deps, env, address, denom)?)
         }
@@ -701,10 +697,10 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&get_total_reserves_by_token(deps, env, denom)?)
         }
         QueryMsg::GetTotalDepositedByToken { denom } => {
-            to_binary(&get_total_deposited_by_token_usd(deps, env, denom)?)
+            to_binary(&get_total_deposited_by_token(deps, env, denom)?)
         }
         QueryMsg::GetTotalBorrowedByToken { denom } => {
-            to_binary(&get_total_borrowed_by_token_usd(deps, denom)?)
+            to_binary(&get_total_borrowed_by_token(deps, denom)?)
         }
         QueryMsg::GetAvailableLiquidityByToken { denom } => {
             to_binary(&get_available_liquidity_by_token(deps, env, denom)?)
@@ -1154,7 +1150,7 @@ pub mod query {
         })
     }
 
-    pub fn get_contract_balance_by_token(
+    pub fn get_available_liquidity_by_token(
         deps: Deps,
         env: Env,
         denom: String,
@@ -1162,14 +1158,14 @@ pub mod query {
         let contract_address = env.contract.address;
         let coins: Vec<Coin> = deps.querier.query_all_balances(contract_address)?;
 
-        let balance = coins
+        let liquidity = coins
             .into_iter()
             .find(|coin| coin.denom == denom)
             .map_or(Uint128::zero(), |coin| coin.amount);
 
-        Ok(balance)
+        Ok(liquidity)
     }
-
+    
     pub fn get_available_to_borrow(
         deps: Deps,
         env: Env,
@@ -1212,7 +1208,7 @@ pub mod query {
                     .to_u128_with_decimals(token_decimals)
                     .unwrap();
 
-            let token_liquidity = get_contract_balance_by_token(deps, env.clone(), denom.clone())
+            let token_liquidity = get_available_liquidity_by_token(deps, env.clone(), denom.clone())
                 .unwrap()
                 .u128();
 
@@ -1258,7 +1254,7 @@ pub mod query {
 
                 let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;
 
-                let token_liquidity = get_contract_balance_by_token(deps, env.clone(), denom.clone())
+                let token_liquidity = get_available_liquidity_by_token(deps, env.clone(), denom.clone())
                     .unwrap()
                     .u128();
 
@@ -1300,7 +1296,7 @@ pub mod query {
         Ok(Uint128::from(available_to_redeem))
     }
 
-    pub fn get_total_deposited_by_token_usd(
+    pub fn get_total_deposited_by_token(
         deps: Deps,
         env: Env,
         denom: String
@@ -1333,75 +1329,27 @@ pub mod query {
                 .to_u128_with_decimals(token_decimals)
                 .unwrap();
 
-        let price = get_price(deps, denom.clone())
-            .unwrap()
-            .u128();
-
-        let sum_token_balance_usd = 
-            Decimal::from_i128_with_scale(
-                sum_token_balance as i128,
-                token_decimals,
-            )
-                .mul(Decimal::from_i128_with_scale(
-                    price as i128,
-                    USD_DECIMALS,
-                ))
-                .to_u128_with_decimals(USD_DECIMALS)
-                .unwrap();
-
-        Ok(Uint128::from(sum_token_balance_usd))
+        Ok(Uint128::from(sum_token_balance))
     }
 
-    pub fn get_total_borrowed_by_token_usd(deps: Deps, denom: String) -> StdResult<Uint128> {
+    pub fn get_total_borrowed_by_token(deps: Deps, denom: String) -> StdResult<Uint128> {
         let total_borrowed_amount = TOTAL_BORROW_DATA
             .load(deps.storage, denom.clone())
             .unwrap()
             .total_borrowed_amount;
 
-        let token_decimals = get_token_decimal(deps, denom.clone())
-            .unwrap()
-            .u128() as u32;
-
-        let price = get_price(deps, denom.clone())
-            .unwrap()
-            .u128();
-
-        let total_borrowed_amount_usd = 
-            Decimal::from_i128_with_scale(
-                total_borrowed_amount as i128,
-                token_decimals,
-            )
-                .mul(Decimal::from_i128_with_scale(
-                    price as i128,
-                    USD_DECIMALS,
-                ))
-                .to_u128_with_decimals(USD_DECIMALS)
-                .unwrap();
-
-        Ok(Uint128::from(total_borrowed_amount_usd))
+        Ok(Uint128::from(total_borrowed_amount))
     }
 
     pub fn get_total_reserves_by_token(deps: Deps, env: Env, denom: String) -> StdResult<Uint128> {
-        let contract_balance = get_contract_balance_by_token(deps, env, denom.clone())
+        let token_liquidity = get_available_liquidity_by_token(deps, env, denom.clone())
             .unwrap()
             .u128();
-        let borrowed_by_token = get_total_borrowed_by_token_usd(deps, denom.clone())
-            .unwrap()
-            .u128();
-
-        Ok(Uint128::from(contract_balance + borrowed_by_token))
-    }
-
-    pub fn get_available_liquidity_by_token(
-        deps: Deps,
-        env: Env,
-        denom: String,
-    ) -> StdResult<Uint128> {
-        let contract_balance = get_contract_balance_by_token(deps, env.clone(), denom.clone())
+        let borrowed_by_token = get_total_borrowed_by_token(deps, denom.clone())
             .unwrap()
             .u128();
 
-        Ok(Uint128::from(contract_balance))
+        Ok(Uint128::from(token_liquidity + borrowed_by_token))
     }
 
     pub fn get_utilization_rate_by_token(
@@ -1413,11 +1361,15 @@ pub mod query {
             .unwrap()
             .u128();
 
-        let borrowed_by_token = get_total_borrowed_by_token_usd(deps, denom.clone())
-            .unwrap()
-            .u128();
-
         if reserves_by_token != 0 {
+            let token_decimals = get_token_decimal(deps, denom.clone())
+                .unwrap()
+                .u128() as u32;
+
+            let borrowed_by_token = get_total_borrowed_by_token(deps, denom.clone())
+                .unwrap()
+                .u128();
+
             Ok(Uint128::from(
                 borrowed_by_token * HUNDRED_PERCENT / reserves_by_token,
             ))
