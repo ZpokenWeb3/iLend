@@ -1,36 +1,26 @@
 #[cfg(test)]
 mod tests {
-    //     use super::*;
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
     use cosmwasm_std::{
         Addr,
         BlockInfo,
         Timestamp,
         Uint128,
-        //         Uint64
     };
     use cw_multi_test::Executor;
     use master_contract::msg::{
         ExecuteMsg,
         GetBalanceResponse,
-        GetBorrowAmountWithInterestResponse,
-        //         GetSupportedTokensResponse,
-        //         GetTotalBorrowedUsdResponse,
-        //         GetTotalDepositedUsdResponse,
         QueryMsg,
-        //         UserBorrowingInfo,
     };
-    //     use near_sdk::json_types::U128;
-    //     use std::fmt::format;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn test_success_borrow_one_token() {
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
 
-        //         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1_000_000 * DECIMAL_FRACTIONAL.u128(); // 1M ATOM
 
-        //         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
         const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
         const BORROW_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
@@ -44,11 +34,15 @@ mod tests {
         borrowed atom 300 * 10 = 3_000 $
         */
 
+        // contract reserves: 1000 ETH and 1000 ATOM
+        // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 
         app.set_block(BlockInfo {
             height: 0,
-            time: Timestamp::from_seconds(0),
+            time: Timestamp::from_seconds(now),
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -98,26 +92,24 @@ mod tests {
 
         app.set_block(BlockInfo {
             height: 2,
-            time: Timestamp::from_seconds(31536000),
+            time: Timestamp::from_seconds(now + 31536000),
             chain_id: "custom_chain_id".to_string(),
         });
 
-        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
+        let user_borrowed_balance: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrowAmountWithInterest {
+                &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        println!("{:?}", user_borrowed_balance);
-
-        assert_ne!(user_borrowed_balance.amount.u128(), BORROW_SECOND_TOKEN);
+        assert_ne!(user_borrowed_balance.u128(), BORROW_SECOND_TOKEN);
         assert_eq!(
-            user_borrowed_balance.amount.u128(),
+            user_borrowed_balance.u128(),
             BORROW_SECOND_TOKEN * 105 / 100
         );
     }

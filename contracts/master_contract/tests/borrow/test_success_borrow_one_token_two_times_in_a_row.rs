@@ -1,30 +1,23 @@
 #[cfg(test)]
 mod tests {
-    //     use super::*;
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
     use cosmwasm_std::{
         Addr,
-        //         BlockInfo,
-        //         Decimal,
         Uint128,
     };
     use cw_multi_test::Executor;
     use master_contract::msg::{
         ExecuteMsg,
         GetBalanceResponse,
-        GetBorrowAmountWithInterestResponse,
-        //         GetSupportedTokensResponse,
         QueryMsg,
     };
-    //     use std::fmt::format;
 
     #[test]
     fn test_sucess() {
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
-                                                                                         //         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1_000_000 * DECIMAL_FRACTIONAL.u128(); // 1М ATOM
 
-        //         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
         const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
         const BORROW_SECOND_TOKEN_FIRST_PART: u128 = 300 * DECIMAL_FRACTIONAL.u128();
@@ -40,6 +33,8 @@ mod tests {
         second borrowed atom 200 * 10 = 2_000 $
         */
 
+        // contract reserves: 1000 ETH and 1000 ATOM
+        // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
         app.execute_contract(
@@ -86,11 +81,11 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
+        let user_borrowed_balance: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrowAmountWithInterest {
+                &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
@@ -98,7 +93,7 @@ mod tests {
             .unwrap();
         //
         assert_eq!(
-            user_borrowed_balance.amount.u128(),
+            user_borrowed_balance.u128(),
             BORROW_SECOND_TOKEN_FIRST_PART
         );
 
@@ -122,11 +117,11 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
+        let user_borrowed_balance: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrowAmountWithInterest {
+                &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
@@ -134,7 +129,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_borrowed_balance.amount.u128(),
+            user_borrowed_balance.u128(),
             BORROW_SECOND_TOKEN_FIRST_PART + BORROW_SECOND_TOKEN_SECOND_PART
         );
 

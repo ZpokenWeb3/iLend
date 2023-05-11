@@ -15,6 +15,7 @@ use master_contract::msg::{
     QueryMsg,
 };
 use master_contract::{execute, instantiate, query};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
@@ -604,9 +605,11 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     assert_eq!(get_price_atom.u128(), 1000000000); // 10$
     assert_eq!(get_price_eth.u128(), 200000000000); // 2000$
 
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+
     app.set_block(BlockInfo {
         height: 0,
-        time: Timestamp::from_seconds(0),
+        time: Timestamp::from_seconds(now),
         chain_id: "custom_chain_id".to_string(),
     });
 
@@ -660,7 +663,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     app.set_block(BlockInfo {
         height: 0,
-        time: Timestamp::from_seconds(1000),
+        time: Timestamp::from_seconds(now + 1000),
         chain_id: "custom_chain_id".to_string(),
     });
 
@@ -719,7 +722,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     app.set_block(BlockInfo {
         height: 0,
-        time: Timestamp::from_seconds(2000),
+        time: Timestamp::from_seconds(now + 2000),
         chain_id: "custom_chain_id".to_string(),
     });
 
@@ -759,7 +762,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 
     app.set_block(BlockInfo {
         height: 542,
-        time: Timestamp::from_seconds(10000),
+        time: Timestamp::from_seconds(now + 10000),
         chain_id: "custom_chain_id".to_string(),
     });
 

@@ -1,10 +1,5 @@
 #[cfg(test)]
 mod tests {
-    //     use super::*;
-    //     use crate::utils::{
-    //         success_deposit_of_diff_token_with_prices,
-    //         success_deposit_of_one_token_setup,
-    //     };
     use cosmwasm_std::{
         coin,
         coins,
@@ -15,7 +10,6 @@ mod tests {
     use master_contract::msg::{
         ExecuteMsg,
         GetBalanceResponse,
-        GetBorrowAmountWithInterestResponse,
         InstantiateMsg,
         QueryMsg,
     };
@@ -269,17 +263,17 @@ mod tests {
         )
         .unwrap();
 
-        let user_borrowed_balance: GetBorrowAmountWithInterestResponse = app
+        let user_borrowed_balance: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrowAmountWithInterest {
+                &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_balance.amount.u128(), BORROW_AMOUNT_ATOM);
+        assert_eq!(user_borrowed_balance.u128(), BORROW_AMOUNT_ATOM);
     }
 }
