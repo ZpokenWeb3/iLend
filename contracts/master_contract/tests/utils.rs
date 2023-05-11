@@ -1,4 +1,10 @@
-use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
+use cosmwasm_std::{
+    coin,
+    coins,
+    Addr,
+    BlockInfo,
+    Timestamp
+};
 use cw_multi_test::{
     App,
     BasicApp,

@@ -11,3 +11,4 @@ mod test_user_deposit_as_collateral;
 mod test_get_user_collateral_usd;
 mod test_get_utilization_rate_by_token;
 mod test_get_total_borrowed_by_token;
+mod test_get_total_reserves_by_token;
