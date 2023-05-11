@@ -99,6 +99,7 @@ mod tests {
         const DEPOSIT_AMOUNT_ATOM: u128 = 500000u128 * 10u128.pow(ATOM_DECIMALS); // 500000 ATOM
         const BORROW_AMOUNT_ETH: u128 = 160u128 * 10u128.pow(ETH_DECIMALS); // 160 ETH
 
+        // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 

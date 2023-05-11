@@ -22,8 +22,8 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
     const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
-    const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
-    const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
+    const FIRST_DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
+    const SECOND_DEPOSIT_AMOUNT_ETH: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
     const INTEREST_RATE_DECIMALS: u32 = 18;
 
@@ -99,7 +99,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         Addr::unchecked("user"),
         addr.clone(),
         &ExecuteMsg::Deposit {},
-        &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
+        &coins(FIRST_DEPOSIT_AMOUNT_ETH, "eth"),
     )
     .unwrap();
 
@@ -114,7 +114,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.balance.u128(), FIRST_DEPOSIT_AMOUNT);
+    assert_eq!(user_deposited_balance.balance.u128(), FIRST_DEPOSIT_AMOUNT_ETH);
 
     assert_eq!(
         app.wrap()
@@ -122,7 +122,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             .unwrap()
             .amount
             .u128(),
-        INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
+        INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT_ETH
     );
 
     assert_eq!(
@@ -131,14 +131,14 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             .unwrap()
             .amount
             .u128(),
-        CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT
+        CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT_ETH
     );
 
     app.execute_contract(
         Addr::unchecked("user"),
         addr.clone(),
         &ExecuteMsg::Deposit {},
-        &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
+        &coins(SECOND_DEPOSIT_AMOUNT_ETH, "eth"),
     )
     .unwrap();
 
@@ -155,7 +155,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
 
     assert_eq!(
         user_deposited_balance.balance.u128(),
-        FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
+        FIRST_DEPOSIT_AMOUNT_ETH + SECOND_DEPOSIT_AMOUNT_ETH
     );
 
     assert_eq!(
@@ -164,7 +164,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             .unwrap()
             .amount
             .u128(),
-        INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT - SECOND_DEPOSIT_AMOUNT
+        INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT_ETH - SECOND_DEPOSIT_AMOUNT_ETH
     );
 
     assert_eq!(
@@ -173,7 +173,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             .unwrap()
             .amount
             .u128(),
-        CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
+        CONTRACT_RESERVES + FIRST_DEPOSIT_AMOUNT_ETH + SECOND_DEPOSIT_AMOUNT_ETH
     );
 
     (app, addr)
