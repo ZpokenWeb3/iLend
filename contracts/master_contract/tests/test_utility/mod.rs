@@ -13,3 +13,4 @@ mod test_get_utilization_rate_by_token;
 mod test_get_total_borrowed_by_token;
 mod test_get_total_reserves_by_token;
 mod test_get_total_deposited_by_token;
+mod test_get_available_to_borrow;

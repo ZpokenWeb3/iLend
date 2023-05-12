@@ -744,8 +744,6 @@ pub mod query {
         GetBalanceResponse,
         GetSupportedTokensResponse,
         GetTokensInterestRateModelParamsResponse,
-        GetUserBorrowedUsdResponse,
-        GetUserDepositedUsdResponse,
         TotalBorrowData,
         UserBorrowingInfo,
     };
@@ -1055,7 +1053,7 @@ pub mod query {
         deps: Deps,
         env: Env,
         user: String,
-    ) -> StdResult<GetUserDepositedUsdResponse> {
+    ) -> StdResult<Uint128> {
         let mut user_deposited_usd = 0u128;
 
         for token in get_supported_tokens(deps).unwrap().supported_tokens {
@@ -1085,9 +1083,7 @@ pub mod query {
                     .unwrap()
         }
 
-        Ok(GetUserDepositedUsdResponse {
-            user_deposited_usd: Uint128::from(user_deposited_usd),
-        })
+        Ok(Uint128::from(user_deposited_usd))
     }
 
     pub fn get_user_collateral_usd(
@@ -1140,7 +1136,7 @@ pub mod query {
         deps: Deps,
         env: Env,
         user: String,
-    ) -> StdResult<GetUserBorrowedUsdResponse> {
+    ) -> StdResult<Uint128> {
         let mut user_borrowed_usd = 0u128;
         for token in get_supported_tokens(deps).unwrap().supported_tokens {
             let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
@@ -1173,9 +1169,7 @@ pub mod query {
                     .unwrap()
         }
 
-        Ok(GetUserBorrowedUsdResponse {
-            user_borrowed_usd: Uint128::from(user_borrowed_usd),
-        })
+        Ok(Uint128::from(user_borrowed_usd))
     }
 
     pub fn get_available_liquidity_by_token(
@@ -1211,7 +1205,6 @@ pub mod query {
 
         let sum_user_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
             .unwrap()
-            .user_borrowed_usd
             .u128();
 
         if max_allowed_borrow_amount_usd > sum_user_borrow_balance_usd {
@@ -1277,7 +1270,6 @@ pub mod query {
 
                 let sum_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
                     .unwrap()
-                    .user_borrowed_usd
                     .u128();
 
                 let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;

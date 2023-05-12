@@ -91,13 +91,13 @@ pub enum QueryMsg {
     #[returns(Uint128)]
     GetMmTokenPrice { denom: String },
 
-    #[returns(GetUserDepositedUsdResponse)]
+    #[returns(Uint128)]
     GetUserDepositedUsd { address: String },
 
     #[returns(Uint128)]
     GetUserCollateralUsd { address: String },
 
-    #[returns(GetUserBorrowedUsdResponse)]
+    #[returns(Uint128)]
     GetUserBorrowedUsd { address: String },
 
     #[returns(Uint128)]
@@ -128,16 +128,6 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct GetBalanceResponse {
     pub balance: Uint128,
-}
-
-#[cw_serde]
-pub struct GetUserDepositedUsdResponse {
-    pub user_deposited_usd: Uint128,
-}
-
-#[cw_serde]
-pub struct GetUserBorrowedUsdResponse {
-    pub user_borrowed_usd: Uint128,
 }
 
 #[cw_serde]

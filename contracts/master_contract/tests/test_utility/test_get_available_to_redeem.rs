@@ -8,8 +8,7 @@ mod tests {
     use cw_multi_test::Executor;
     use master_contract::msg::{
         ExecuteMsg,
-        QueryMsg,
-        GetUserDepositedUsdResponse
+        QueryMsg
     };
 
     #[test]
@@ -18,10 +17,10 @@ mod tests {
         // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
-        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
-        const BORROW_AMOUNT_ATOM: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const TOKENS_DECIMALS: u32 = 18;
+        const BORROW_AMOUNT_ATOM: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS); // 1000 ATOM
 
-        let user_deposited_usd: GetUserDepositedUsdResponse = app
+        let user_deposited_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -32,7 +31,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            user_deposited_usd.user_deposited_usd.u128(),
+            user_deposited_usd.u128(),
             40300000000000 // 300 ATOM * 10$ + 200 ETH * 2000$ = 403000$
         );
 
