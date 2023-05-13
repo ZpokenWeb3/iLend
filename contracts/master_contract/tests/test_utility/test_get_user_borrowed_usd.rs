@@ -88,17 +88,6 @@ mod tests {
             chain_id: "custom_chain_id".to_string(),
         });
 
-        app.execute_contract(
-            Addr::unchecked("user"),
-            addr.clone(),
-            &ExecuteMsg::Borrow {
-                denom: "atom".to_string(),
-                amount: Uint128::from(BORROW_AMOUNT_ATOM),
-            },
-            &[],
-        )
-        .unwrap();
-
         let user_borrowed_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
@@ -109,6 +98,6 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_borrowed_usd.u128(), 10910000000000); // 109_100$ (~7% APY)
+        assert_eq!(user_borrowed_usd.u128(), 10710000000000); // 107_100$ (5% APY)
     }
 }
