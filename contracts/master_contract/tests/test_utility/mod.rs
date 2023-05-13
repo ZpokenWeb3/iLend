@@ -16,3 +16,4 @@ mod test_get_total_deposited_by_token;
 mod test_get_available_to_borrow;
 mod test_get_available_liquidity_by_token;
 mod test_get_user_borrowed_usd;
+mod test_get_user_deposited_usd;
