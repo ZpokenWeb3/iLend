@@ -9,8 +9,8 @@ mod tests {
 
     #[test]
     fn test_get_liquidity_rate() {
-        // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
-        // so that FIRST_DEPOSIT_AMOUNT is remaining
+        // contract reserves: 1000 ETH and 1000 ATOM
+        // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
@@ -47,7 +47,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(get_liquidity_rate_atom.u128(), 1499999999550000000);
+        assert_eq!(get_liquidity_rate_atom.u128(), 1153846153846153846); // ~1.154%
         assert_eq!(get_liquidity_rate_eth.u128(), 0);
     }
 }

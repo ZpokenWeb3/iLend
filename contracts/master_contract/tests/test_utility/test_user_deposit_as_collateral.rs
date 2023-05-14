@@ -12,7 +12,6 @@ mod tests {
     use master_contract::msg::{
         ExecuteMsg,
         QueryMsg,
-        GetUserDepositedUsdResponse,
         GetBalanceResponse
     };
 
@@ -99,6 +98,7 @@ mod tests {
         const DEPOSIT_AMOUNT_ATOM: u128 = 500000u128 * 10u128.pow(ATOM_DECIMALS); // 500000 ATOM
         const BORROW_AMOUNT_ETH: u128 = 160u128 * 10u128.pow(ETH_DECIMALS); // 160 ETH
 
+        // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
@@ -146,7 +146,7 @@ mod tests {
 
         assert_eq!(user_deposited_balance_eth.balance.u128(), 200000000000000000000); // 200 ETH
 
-        let sum_collateral_balance_usd: GetUserDepositedUsdResponse = app
+        let sum_collateral_balance_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
@@ -156,7 +156,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(sum_collateral_balance_usd.user_deposited_usd.u128(), 540300000000000); // 500300 ATOM * 10 + 200 ETH * 2000 = 5003000$ + 400000$ = 5403000$
+        assert_eq!(sum_collateral_balance_usd.u128(), 540300000000000); // 500300 ATOM * 10 + 200 ETH * 2000 = 5003000$ + 400000$ = 5403000$
 
         let available_to_borrow_eth: Uint128 = app
             .wrap()

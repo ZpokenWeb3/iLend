@@ -61,8 +61,8 @@ pub enum QueryMsg {
     #[returns(bool)]
     UserDepositAsCollateral { address: String, denom: String },
 
-    #[returns(GetBorrowAmountWithInterestResponse)]
-    GetBorrowAmountWithInterest { address: String, denom: String },
+    #[returns(Uint128)]
+    GetUserBorrowAmountWithInterest { address: String, denom: String },
 
     #[returns(UserBorrowingInfo)]
     GetUserBorrowingInfo { address: String, denom: String },
@@ -91,17 +91,17 @@ pub enum QueryMsg {
     #[returns(Uint128)]
     GetMmTokenPrice { denom: String },
 
-    #[returns(GetUserDepositedUsdResponse)]
+    #[returns(Uint128)]
     GetUserDepositedUsd { address: String },
 
     #[returns(Uint128)]
     GetUserCollateralUsd { address: String },
 
-    #[returns(GetUserBorrowedUsdResponse)]
+    #[returns(Uint128)]
     GetUserBorrowedUsd { address: String },
 
     #[returns(Uint128)]
-    GetContractBalance { denom: String },
+    GetUserUtilizationRate { address: String },
 
     #[returns(Uint128)]
     GetAvailableToBorrow { address: String, denom: String },
@@ -131,24 +131,6 @@ pub enum QueryMsg {
 #[cw_serde]
 pub struct GetBalanceResponse {
     pub balance: Uint128,
-}
-
-#[cw_serde]
-pub struct GetBorrowAmountWithInterestResponse {
-    pub amount: Uint128,
-    pub base: Uint128,
-    pub exponent: Uint128,
-    pub average_interest_rate: Uint128,
-}
-
-#[cw_serde]
-pub struct GetUserDepositedUsdResponse {
-    pub user_deposited_usd: Uint128,
-}
-
-#[cw_serde]
-pub struct GetUserBorrowedUsdResponse {
-    pub user_borrowed_usd: Uint128,
 }
 
 #[cw_serde]
@@ -217,4 +199,6 @@ pub struct TotalBorrowData {
     pub denom: String,
     pub total_borrowed_amount: u128,
     pub expected_annual_interest_income: u128,
+    pub average_interest_rate: u128,
+    pub timestamp: Timestamp,
 }

@@ -5,8 +5,10 @@ mod tests {
         coins,
         Addr,
         BlockInfo,
-        Timestamp
+        Timestamp,
+        Uint128
     };
+
     use cw_multi_test::{
         App,
         ContractWrapper,
@@ -14,16 +16,15 @@ mod tests {
     };
     use std::vec;
 
-    use cosmwasm_std::Uint128;
     use master_contract::msg::{
         ExecuteMsg,
         GetBalanceResponse,
-        GetBorrowAmountWithInterestResponse,
         InstantiateMsg,
         QueryMsg,
         TotalBorrowData,
     };
     use master_contract::{execute, instantiate, query};
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
     fn test_successful_deposits_of_one_token() {
@@ -226,9 +227,11 @@ mod tests {
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
         );
 
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+
         app.set_block(BlockInfo {
             height: 0,
-            time: Timestamp::from_seconds(0),
+            time: Timestamp::from_seconds(now),
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -253,7 +256,7 @@ mod tests {
 
         app.set_block(BlockInfo {
             height: 0,
-            time: Timestamp::from_seconds(31536000),
+            time: Timestamp::from_seconds(now + 31536000),
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -287,11 +290,11 @@ mod tests {
             )
             .unwrap();
 
-        let borrow_amount_with_interest: GetBorrowAmountWithInterestResponse = app
+        let borrow_amount_with_interest: Uint128 = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetBorrowAmountWithInterest {
+                &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "owner".to_string(),
                     denom: "eth".to_string(),
                 },
