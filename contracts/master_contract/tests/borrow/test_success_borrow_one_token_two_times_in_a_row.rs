@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     //     use super::*;
-    use crate::utils::success_deposit_of_diff_token_with_prices;
+    use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
     use cosmwasm_std::{
         Addr,
         //         BlockInfo,
@@ -22,7 +22,7 @@ mod tests {
     fn test_sucess() {
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
                                                                                          //         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const INIT_BALANCE_SECOND_TOKEN: u128 = 1_000_000 * DECIMAL_FRACTIONAL.u128(); // 1М ATOM
 
         //         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
         const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
@@ -40,7 +40,7 @@ mod tests {
         second borrowed atom 200 * 10 = 2_000 $
         */
 
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("user"),

@@ -184,6 +184,26 @@ mod tests {
         )
         .unwrap();
 
+        app.execute_contract(
+            Addr::unchecked("user"),
+            addr.clone(),
+            &ExecuteMsg::ToggleCollateralSetting {
+                denom: "eth".to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
+        app.execute_contract(
+            Addr::unchecked("owner"),
+            addr.clone(),
+            &ExecuteMsg::ToggleCollateralSetting {
+                denom: "eth".to_string(),
+            },
+            &[],
+        )
+        .unwrap();
+
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(

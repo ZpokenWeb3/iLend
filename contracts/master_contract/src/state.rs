@@ -14,6 +14,15 @@ Key: (user_address_1, token_B) -> Value: balance_for_token_B
 Key: (user_address_2, token_A) -> Value: balance_for_token_A
  */
 
+pub const USER_DEPOSIT_AS_COLLATERAL: Map<(String, String), bool> =
+    Map::new("user_deposit_as_collateral");
+/*
+USER_DEPOSIT_AS_COLLATERAL STORAGE
+Key: (user_address_1, token_A) -> Value: user_deposit_as_collateral
+Key: (user_address_1, token_B) -> Value: user_deposit_as_collateral
+Key: (user_address_2, token_A) -> Value: user_deposit_as_collateral
+ */
+
 pub const USER_BORROWED_BALANCE: Map<(String, String), Uint128> = Map::new("user_borrowed_balance");
 /*
 USER_BORROWED_BALANCE STORAGE
