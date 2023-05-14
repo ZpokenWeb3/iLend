@@ -172,8 +172,9 @@ mod tests {
             .unwrap();
 
         // interest accrued for the year and included in total reserves
-        // TODO: check why so little
-        assert_eq!(total_reserves_by_token_eth.u128(), 1230005000000000000000); // 1230.005 ETH
-        assert_eq!(total_reserves_by_token_atom.u128(), 1700100000000000000000); // 1700.1 ATOM
+        // 1230 ETH + 10 ETH * 5% borrow APY = 1230 ETH + 0.5 ETH = 1230.5 ETH
+        assert_eq!(total_reserves_by_token_eth.u128(), 1230500000000000000000);
+        // 1700 ATOM + 200 ATOM * 5% borrow APY = 1700 ATOM + 10 ATOM = 1710 ATOM
+        assert_eq!(total_reserves_by_token_atom.u128(), 1710000000000000000000);
     }
 }

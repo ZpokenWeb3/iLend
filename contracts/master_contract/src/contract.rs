@@ -483,7 +483,7 @@ pub fn execute(
                 - user_borrowing_info.borrowed_amount.u128()
                 + new_user_borrow_amount;
 
-            let total_average_interest_rate = Decimal::from_i128_with_scale(
+            let total_average_interest_rate = HUNDRED * Decimal::from_i128_with_scale(
                 expected_annual_interest_income as i128,
                 INTEREST_RATE_DECIMALS,
             )
@@ -668,7 +668,7 @@ pub fn execute(
 
             let mut total_average_interest_rate = 0u128;
             if total_borrowed_amount != 0u128 {
-                total_average_interest_rate = Decimal::from_i128_with_scale(
+                total_average_interest_rate = HUNDRED * Decimal::from_i128_with_scale(
                     expected_annual_interest_income as i128,
                     INTEREST_RATE_DECIMALS,
                 )

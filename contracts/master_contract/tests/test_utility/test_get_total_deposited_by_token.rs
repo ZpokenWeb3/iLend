@@ -178,7 +178,7 @@ mod tests {
             .unwrap();
 
         // interest accrued for the year is included in the total balance of deposits
-        assert!(total_deposited_by_token_eth.u128() > 230900000000000000000); // > 230.9 ETH (~0.4% liquidity rate)
-        assert!(total_deposited_by_token_atom.u128() > 710290000000000000000); // > 710.29 ATOM  (~1.47% liquidity rate)
+        assert!(total_deposited_by_token_eth.u128() > 230930000000000000000); // > 230.93 ETH (~0.4% liquidity rate)
+        assert!(total_deposited_by_token_atom.u128() > 710140000000000000000); // > 710.14 ATOM  (~1.45% liquidity rate)
     }
 }
