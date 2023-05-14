@@ -1,17 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        BlockInfo,
-        Timestamp
-    };
+    use cosmwasm_std::{Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -39,7 +31,10 @@ mod tests {
         // user hasn't borrowed anything yet
         assert_eq!(user_utilization_rate.u128(), 0);
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         app.set_block(BlockInfo {
             height: 0,

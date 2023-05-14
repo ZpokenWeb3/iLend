@@ -1,17 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        BlockInfo,
-        Timestamp
-    };
+    use cosmwasm_std::{Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -52,7 +44,10 @@ mod tests {
         assert_eq!(user_borrow_amount_with_interest_eth.u128(), 0);
         assert_eq!(user_borrow_amount_with_interest_atom.u128(), 0);
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         app.set_block(BlockInfo {
             height: 0,
@@ -104,8 +99,14 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_borrow_amount_with_interest_eth.u128(), 50000000000000000000); // 50 ETH
-        assert_eq!(user_borrow_amount_with_interest_atom.u128(), 200000000000000000000); // 200 ATOM
+        assert_eq!(
+            user_borrow_amount_with_interest_eth.u128(),
+            50000000000000000000
+        ); // 50 ETH
+        assert_eq!(
+            user_borrow_amount_with_interest_atom.u128(),
+            200000000000000000000
+        ); // 200 ATOM
 
         app.set_block(BlockInfo {
             height: 0,
@@ -136,8 +137,14 @@ mod tests {
             .unwrap();
 
         // 50 ETH + 5% borrow APY = 50 ETH + 2.5 ETH = 52.5 ETH
-        assert_eq!(user_borrow_amount_with_interest_eth.u128(), 52500000000000000000);
+        assert_eq!(
+            user_borrow_amount_with_interest_eth.u128(),
+            52500000000000000000
+        );
         // 200 ATOM + 5% borrow APY = 200 ATOM + 10 ATOM = 210 ATOM
-        assert_eq!(user_borrow_amount_with_interest_atom.u128(), 210000000000000000000);
+        assert_eq!(
+            user_borrow_amount_with_interest_atom.u128(),
+            210000000000000000000
+        );
     }
 }

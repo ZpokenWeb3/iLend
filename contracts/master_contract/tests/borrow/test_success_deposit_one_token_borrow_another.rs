@@ -1,18 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{
-        coin,
-        coins,
-        Addr,
-        Uint128
-    };
+    use cosmwasm_std::{coin, coins, Addr, Uint128};
     use cw_multi_test::{App, ContractWrapper, Executor};
-    use master_contract::msg::{
-        ExecuteMsg,
-        GetBalanceResponse,
-        InstantiateMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
 
     #[test]
@@ -229,10 +219,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(
-            user_deposited_balance.balance.u128(),
-            DEPOSIT_AMOUNT_ETH
-        );
+        assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_AMOUNT_ETH);
 
         assert_eq!(
             app.wrap()

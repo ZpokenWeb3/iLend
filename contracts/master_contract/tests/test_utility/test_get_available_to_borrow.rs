@@ -1,16 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        coins
-    };
+    use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
 
     #[test]
     fn test_get_available_to_borrow() {
@@ -63,8 +56,8 @@ mod tests {
 
         // user_collateral_usd * 0.8 / price = 403000$ * 0.8 / price = 322400$ / price
         assert_eq!(available_to_borrow_eth.u128(), 161200000000000000000); // 322400$ / 2000 == 161.2 ETH
-        // the amount of user deposits allow the user to borrow 322400$ / 10 == 32240 ATOM
-        // but the contract has only 1300 ATOM liquidity
+                                                                           // the amount of user deposits allow the user to borrow 322400$ / 10 == 32240 ATOM
+                                                                           // but the contract has only 1300 ATOM liquidity
         assert_eq!(available_to_borrow_atom.u128(), 1300000000000000000000); // 1300 ATOM
 
         app.execute_contract(
@@ -128,8 +121,8 @@ mod tests {
 
         // (user_deposited_usd * 0.8 - user_borrowed_usd) / price = (403000$ * 0.8 - 210000$) / price = 112400$ / price
         assert_eq!(available_to_borrow_eth.u128(), 56200000000000000000); // 112400$ / 2000 == 56.2 ETH
-        // the amount of user deposits allow the user to borrow 112400$ / 10 == 11240 ATOM
-        // but the contract has only 1300 ATOM - 1000 ATOM = 300 ATOM liquidity
+                                                                          // the amount of user deposits allow the user to borrow 112400$ / 10 == 11240 ATOM
+                                                                          // but the contract has only 1300 ATOM - 1000 ATOM = 300 ATOM liquidity
         assert_eq!(available_to_borrow_atom.u128(), 300000000000000000000); // 300 ATOM
 
         app.execute_contract(
@@ -187,8 +180,8 @@ mod tests {
 
         // (user_deposited_usd * 0.8 - user_borrowed_usd) / price = (467000$ * 0.8 - 210000$) / price = 163600$ / price
         assert_eq!(available_to_borrow_eth.u128(), 81800000000000000000); // 163600$ / 2000 == 81.8 ETH
-        // the amount of user deposits allow the user to borrow 163600$ / 10 == 16360 ATOM
-        // but the contract has only 1300 ATOM - 1000 ATOM + 400 ATOM = 700 ATOM liquidity
+                                                                          // the amount of user deposits allow the user to borrow 163600$ / 10 == 16360 ATOM
+                                                                          // but the contract has only 1300 ATOM - 1000 ATOM + 400 ATOM = 700 ATOM liquidity
         assert_eq!(available_to_borrow_atom.u128(), 700000000000000000000); // 700 ATOM
     }
 }

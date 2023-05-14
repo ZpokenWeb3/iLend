@@ -1,18 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        coins,
-        BlockInfo,
-        Timestamp
-    };
+    use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -52,7 +43,10 @@ mod tests {
         assert_eq!(total_reserves_by_token_eth.u128(), 1200000000000000000000); // 1000 ETH + 200 ETH = 1200 ETH
         assert_eq!(total_reserves_by_token_atom.u128(), 1300000000000000000000); // 1000 ATOM + 300 ATOM = 1300 ATOM
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         app.set_block(BlockInfo {
             height: 0,

@@ -1,16 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-    };
+    use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        GetBalanceResponse,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
 
     #[test]
     fn test_sucess() {
@@ -92,10 +85,7 @@ mod tests {
             )
             .unwrap();
         //
-        assert_eq!(
-            user_borrowed_balance.u128(),
-            BORROW_SECOND_TOKEN_FIRST_PART
-        );
+        assert_eq!(user_borrowed_balance.u128(), BORROW_SECOND_TOKEN_FIRST_PART);
 
         assert_eq!(
             app.wrap()

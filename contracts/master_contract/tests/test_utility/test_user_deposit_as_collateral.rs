@@ -3,17 +3,9 @@ mod tests {
     //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
     //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        coins
-    };
+    use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-        GetBalanceResponse
-    };
+    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
 
     #[test]
     fn test_user_deposit_as_collateral() {
@@ -90,7 +82,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "The collateral has already using to collateralise the borrowing. Not enough available balance")]
+    #[should_panic(
+        expected = "The collateral has already using to collateralise the borrowing. Not enough available balance"
+    )]
     fn test_fail_toggle_collateral_setting_when_not_enough_available_balance() {
         const ATOM_DECIMALS: u32 = 18;
         const ETH_DECIMALS: u32 = 18;
@@ -131,7 +125,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_atom.balance.u128(), 500300000000000000000000); // 500300 ATOM
+        assert_eq!(
+            user_deposited_balance_atom.balance.u128(),
+            500300000000000000000000
+        ); // 500300 ATOM
 
         let user_deposited_balance_eth: GetBalanceResponse = app
             .wrap()
@@ -144,7 +141,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_eth.balance.u128(), 200000000000000000000); // 200 ETH
+        assert_eq!(
+            user_deposited_balance_eth.balance.u128(),
+            200000000000000000000
+        ); // 200 ETH
 
         let sum_collateral_balance_usd: Uint128 = app
             .wrap()
@@ -180,7 +180,8 @@ mod tests {
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
             },
             &[],
-        ).unwrap();
+        )
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -189,6 +190,7 @@ mod tests {
                 denom: "eth".to_string(),
             },
             &[],
-        ).unwrap();
+        )
+        .unwrap();
     }
 }

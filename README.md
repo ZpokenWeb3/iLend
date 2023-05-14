@@ -11,7 +11,7 @@ i-Lend is a decentralized finance protocol developed on the Injective network. I
 
 |                       | description                                                | contract's link                                                                                 |
 |-----------------------|------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| master contract | operating all the core logic and storing users information | https://testnet.explorer.injective.network/contract/inj10fmfw732eslzgsf9v56ackpsvjfguffanexlps/ |
+| master contract | operating all the core logic and storing users information | https://testnet.explorer.injective.network/contract/inj1gmk2w8mqcwwm4rwlqthksuyqvk3vnwu5vj05pt/ |
 
 
 
@@ -53,7 +53,7 @@ To run the project you need:
 
 Make sure you have your injective address and i-lend contract set up
 - `readonly INJ_ADDRESS="YOUR_INJ_ADDRESS"`
-- `readonly CONTRACT="inj10fmfw732eslzgsf9v56ackpsvjfguffanexlps"`
+- `readonly CONTRACT="RESPECTIVE_CONTRACT_ADDR_FROM_TABLE_ABOVE"`
 - you can find respective supported tokens information above or via command
 ```
   GET_SUPPORTED_TOKENS_QUERY='{"get_supported_tokens": {}}'

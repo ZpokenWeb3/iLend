@@ -2,18 +2,9 @@
 mod tests {
     //     use super::*;
     use crate::utils::success_borrow_setup;
-    use cosmwasm_std::{
-        coins,
-        Addr,
-        BlockInfo,
-        Timestamp,
-        Uint128
-    };
+    use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -23,7 +14,10 @@ mod tests {
 
         let (mut app, addr) = success_borrow_setup();
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         app.set_block(BlockInfo {
             height: 542,

@@ -1,25 +1,9 @@
-use cosmwasm_std::{
-    coin,
-    coins,
-    Addr,
-    BlockInfo,
-    Timestamp
-};
-use cw_multi_test::{
-    App,
-    BasicApp,
-    ContractWrapper,
-    Executor
-};
+use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp};
+use cw_multi_test::{App, BasicApp, ContractWrapper, Executor};
 use std::vec;
 
 use cosmwasm_std::Uint128;
-use master_contract::msg::{
-    ExecuteMsg,
-    GetBalanceResponse,
-    InstantiateMsg,
-    QueryMsg,
-};
+use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
 use master_contract::{execute, instantiate, query};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -121,7 +105,10 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(user_deposited_balance.balance.u128(), FIRST_DEPOSIT_AMOUNT_ETH);
+    assert_eq!(
+        user_deposited_balance.balance.u128(),
+        FIRST_DEPOSIT_AMOUNT_ETH
+    );
 
     assert_eq!(
         app.wrap()
@@ -351,10 +338,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(
-        user_deposited_balance.balance.u128(),
-        DEPOSIT_AMOUNT_ETH
-    );
+    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_AMOUNT_ETH);
 
     assert_eq!(
         app.wrap()
@@ -393,10 +377,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(
-        user_deposited_balance.balance.u128(),
-        DEPOSIT_AMOUNT_ATOM
-    );
+    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_AMOUNT_ATOM);
 
     assert_eq!(
         app.wrap()
@@ -611,7 +592,10 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     assert_eq!(get_price_atom.u128(), 1000000000); // 10$
     assert_eq!(get_price_eth.u128(), 200000000000); // 2000$
 
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
 
     app.set_block(BlockInfo {
         height: 0,
@@ -695,10 +679,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(
-        user_deposited_balance.balance.u128(),
-        DEPOSIT_AMOUNT_ETH
-    );
+    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_AMOUNT_ETH);
 
     assert_eq!(
         app.wrap()
@@ -743,10 +724,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         )
         .unwrap();
 
-    assert_eq!(
-        user_deposited_balance.balance.u128(),
-        DEPOSIT_AMOUNT_ATOM
-    );
+    assert_eq!(user_deposited_balance.balance.u128(), DEPOSIT_AMOUNT_ATOM);
 
     assert_eq!(
         app.wrap()

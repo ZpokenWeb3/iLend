@@ -1,16 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        coins
-    };
+    use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
 
     #[test]
     fn test_get_available_liquidity_by_token() {
@@ -44,8 +37,14 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(available_liquidity_by_token_eth.u128(), 1200000000000000000000); // 1000 ETH + 200 ETH = 1200 ETH
-        assert_eq!(available_liquidity_by_token_atom.u128(), 1300000000000000000000); // 1000 ATOM + 300 ATOM = 1300 ATOM
+        assert_eq!(
+            available_liquidity_by_token_eth.u128(),
+            1200000000000000000000
+        ); // 1000 ETH + 200 ETH = 1200 ETH
+        assert_eq!(
+            available_liquidity_by_token_atom.u128(),
+            1300000000000000000000
+        ); // 1000 ATOM + 300 ATOM = 1300 ATOM
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -89,8 +88,14 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(available_liquidity_by_token_eth.u128(), 1100000000000000000000); // 1200 ETH - 100 ETH = 1100 ETH
-        assert_eq!(available_liquidity_by_token_atom.u128(), 300000000000000000000); // 1300 ATOM - 1000 ATOM = 300 ATOM
+        assert_eq!(
+            available_liquidity_by_token_eth.u128(),
+            1100000000000000000000
+        ); // 1200 ETH - 100 ETH = 1100 ETH
+        assert_eq!(
+            available_liquidity_by_token_atom.u128(),
+            300000000000000000000
+        ); // 1300 ATOM - 1000 ATOM = 300 ATOM
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -128,7 +133,13 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(available_liquidity_by_token_eth.u128(), 1130000000000000000000); // 1100 ETH + 30 ETH = 1130 ETH
-        assert_eq!(available_liquidity_by_token_atom.u128(), 700000000000000000000); // 300 ATOM + 400 ATOM = 700 ATOM
+        assert_eq!(
+            available_liquidity_by_token_eth.u128(),
+            1130000000000000000000
+        ); // 1100 ETH + 30 ETH = 1130 ETH
+        assert_eq!(
+            available_liquidity_by_token_atom.u128(),
+            700000000000000000000
+        ); // 300 ATOM + 400 ATOM = 700 ATOM
     }
 }

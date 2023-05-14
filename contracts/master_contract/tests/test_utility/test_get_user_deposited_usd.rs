@@ -1,17 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        BlockInfo,
-        Timestamp
-    };
+    use cosmwasm_std::{Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -38,7 +30,10 @@ mod tests {
 
         assert_eq!(user_deposited_usd.u128(), 40300000000000); // 200 ETH * 2000 + 300 ATOM * 10 = 403_000$
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         app.set_block(BlockInfo {
             height: 0,

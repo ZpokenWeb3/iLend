@@ -3,16 +3,9 @@ mod tests {
     //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
     //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        coins
-    };
+    use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg};
 
     #[test]
     fn test_get_user_collateral_usd() {

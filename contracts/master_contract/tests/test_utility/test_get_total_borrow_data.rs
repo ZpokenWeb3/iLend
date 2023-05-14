@@ -1,18 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{
-        Addr,
-        Uint128,
-        BlockInfo,
-        Timestamp
-    };
+    use cosmwasm_std::{Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{
-        ExecuteMsg,
-        QueryMsg,
-        TotalBorrowData
-    };
+    use master_contract::msg::{ExecuteMsg, QueryMsg, TotalBorrowData};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -25,7 +16,10 @@ mod tests {
         // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         let total_borrow_data_eth: TotalBorrowData = app
             .wrap()
@@ -110,15 +104,39 @@ mod tests {
             .unwrap();
 
         assert_eq!(total_borrow_data_eth.denom, "eth");
-        assert_eq!(total_borrow_data_eth.total_borrowed_amount, 50000000000000000000); // 50 ETH
-        assert_eq!(total_borrow_data_eth.expected_annual_interest_income, 2500000000000000000); // 2.5 ETH (5% borrow APY)
-        assert_eq!(total_borrow_data_eth.average_interest_rate, 5000000000000000000); // 5%
-        assert_eq!(total_borrow_data_eth.timestamp, Timestamp::from_seconds(now));
+        assert_eq!(
+            total_borrow_data_eth.total_borrowed_amount,
+            50000000000000000000
+        ); // 50 ETH
+        assert_eq!(
+            total_borrow_data_eth.expected_annual_interest_income,
+            2500000000000000000
+        ); // 2.5 ETH (5% borrow APY)
+        assert_eq!(
+            total_borrow_data_eth.average_interest_rate,
+            5000000000000000000
+        ); // 5%
+        assert_eq!(
+            total_borrow_data_eth.timestamp,
+            Timestamp::from_seconds(now)
+        );
 
         assert_eq!(total_borrow_data_atom.denom, "atom");
-        assert_eq!(total_borrow_data_atom.total_borrowed_amount, 200000000000000000000); // 200 ETH
-        assert_eq!(total_borrow_data_atom.expected_annual_interest_income, 10000000000000000000); // 10 ETH (5% borrow APY)
-        assert_eq!(total_borrow_data_atom.average_interest_rate, 5000000000000000000); // 5%
-        assert_eq!(total_borrow_data_atom.timestamp, Timestamp::from_seconds(now));
+        assert_eq!(
+            total_borrow_data_atom.total_borrowed_amount,
+            200000000000000000000
+        ); // 200 ETH
+        assert_eq!(
+            total_borrow_data_atom.expected_annual_interest_income,
+            10000000000000000000
+        ); // 10 ETH (5% borrow APY)
+        assert_eq!(
+            total_borrow_data_atom.average_interest_rate,
+            5000000000000000000
+        ); // 5%
+        assert_eq!(
+            total_borrow_data_atom.timestamp,
+            Timestamp::from_seconds(now)
+        );
     }
 }

@@ -1,27 +1,12 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{
-        coin,
-        coins,
-        Addr,
-        BlockInfo,
-        Timestamp,
-        Uint128
-    };
+    use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp, Uint128};
 
-    use cw_multi_test::{
-        App,
-        ContractWrapper,
-        Executor
-    };
+    use cw_multi_test::{App, ContractWrapper, Executor};
     use std::vec;
 
     use master_contract::msg::{
-        ExecuteMsg,
-        GetBalanceResponse,
-        InstantiateMsg,
-        QueryMsg,
-        TotalBorrowData,
+        ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg, TotalBorrowData,
     };
     use master_contract::{execute, instantiate, query};
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -227,7 +212,10 @@ mod tests {
             INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT
         );
 
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
 
         app.set_block(BlockInfo {
             height: 0,
