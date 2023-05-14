@@ -4,7 +4,6 @@ mod tests {
     use cosmwasm_std::{
         Addr,
         Uint128,
-        coins,
         BlockInfo,
         Timestamp
     };
@@ -21,8 +20,6 @@ mod tests {
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS); // 50 ETH
         const BORROW_AMOUNT_ATOM: u128 = 200 * 10u128.pow(TOKENS_DECIMALS); // 200 ATOM
-
-        const YEAR_IN_SECONDS: u64 = 31536000;
 
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM

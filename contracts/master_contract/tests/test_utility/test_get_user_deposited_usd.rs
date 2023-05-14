@@ -4,7 +4,6 @@ mod tests {
     use cosmwasm_std::{
         Addr,
         Uint128,
-        coins,
         BlockInfo,
         Timestamp
     };
