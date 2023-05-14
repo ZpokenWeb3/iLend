@@ -3,6 +3,8 @@ use crate::contract::query::{
     get_available_to_borrow,
     get_available_to_redeem,
     get_user_borrow_amount_with_interest,
+    get_user_collateral_usd,
+    get_user_utilization_rate,
     get_current_liquidity_index_ln,
     get_interest_rate,
     get_liquidity_index_last_update,
@@ -20,7 +22,6 @@ use crate::contract::query::{
     get_user_borrowing_info,
     get_user_deposited_usd,
     get_utilization_rate_by_token,
-    get_user_collateral_usd,
     user_deposit_as_collateral
 };
 
@@ -770,6 +771,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetUserBorrowedUsd { address } => {
             to_binary(&get_user_borrowed_usd(deps, env, address)?)
         }
+        QueryMsg::GetUserUtilizationRate { address } => {
+            to_binary(&get_user_utilization_rate(deps, env, address)?)
+        }
         QueryMsg::GetAvailableToBorrow { address, denom } => {
             to_binary(&get_available_to_borrow(deps, env, address, denom)?)
         }
@@ -1497,16 +1501,34 @@ pub mod query {
             .u128();
 
         if reserves_by_token != 0 {
-            let token_decimals = get_token_decimal(deps, denom.clone())
-                .unwrap()
-                .u128() as u32;
-
             let borrowed_by_token = get_total_borrowed_by_token(deps, env, denom.clone())
                 .unwrap()
                 .u128();
 
             Ok(Uint128::from(
                 borrowed_by_token * HUNDRED_PERCENT / reserves_by_token,
+            ))
+        } else {
+            Ok(Uint128::from(0u128))
+        }
+    }
+
+    pub fn get_user_utilization_rate(
+        deps: Deps,
+        env: Env,
+        user: String,
+    ) -> StdResult<Uint128> {
+        let sum_collateral_balance_usd = get_user_collateral_usd(deps, env.clone(), user.clone())
+            .unwrap()
+            .u128();
+
+        if sum_collateral_balance_usd != 0 {
+            let sum_user_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
+                .unwrap()
+                .u128();
+
+            Ok(Uint128::from(
+                sum_user_borrow_balance_usd * HUNDRED_PERCENT / sum_collateral_balance_usd,
             ))
         } else {
             Ok(Uint128::from(0u128))

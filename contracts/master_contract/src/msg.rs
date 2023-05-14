@@ -101,6 +101,9 @@ pub enum QueryMsg {
     GetUserBorrowedUsd { address: String },
 
     #[returns(Uint128)]
+    GetUserUtilizationRate { address: String },
+
+    #[returns(Uint128)]
     GetAvailableToBorrow { address: String, denom: String },
 
     #[returns(Uint128)]

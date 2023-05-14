@@ -20,3 +20,4 @@ mod test_get_user_deposited_usd;
 mod test_get_total_borrow_data;
 mod test_get_user_borrowing_info;
 mod test_get_user_borrow_amount_with_interest;
+mod test_get_user_utilization_rate;
