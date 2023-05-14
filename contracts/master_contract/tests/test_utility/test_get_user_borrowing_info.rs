@@ -12,12 +12,12 @@ mod tests {
     use master_contract::msg::{
         ExecuteMsg,
         QueryMsg,
-        TotalBorrowData
+        UserBorrowingInfo
     };
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
-    fn test_get_total_borrow_data() {
+    fn test_get_user_borrowing_info() {
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS); // 50 ETH
         const BORROW_AMOUNT_ATOM: u128 = 200 * 10u128.pow(TOKENS_DECIMALS); // 200 ATOM
@@ -30,39 +30,39 @@ mod tests {
 
         let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
 
-        let total_borrow_data_eth: TotalBorrowData = app
+        let user_borrowing_info_eth: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetTotalBorrowData {
+                &QueryMsg::GetUserBorrowingInfo {
+                    address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
             )
             .unwrap();
-
-        let total_borrow_data_atom: TotalBorrowData = app
+            
+        let user_borrowing_info_atom: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetTotalBorrowData {
+                &QueryMsg::GetUserBorrowingInfo {
+                    address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
         // user hasn't borrowed anything yet
-        assert_eq!(total_borrow_data_eth.denom, "eth");
-        assert_eq!(total_borrow_data_eth.total_borrowed_amount, 0);
-        assert_eq!(total_borrow_data_eth.expected_annual_interest_income, 0);
-        assert_eq!(total_borrow_data_eth.average_interest_rate, 0);
-        assert!(total_borrow_data_eth.timestamp < Timestamp::from_seconds(now));
+        assert_eq!(user_borrowing_info_eth.borrowed_amount.u128(), 0);
+        // if borrowed_amount == 0 then returns the current interest rate (5%)
+        assert_eq!(user_borrowing_info_eth.average_interest_rate.u128(), 5000000000000000000);
+        assert!(user_borrowing_info_eth.timestamp < Timestamp::from_seconds(now));
 
         // user hasn't borrowed anything yet
-        assert_eq!(total_borrow_data_atom.denom, "atom");
-        assert_eq!(total_borrow_data_atom.total_borrowed_amount, 0);
-        assert_eq!(total_borrow_data_atom.expected_annual_interest_income, 0);
-        assert_eq!(total_borrow_data_atom.average_interest_rate, 0);
-        assert!(total_borrow_data_atom.timestamp < Timestamp::from_seconds(now));
+        assert_eq!(user_borrowing_info_atom.borrowed_amount.u128(), 0);
+        // if borrowed_amount == 0 then returns the current interest rate (5%)
+        assert_eq!(user_borrowing_info_atom.average_interest_rate.u128(), 5000000000000000000);
+        assert!(user_borrowing_info_atom.timestamp < Timestamp::from_seconds(now));
 
         app.set_block(BlockInfo {
             height: 0,
@@ -92,36 +92,34 @@ mod tests {
         )
         .unwrap();
 
-        let total_borrow_data_eth: TotalBorrowData = app
+        let user_borrowing_info_eth: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetTotalBorrowData {
+                &QueryMsg::GetUserBorrowingInfo {
+                    address: "user".to_string(),
                     denom: "eth".to_string(),
                 },
             )
             .unwrap();
 
-        let total_borrow_data_atom: TotalBorrowData = app
+        let user_borrowing_info_atom: UserBorrowingInfo = app
             .wrap()
             .query_wasm_smart(
                 addr.clone(),
-                &QueryMsg::GetTotalBorrowData {
+                &QueryMsg::GetUserBorrowingInfo {
+                    address: "user".to_string(),
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(total_borrow_data_eth.denom, "eth");
-        assert_eq!(total_borrow_data_eth.total_borrowed_amount, 50000000000000000000); // 50 ETH
-        assert_eq!(total_borrow_data_eth.expected_annual_interest_income, 2500000000000000000); // 2.5 ETH (5% borrow APY)
-        assert_eq!(total_borrow_data_eth.average_interest_rate, 5000000000000000000); // 5%
-        assert_eq!(total_borrow_data_eth.timestamp, Timestamp::from_seconds(now));
+        assert_eq!(user_borrowing_info_eth.borrowed_amount.u128(), 50000000000000000000); // 50 ETH
+        assert_eq!(user_borrowing_info_eth.average_interest_rate.u128(), 5000000000000000000); // 5%
+        assert_eq!(user_borrowing_info_eth.timestamp, Timestamp::from_seconds(now));
 
-        assert_eq!(total_borrow_data_atom.denom, "atom");
-        assert_eq!(total_borrow_data_atom.total_borrowed_amount, 200000000000000000000); // 200 ETH
-        assert_eq!(total_borrow_data_atom.expected_annual_interest_income, 10000000000000000000); // 10 ETH (5% borrow APY)
-        assert_eq!(total_borrow_data_atom.average_interest_rate, 5000000000000000000); // 5%
-        assert_eq!(total_borrow_data_atom.timestamp, Timestamp::from_seconds(now));
+        assert_eq!(user_borrowing_info_atom.borrowed_amount.u128(), 200000000000000000000); // 200 ATOM
+        assert_eq!(user_borrowing_info_atom.average_interest_rate.u128(), 5000000000000000000); // 5%
+        assert_eq!(user_borrowing_info_atom.timestamp, Timestamp::from_seconds(now));
     }
 }
