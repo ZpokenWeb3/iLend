@@ -31,6 +31,8 @@ mod tests {
         const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
+        const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
+
         const PRICE_DECIMALS: u32 = 8;
         const PRICE_ETH: u128 = 2000 * 10u128.pow(PRICE_DECIMALS);
         const PRICE_ATOM: u128 = 10 * 10u128.pow(PRICE_DECIMALS);
@@ -91,6 +93,7 @@ mod tests {
                             5000000000000000000,
                             20000000000000000000,
                             100000000000000000000,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                     ],
                 },
@@ -113,6 +116,7 @@ mod tests {
                 min_interest_rate: MIN_INTEREST_RATE,
                 safe_borrow_max_rate: SAFE_BORROW_MAX_RATE,
                 rate_growth_factor: RATE_GROWTH_FACTOR,
+                optimal_utilisation_ratio: OPTIMAL_UTILISATION_RATIO,
             },
             &[],
         )

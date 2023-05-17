@@ -13,8 +13,8 @@ pub struct InstantiateMsg {
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
     pub reserve_configuration: Vec<(String, u128, u128)>,
-    // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
-    pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
+    // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor, optimal_utilisation_ratio
+    pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128, u128)>,
 }
 
 #[cw_serde]
@@ -36,6 +36,7 @@ pub enum ExecuteMsg {
         min_interest_rate: u128,
         safe_borrow_max_rate: u128,
         rate_growth_factor: u128,
+        optimal_utilisation_ratio: u128,
     },
     AddMarkets {
         denom: String,
@@ -47,6 +48,7 @@ pub enum ExecuteMsg {
         min_interest_rate: u128,
         safe_borrow_max_rate: u128,
         rate_growth_factor: u128,
+        optimal_utilisation_ratio: u128,
     },
 
     // Deposit / Redeem functionality
@@ -217,6 +219,7 @@ pub struct TokenInterestRateModelParams {
     pub min_interest_rate: u128,
     pub safe_borrow_max_rate: u128,
     pub rate_growth_factor: u128,
+    pub optimal_utilisation_ratio: u128,
 }
 
 #[cw_serde]

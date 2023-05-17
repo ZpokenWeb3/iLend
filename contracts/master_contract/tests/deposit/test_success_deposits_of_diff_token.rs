@@ -32,6 +32,8 @@ mod tests {
         const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
         const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
+        const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
+
         let mut app = App::new(|router, _, storage| {
             router
                 .bank
@@ -99,12 +101,14 @@ mod tests {
                             MIN_INTEREST_RATE,
                             SAFE_BORROW_MAX_RATE,
                             RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                         (
                             "atom".to_string(),
                             MIN_INTEREST_RATE,
                             SAFE_BORROW_MAX_RATE,
                             RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                     ],
                 },

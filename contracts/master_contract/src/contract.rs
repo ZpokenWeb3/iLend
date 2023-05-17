@@ -45,7 +45,6 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const PERCENT_DECIMALS: u32 = 5;
 const HUNDRED_PERCENT: u128 = 100 * 10u128.pow(PERCENT_DECIMALS);
-const UTILIZATION_LIMIT: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
 
 const INTEREST_RATE_DECIMALS: u32 = 18;
 const INTEREST_RATE_MULTIPLIER: u128 = 10u128.pow(INTEREST_RATE_DECIMALS);
@@ -141,6 +140,7 @@ pub fn instantiate(
                 min_interest_rate: params.1,
                 safe_borrow_max_rate: params.2,
                 rate_growth_factor: params.3,
+                optimal_utilisation_ratio: params.4,
             },
         )?;
     }
@@ -302,6 +302,7 @@ pub fn execute(
             min_interest_rate,
             safe_borrow_max_rate,
             rate_growth_factor,
+            optimal_utilisation_ratio,
         } => {
             assert!(
                 !SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
@@ -337,6 +338,7 @@ pub fn execute(
                     min_interest_rate,
                     safe_borrow_max_rate,
                     rate_growth_factor,
+                    optimal_utilisation_ratio,
                 },
             )?;
 
@@ -561,7 +563,8 @@ pub fn execute(
             denom,
             min_interest_rate,
             safe_borrow_max_rate,
-            rate_growth_factor
+            rate_growth_factor,
+            optimal_utilisation_ratio,
         } => {
             assert_eq!(
                 info.sender.to_string(),
@@ -582,6 +585,7 @@ pub fn execute(
                     min_interest_rate,
                     safe_borrow_max_rate,
                     rate_growth_factor,
+                    optimal_utilisation_ratio,
                 },
             )?;
 
@@ -1124,18 +1128,22 @@ pub mod query {
             .load(deps.storage, denom.clone())
             .unwrap()
             .rate_growth_factor;
+        let optimal_utilisation_ratio = TOKENS_INTEREST_RATE_MODEL_PARAMS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .optimal_utilisation_ratio;
 
-        if utilization_rate <= UTILIZATION_LIMIT {
+        if utilization_rate <= optimal_utilisation_ratio {
             Ok(Uint128::from(
                 min_interest_rate
                     + utilization_rate * (safe_borrow_max_rate - min_interest_rate)
-                        / UTILIZATION_LIMIT,
+                        / optimal_utilisation_ratio,
             ))
         } else {
             Ok(Uint128::from(
                 safe_borrow_max_rate
-                    + rate_growth_factor * (utilization_rate - UTILIZATION_LIMIT)
-                        / (HUNDRED_PERCENT - UTILIZATION_LIMIT),
+                    + rate_growth_factor * (utilization_rate - optimal_utilisation_ratio)
+                        / (HUNDRED_PERCENT - optimal_utilisation_ratio),
             ))
         }
     }

@@ -27,6 +27,8 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
     const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
+    const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
+
     let mut app = App::new(|router, _, storage| {
         router
             .bank
@@ -88,12 +90,14 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     ),
                     (
                         "atom".to_string(),
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     ),
                 ],
             },
@@ -213,6 +217,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
     const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
+    const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
+
     const PRICE_DECIMALS: u32 = 8;
     const PRICE_ETH: u128 = 2000 * 10u128.pow(PRICE_DECIMALS);
     const PRICE_ATOM: u128 = 10 * 10u128.pow(PRICE_DECIMALS);
@@ -284,12 +290,14 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     ),
                     (
                         "atom".to_string(),
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     ),
                 ],
             },
@@ -505,6 +513,8 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
     const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
+    const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
+
     const PRICE_DECIMALS: u32 = 8;
     const PRICE_ETH: u128 = 2000 * 10u128.pow(PRICE_DECIMALS);
     const PRICE_ATOM: u128 = 10 * 10u128.pow(PRICE_DECIMALS);
@@ -576,12 +586,14 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     ),
                     (
                         "atom".to_string(),
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     ),
                 ],
             },
