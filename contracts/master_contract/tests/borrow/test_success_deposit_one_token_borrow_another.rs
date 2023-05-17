@@ -211,12 +211,11 @@ mod tests {
             )
             .unwrap();
 
-        // sum_collateral_balance_usd = DEPOSIT_AMOUNT_ETH * PRICE_ETH = 200 ETH * 2000 = 400000$
-        // max_allowed_borrow_amount_usd = sum_collateral_balance_usd * 0.8 = 400000$ * 0.8 = 320000$
-        // user_available_to_borrow_eth = max_allowed_borrow_amount_usd / PRICE_ETH = 320000$ / 2000 = 160 ETH
+        // max_allowed_borrow_amount_usd = DEPOSIT_AMOUNT_ETH * PRICE_ETH * LTV_ETH = 200 ETH * 2000 * 0,85 = 340000$
+        // user_available_to_borrow_eth = max_allowed_borrow_amount_usd / PRICE_ETH = 340000$ / 2000 = 170 ETH
         assert_eq!(
             user_available_to_borrow_eth.u128(),
-            160000000000000000000 // 160 ETH
+            170000000000000000000 // 170 ETH
         );
 
         // user_available_to_borrow_atom = max_allowed_borrow_amount_usd / PRICE_ATOM = 320000$ / 10 = 32000 ATOM

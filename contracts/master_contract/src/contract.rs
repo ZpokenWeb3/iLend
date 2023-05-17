@@ -2,7 +2,7 @@ use crate::contract::query::{
     get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem,
     get_current_liquidity_index_ln, get_interest_rate, get_liquidity_index_last_update,
     get_liquidity_rate, get_mm_token_price, get_price, get_supported_tokens, get_token_decimal,
-    get_reserve_configuration,
+    get_reserve_configuration, get_user_liquidation_threshold,
     get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token,
     get_total_deposited_by_token, get_total_reserves_by_token,
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
@@ -821,6 +821,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetUserUtilizationRate { address } => {
             to_binary(&get_user_utilization_rate(deps, env, address)?)
         }
+        QueryMsg::GetUserLiquidationThreshold { address } => {
+            to_binary(&get_user_liquidation_threshold(deps, env, address)?)
+        }
         QueryMsg::GetAvailableToBorrow { address, denom } => {
             to_binary(&get_available_to_borrow(deps, env, address, denom)?)
         }
@@ -1277,6 +1280,96 @@ pub mod query {
         Ok(liquidity)
     }
 
+    pub fn get_user_liquidation_threshold(
+        deps: Deps,
+        env: Env,
+        user: String,
+    ) -> StdResult<Uint128> {
+        // the minimum borrowing amount in USD, upon reaching which the user's loan positions are liquidated
+        let mut liquidation_threshold_borrow_amount_usd = 0u128;
+        let mut user_collateral_usd = 0u128;
+
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
+            let use_user_deposit_as_collateral =
+                user_deposit_as_collateral(deps, user.clone(), token.denom.clone()).unwrap();
+
+            if use_user_deposit_as_collateral {
+                let user_deposit =
+                    get_deposit(deps, env.clone(), user.clone(), token.denom.clone())
+                        .unwrap()
+                        .balance
+                        .u128();
+
+                let liquidation_threshold = RESERVE_CONFIGURATION
+                    .load(deps.storage, token.denom.clone())
+                    .unwrap()
+                    .liquidation_threshold;
+
+                let token_decimals =
+                    get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
+
+                let price = get_price(deps, token.denom.clone()).unwrap().u128();
+
+                let user_deposit_usd = Decimal::from_i128_with_scale(
+                    user_deposit as i128,
+                    token_decimals
+                )
+                    .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                    .to_u128_with_decimals(USD_DECIMALS)
+                    .unwrap();
+
+                liquidation_threshold_borrow_amount_usd += user_deposit_usd * liquidation_threshold / HUNDRED_PERCENT;
+                user_collateral_usd += user_deposit_usd;
+            }
+        }
+
+        Ok(Uint128::from(liquidation_threshold_borrow_amount_usd * HUNDRED_PERCENT / user_collateral_usd))
+    }
+
+    pub fn get_user_max_allowed_borrow_amount_usd(
+        deps: Deps,
+        env: Env,
+        user: String,
+    ) -> StdResult<Uint128> {
+        // the maximum amount in USD that a user can borrow
+        let mut max_allowed_borrow_amount_usd = 0u128;
+
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
+            let use_user_deposit_as_collateral =
+                user_deposit_as_collateral(deps, user.clone(), token.denom.clone()).unwrap();
+
+            if use_user_deposit_as_collateral {
+                let user_deposit =
+                    get_deposit(deps, env.clone(), user.clone(), token.denom.clone())
+                        .unwrap()
+                        .balance
+                        .u128();
+
+                let loan_to_value_ratio = RESERVE_CONFIGURATION
+                    .load(deps.storage, token.denom.clone())
+                    .unwrap()
+                    .loan_to_value_ratio;
+
+                let token_decimals =
+                    get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
+
+                let price = get_price(deps, token.denom.clone()).unwrap().u128();
+
+                let user_deposit_usd = Decimal::from_i128_with_scale(
+                    user_deposit as i128,
+                    token_decimals
+                )
+                    .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                    .to_u128_with_decimals(USD_DECIMALS)
+                    .unwrap();
+
+                max_allowed_borrow_amount_usd += user_deposit_usd * loan_to_value_ratio / HUNDRED_PERCENT;
+            }
+        }
+
+        Ok(Uint128::from(max_allowed_borrow_amount_usd))
+    }
+
     pub fn get_available_to_borrow(
         deps: Deps,
         env: Env,
@@ -1285,12 +1378,10 @@ pub mod query {
     ) -> StdResult<Uint128> {
         let mut available_to_borrow = 0u128;
 
-        let sum_collateral_balance_usd = get_user_collateral_usd(deps, env.clone(), user.clone())
+        // maximum amount allowed for borrowing
+        let max_allowed_borrow_amount_usd = get_user_max_allowed_borrow_amount_usd(deps, env.clone(), user.clone())
             .unwrap()
             .u128();
-
-        // maximum amount allowed for borrowing
-        let max_allowed_borrow_amount_usd = sum_collateral_balance_usd * 8u128 / 10u128;
 
         let sum_user_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
             .unwrap()
@@ -1349,7 +1440,11 @@ pub mod query {
                     .unwrap()
                     .u128();
 
-                let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;
+                let user_liquidation_threshold = get_user_liquidation_threshold(deps, env.clone(), user.clone())
+                    .unwrap()
+                    .u128();
+
+                let required_collateral_balance_usd = sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold;
 
                 let token_liquidity =
                     get_available_liquidity_by_token(deps, env.clone(), denom.clone())

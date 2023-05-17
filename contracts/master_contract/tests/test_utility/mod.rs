@@ -22,3 +22,4 @@ mod test_get_utilization_rate_by_token;
 mod test_set_get_price;
 mod test_user_deposit_as_collateral;
 mod test_get_reserve_configuration;
+mod test_get_user_liquidation_threshold;

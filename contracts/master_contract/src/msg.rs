@@ -122,6 +122,9 @@ pub enum QueryMsg {
     GetUserUtilizationRate { address: String },
 
     #[returns(Uint128)]
+    GetUserLiquidationThreshold { address: String },
+
+    #[returns(Uint128)]
     GetAvailableToBorrow { address: String, denom: String },
 
     #[returns(Uint128)]

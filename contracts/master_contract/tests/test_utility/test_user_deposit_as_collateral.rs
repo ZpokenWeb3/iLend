@@ -94,6 +94,7 @@ mod tests {
 
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
+        // LTV_ETH = 85%
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
@@ -128,7 +129,7 @@ mod tests {
         assert_eq!(
             user_deposited_balance_atom.balance.u128(),
             500300000000000000000000
-        ); // 500300 ATOM
+        ); // 500000 ATOM + 300 ATOM = 500300 ATOM
 
         let user_deposited_balance_eth: GetBalanceResponse = app
             .wrap()
@@ -156,7 +157,8 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(sum_collateral_balance_usd.u128(), 540300000000000); // 500300 ATOM * 10 + 200 ETH * 2000 = 5003000$ + 400000$ = 5403000$
+        // 500300 ATOM * 10 + 200 ETH * 2000 = 5003000$ + 400000$ = 5403000$
+        assert_eq!(sum_collateral_balance_usd.u128(), 540300000000000);
 
         let available_to_borrow_eth: Uint128 = app
             .wrap()
@@ -169,8 +171,10 @@ mod tests {
             )
             .unwrap();
 
-        // Only the ether deposit counts as collateral => 200 ETH * 0.8 = 160 ETH
-        assert_eq!(available_to_borrow_eth.u128(), 160000000000000000000); // 160 ETH == 320_000$
+        // Only the ETH deposit counts as collateral =>
+        // available_to_borrow_eth = user_deposited_balance_eth * LTV_ETH =
+        // 200 ETH * 0.85 = 170 ETH
+        assert_eq!(available_to_borrow_eth.u128(), 170000000000000000000); // 170 ETH == 340_000$
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -183,6 +187,7 @@ mod tests {
         )
         .unwrap();
 
+        // toggle attempt unsuccessful since the user has a debt
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
