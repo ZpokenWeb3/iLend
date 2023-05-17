@@ -15,20 +15,25 @@ mod tests {
     fn test_successful_deposits_of_one_token() {
         const TOKEN_DECIMALS: u32 = 18;
 
-        const INIT_USER_BALANCE: u128 = 1000u128 * 10u128.pow(TOKEN_DECIMALS);
-        const CONTRACT_RESERVES: u128 = 1000000u128 * 10u128.pow(TOKEN_DECIMALS);
-        const FIRST_DEPOSIT_AMOUNT: u128 = 200u128 * 10u128.pow(TOKEN_DECIMALS);
-        const SECOND_DEPOSIT_AMOUNT: u128 = 300u128 * 10u128.pow(TOKEN_DECIMALS);
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKEN_DECIMALS);
+        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKEN_DECIMALS);
+        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKEN_DECIMALS);
+        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKEN_DECIMALS);
+
+        const PERCENT_DECIMALS: u32 = 5;
+        const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
+        const LIQUIDATION_THRESHOLD_ETH: u128 = 90 * 10u128.pow(PERCENT_DECIMALS); // 90%
+        const LTV_ATOM: u128 = 75 * 10u128.pow(PERCENT_DECIMALS); // 75%
+        const LIQUIDATION_THRESHOLD_ATOM: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
 
         const INTEREST_RATE_DECIMALS: u32 = 18;
-
-        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const MIN_INTEREST_RATE: u128 = 5 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
 
         const PRICE_DECIMALS: u32 = 8;
-        const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
-        const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS);
+        const PRICE_ETH: u128 = 2000 * 10u128.pow(PRICE_DECIMALS);
+        const PRICE_ATOM: u128 = 10 * 10u128.pow(PRICE_DECIMALS);
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -66,26 +71,21 @@ mod tests {
                 &InstantiateMsg {
                     admin: "owner".to_string(),
                     supported_tokens: vec![
-                        (
-                            "eth".to_string(),
-                            "ethereum".to_string(),
-                            "ETH".to_string(),
-                            18,
-                        ),
-                        (
+                         (
                             "atom".to_string(),
                             "atom".to_string(),
                             "ATOM".to_string(),
                             6,
                         ),
                     ],
-                    tokens_interest_rate_model_params: vec![
+                    reserve_configuration: vec![
                         (
-                            "eth".to_string(),
-                            5000000000000000000,
-                            20000000000000000000,
-                            100000000000000000000,
+                            "atom".to_string(),
+                            LTV_ATOM,
+                            LIQUIDATION_THRESHOLD_ATOM,
                         ),
+                    ],
+                    tokens_interest_rate_model_params: vec![
                         (
                             "atom".to_string(),
                             5000000000000000000,
@@ -101,6 +101,24 @@ mod tests {
             .unwrap();
 
         app.execute_contract(
+            Addr::unchecked("user"),
+            addr.clone(),
+            &ExecuteMsg::AddMarkets {
+                denom: "eth".to_string(),
+                name: "ethereum".to_string(),
+                symbol: "ETH".to_string(),
+                decimals: TOKEN_DECIMALS as u128,
+                loan_to_value_ratio: LTV_ETH,
+                liquidation_threshold: LIQUIDATION_THRESHOLD_ETH,
+                min_interest_rate: MIN_INTEREST_RATE,
+                safe_borrow_max_rate: SAFE_BORROW_MAX_RATE,
+                rate_growth_factor: RATE_GROWTH_FACTOR,
+            },
+            &[],
+        )
+        .unwrap();
+            
+        app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::Fund {},
@@ -113,22 +131,6 @@ mod tests {
             addr.clone(),
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "atom"),
-        )
-        .unwrap();
-
-        app.execute_contract(
-            Addr::unchecked("user"),
-            addr.clone(),
-            &ExecuteMsg::AddMarkets {
-                denom: "eth".to_string(),
-                name: "ethereum".to_string(),
-                symbol: "ETH".to_string(),
-                decimals: TOKEN_DECIMALS as u128,
-                min_interest_rate: MIN_INTEREST_RATE,
-                safe_borrow_max_rate: SAFE_BORROW_MAX_RATE,
-                rate_growth_factor: RATE_GROWTH_FACTOR,
-            },
-            &[],
         )
         .unwrap();
 

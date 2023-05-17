@@ -2,6 +2,7 @@ use crate::contract::query::{
     get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem,
     get_current_liquidity_index_ln, get_interest_rate, get_liquidity_index_last_update,
     get_liquidity_rate, get_mm_token_price, get_price, get_supported_tokens, get_token_decimal,
+    get_reserve_configuration,
     get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token,
     get_total_deposited_by_token, get_total_reserves_by_token,
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
@@ -10,7 +11,7 @@ use crate::contract::query::{
 };
 
 use crate::msg::{
-    LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
+    LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo, ReserveConfiguration
 };
 
 use crate::state::{
@@ -29,7 +30,7 @@ use {
         msg::InstantiateMsg,
         msg::{ExecuteMsg, QueryMsg},
         state::{
-            ADMIN, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS, USER_MM_TOKEN_BALANCE,
+            ADMIN, SUPPORTED_TOKENS, RESERVE_CONFIGURATION, TOKENS_INTEREST_RATE_MODEL_PARAMS, USER_MM_TOKEN_BALANCE,
         },
     },
     cosmwasm_std::{
@@ -115,6 +116,18 @@ pub fn instantiate(
                 denom: token.0.clone(),
                 liquidity_index_ln: 0u128,
                 timestamp: env.block.time,
+            },
+        )?;
+    }
+
+    for params in msg.reserve_configuration {
+        RESERVE_CONFIGURATION.save(
+            deps.storage,
+            params.0.clone(),
+            &ReserveConfiguration {
+                denom: params.0,
+                loan_to_value_ratio: params.1,
+                liquidation_threshold: params.2,
             },
         )?;
     }
@@ -284,10 +297,17 @@ pub fn execute(
             name,
             symbol,
             decimals,
+            loan_to_value_ratio,
+            liquidation_threshold,
             min_interest_rate,
             safe_borrow_max_rate,
             rate_growth_factor,
         } => {
+            assert!(
+                !SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There already exists such a supported token"
+            );
+
             SUPPORTED_TOKENS.save(
                 deps.storage,
                 denom.clone(),
@@ -296,6 +316,16 @@ pub fn execute(
                     name,
                     symbol,
                     decimals,
+                },
+            )?;
+
+            RESERVE_CONFIGURATION.save(
+                deps.storage,
+                denom.clone(),
+                &ReserveConfiguration {
+                    denom: denom.clone(),
+                    loan_to_value_ratio,
+                    liquidation_threshold,
                 },
             )?;
 
@@ -490,9 +520,72 @@ pub fn execute(
                 "This functionality is allowed for admin only"
             );
 
+            assert!(
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There is no such supported token yet"
+            );
+
             PRICES.save(deps.storage, denom, &price)?;
 
             Ok(Response::new())
+        }
+        ExecuteMsg::SetReserveConfiguration {
+            denom,
+            loan_to_value_ratio,
+            liquidation_threshold,
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            assert!(
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There is no such supported token yet"
+            );
+
+            RESERVE_CONFIGURATION.save(
+                deps.storage,
+                denom.clone(),
+                &ReserveConfiguration {
+                    denom: denom.clone(),
+                    loan_to_value_ratio,
+                    liquidation_threshold,
+                },
+            )?;
+
+            Ok(Response::default())
+        }
+        ExecuteMsg::SetTokenInterestRateModelParams {
+            denom,
+            min_interest_rate,
+            safe_borrow_max_rate,
+            rate_growth_factor
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            assert!(
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There is no such supported token yet"
+            );
+
+            TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
+                deps.storage,
+                denom.clone(),
+                &TokenInterestRateModelParams {
+                    denom: denom.clone(),
+                    min_interest_rate,
+                    safe_borrow_max_rate,
+                    rate_growth_factor,
+                },
+            )?;
+
+            Ok(Response::default())
         }
         ExecuteMsg::ToggleCollateralSetting { denom } => {
             let use_user_deposit_as_collateral =
@@ -704,6 +797,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query::get_total_borrow_data(deps, denom)?)
         }
         QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
+        QueryMsg::GetReserveConfiguration {} => {
+            to_binary(&get_reserve_configuration(deps)?)
+        }
         QueryMsg::GetTokensInterestRateModelParams {} => {
             to_binary(&get_tokens_interest_rate_model_params(deps)?)
         }
@@ -760,7 +856,8 @@ pub mod query {
     //     use std::str::FromStr;
 
     use crate::msg::{
-        GetBalanceResponse, GetSupportedTokensResponse, GetTokensInterestRateModelParamsResponse,
+        GetBalanceResponse, GetSupportedTokensResponse, 
+        GetReserveConfigurationResponse, GetTokensInterestRateModelParamsResponse,
         TotalBorrowData, UserBorrowingInfo,
     };
     use cosmwasm_std::{Coin, Order};
@@ -970,6 +1067,23 @@ pub mod query {
 
         Ok(GetSupportedTokensResponse {
             supported_tokens: result,
+        })
+    }
+
+    pub fn get_reserve_configuration(
+        deps: Deps,
+    ) -> StdResult<GetReserveConfigurationResponse> {
+        let mut result: Vec<ReserveConfiguration> = vec![];
+
+        let all: StdResult<Vec<_>> = RESERVE_CONFIGURATION
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
+        for el in all.unwrap() {
+            result.push(el.1)
+        }
+
+        Ok(GetReserveConfigurationResponse {
+            reserve_configuration: result,
         })
     }
 

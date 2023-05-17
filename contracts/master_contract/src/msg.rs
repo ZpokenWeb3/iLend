@@ -11,6 +11,8 @@ pub struct InstantiateMsg {
     pub admin: String,
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
+    // denom, loan_to_value_ratio, liquidation_threshold
+    pub reserve_configuration: Vec<(String, u128, u128)>,
     // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
     pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
 }
@@ -24,11 +26,24 @@ pub enum ExecuteMsg {
         denom: String,
         price: u128,
     },
+    SetReserveConfiguration {
+        denom: String,
+        loan_to_value_ratio: u128,
+        liquidation_threshold: u128,
+    },
+    SetTokenInterestRateModelParams {
+        denom: String,
+        min_interest_rate: u128,
+        safe_borrow_max_rate: u128,
+        rate_growth_factor: u128,
+    },
     AddMarkets {
         denom: String,
         name: String,
         symbol: String,
         decimals: u128,
+        loan_to_value_ratio: u128,
+        liquidation_threshold: u128,
         min_interest_rate: u128,
         safe_borrow_max_rate: u128,
         rate_growth_factor: u128,
@@ -72,6 +87,9 @@ pub enum QueryMsg {
 
     #[returns(GetSupportedTokensResponse)]
     GetSupportedTokens {},
+
+    #[returns(GetReserveConfigurationResponse)]
+    GetReserveConfiguration {},
 
     #[returns(GetTokensInterestRateModelParamsResponse)]
     GetTokensInterestRateModelParams {},
@@ -139,6 +157,11 @@ pub struct GetSupportedTokensResponse {
 }
 
 #[cw_serde]
+pub struct GetReserveConfigurationResponse {
+    pub reserve_configuration: Vec<ReserveConfiguration>,
+}
+
+#[cw_serde]
 pub struct GetTokensInterestRateModelParamsResponse {
     pub tokens_interest_rate_model_params: Vec<TokenInterestRateModelParams>,
 }
@@ -176,6 +199,13 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u128,
+}
+
+#[cw_serde]
+pub struct ReserveConfiguration {
+    pub denom: String,
+    pub loan_to_value_ratio: u128, // LTV ratio
+    pub liquidation_threshold: u128,
 }
 
 #[cw_serde]
