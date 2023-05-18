@@ -596,30 +596,46 @@ pub fn execute(
                 user_deposit_as_collateral(deps.as_ref(), info.sender.to_string(), denom.clone())
                     .unwrap();
 
-            if use_user_deposit_as_collateral == true {
-                let available_to_redeem = get_available_to_redeem(
-                    deps.as_ref(),
-                    env.clone(),
-                    info.sender.to_string(),
-                    denom.clone(),
-                )
-                .unwrap()
-                .u128();
+            if use_user_deposit_as_collateral {
+                let user_token_balance = get_deposit(deps.as_ref(), env.clone(), info.sender.to_string(), denom.clone())
+                    .unwrap()
+                    .balance
+                    .u128();
 
-                let current_user_deposit = get_deposit(
-                    deps.as_ref(),
-                    env.clone(),
-                    info.sender.to_string(),
-                    denom.clone(),
-                )
-                .unwrap()
-                .balance
-                .u128();
+                if user_token_balance != 0 {
+                    let token_decimals =
+                        get_token_decimal(deps.as_ref(), denom.clone()).unwrap().u128() as u32;
 
-                assert!(
-                    available_to_redeem >= current_user_deposit,
-                    "The collateral has already using to collateralise the borrowing. Not enough available balance"
-                );
+                    let price = get_price(deps.as_ref(), denom.clone()).unwrap().u128();
+
+                    let user_token_balance_usd = Decimal::from_i128_with_scale(
+                        user_token_balance as i128,
+                        token_decimals,
+                    )
+                    .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                    .to_u128_with_decimals(USD_DECIMALS)
+                    .unwrap();
+
+                    let sum_collateral_balance_usd =
+                        get_user_collateral_usd(deps.as_ref(), env.clone(), info.sender.to_string())
+                            .unwrap()
+                            .u128();
+
+                    let sum_borrow_balance_usd =
+                        get_user_borrowed_usd(deps.as_ref(), env.clone(), info.sender.to_string())
+                            .unwrap()
+                            .u128();
+
+                    let user_liquidation_threshold =
+                        get_user_liquidation_threshold(deps.as_ref(), env.clone(), info.sender.to_string())
+                            .unwrap()
+                            .u128();
+
+                    assert!(
+                        sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold < sum_collateral_balance_usd - user_token_balance_usd,
+                        "The collateral has already using to collateralise the borrowing. Not enough available balance"
+                    );
+                }
             }
 
             USER_DEPOSIT_AS_COLLATERAL.save(
@@ -1434,10 +1450,7 @@ pub mod query {
             .balance
             .u128();
 
-        let use_user_deposit_as_collateral =
-            user_deposit_as_collateral(deps, user.clone(), denom.clone()).unwrap();
-
-        if use_user_deposit_as_collateral {
+        if user_deposit_as_collateral(deps, user.clone(), denom.clone()).unwrap() {
             if user_token_balance != 0 {
                 let sum_collateral_balance_usd =
                     get_user_collateral_usd(deps, env.clone(), user.clone())
