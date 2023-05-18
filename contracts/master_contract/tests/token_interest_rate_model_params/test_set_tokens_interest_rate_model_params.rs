@@ -20,6 +20,8 @@ mod tests {
         const RATE_GROWTH_FACTOR_ATOM: u128 = 100 * 10u128.pow(INTEREST_RATE_DECIMALS); // 100%
         const OPTIMAL_UTILISATION_RATIO_ATOM: u128 = 45 * 10u128.pow(PERCENT_DECIMALS); // 45%
 
+        // contract reserves: 1000 ETH and 1000 ATOM
+        // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(

@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests {
-    //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
-    //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
     use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
     use master_contract::msg::{ExecuteMsg, QueryMsg};
@@ -12,8 +10,8 @@ mod tests {
         const ATOM_DECIMALS: u32 = 18;
         const DEPOSIT_AMOUNT_ATOM: u128 = 500u128 * 10u128.pow(ATOM_DECIMALS); // 500 ATOM
 
-        // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
-        // so that FIRST_DEPOSIT_AMOUNT is remaining
+        // contract reserves: 1000 ETH and 1000 ATOM
+        // user deposited 200 ETH and 300 ATOM
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
         let user_eth_deposit_as_collateral: bool = app

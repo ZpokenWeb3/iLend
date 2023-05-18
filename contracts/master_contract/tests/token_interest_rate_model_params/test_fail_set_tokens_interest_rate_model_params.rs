@@ -9,7 +9,7 @@ mod tests {
     #[should_panic(
         expected = "This functionality is allowed for admin only"
     )]
-    fn test_fail_set_reserve_configuration_if_caller_is_not_owner() {
+    fn test_fail_set_tokens_interest_rate_model_params_if_caller_is_not_owner() {
         const PERCENT_DECIMALS: u32 = 5;
 
         const INTEREST_RATE_DECIMALS: u32 = 18;
@@ -39,7 +39,7 @@ mod tests {
     #[should_panic(
         expected = "There is no such supported token yet"
     )]
-    fn test_fail_set_reserve_configuration_if_token_is_not_supported() {
+    fn test_fail_set_tokens_interest_rate_model_params_if_token_is_not_supported() {
         const PERCENT_DECIMALS: u32 = 5;
 
         const INTEREST_RATE_DECIMALS: u32 = 18;

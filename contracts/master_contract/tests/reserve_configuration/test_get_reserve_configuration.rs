@@ -11,6 +11,8 @@ mod tests {
         const LTV_ATOM: u128 = 75 * 10u128.pow(PERCENT_DECIMALS); // 75%
         const LIQUIDATION_THRESHOLD_ATOM: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
 
+        // contract reserves: 1000 ETH and 1000 ATOM
+        // user deposited 200 ETH and 300 ATOM
         let (app, addr) = success_deposit_of_diff_token_with_prices();
 
         let reserve_configuration_response: GetReserveConfigurationResponse =

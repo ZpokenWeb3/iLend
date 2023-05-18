@@ -198,7 +198,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
 
     const INIT_BALANCE_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
-    const INIT_BALANCE_ATOM: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+    const INIT_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
 
     const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const DEPOSIT_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
@@ -242,8 +242,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                 storage,
                 &Addr::unchecked("owner"),
                 vec![
-                    coin(CONTRACT_RESERVES_ETH, "eth"),
-                    coin(CONTRACT_RESERVES_ATOM, "atom"),
+                    coin(INIT_BALANCE_ETH, "eth"),
+                    coin(INIT_BALANCE_ATOM, "atom"),
                 ],
             )
             .unwrap();

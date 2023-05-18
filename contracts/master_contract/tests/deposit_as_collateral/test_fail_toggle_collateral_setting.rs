@@ -1,85 +1,9 @@
 #[cfg(test)]
 mod tests {
-    //     use super::*;
     use crate::utils::success_deposit_of_diff_token_with_prices;
-    //     use cosmwasm_schema::serde::__private::de::IdentifierDeserializer;
     use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
-
-    #[test]
-    fn test_user_deposit_as_collateral() {
-        // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
-        // so that FIRST_DEPOSIT_AMOUNT is remaining
-        let (app, addr) = success_deposit_of_diff_token_with_prices();
-
-        let user_eth_deposit_as_collateral: bool = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::UserDepositAsCollateral {
-                    address: "user".to_string(),
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let user_atom_deposit_as_collateral: bool = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::UserDepositAsCollateral {
-                    address: "user".to_string(),
-                    denom: "atom".to_string(),
-                },
-            )
-            .unwrap();
-
-        assert_eq!(user_eth_deposit_as_collateral, false);
-        assert_eq!(user_atom_deposit_as_collateral, false);
-    }
-
-    #[test]
-    fn test_toggle_collateral_setting() {
-        // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
-        // so that FIRST_DEPOSIT_AMOUNT is remaining
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
-
-        app.execute_contract(
-            Addr::unchecked("user"),
-            addr.clone(),
-            &ExecuteMsg::ToggleCollateralSetting {
-                denom: "eth".to_string(),
-            },
-            &[],
-        )
-        .unwrap();
-
-        let user_eth_deposit_as_collateral: bool = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::UserDepositAsCollateral {
-                    address: "user".to_string(),
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let user_atom_deposit_as_collateral: bool = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::UserDepositAsCollateral {
-                    address: "user".to_string(),
-                    denom: "atom".to_string(),
-                },
-            )
-            .unwrap();
-
-        assert_eq!(user_eth_deposit_as_collateral, true);
-        assert_eq!(user_atom_deposit_as_collateral, false);
-    }
 
     #[test]
     #[should_panic(
@@ -89,8 +13,8 @@ mod tests {
         const ATOM_DECIMALS: u32 = 18;
         const ETH_DECIMALS: u32 = 18;
 
-        const DEPOSIT_AMOUNT_ATOM: u128 = 500000u128 * 10u128.pow(ATOM_DECIMALS); // 500000 ATOM
-        const BORROW_AMOUNT_ETH: u128 = 160u128 * 10u128.pow(ETH_DECIMALS); // 160 ETH
+        const DEPOSIT_AMOUNT_ATOM: u128 = 500_000 * 10u128.pow(ATOM_DECIMALS); // 500_000 ATOM
+        const BORROW_AMOUNT_ETH: u128 = 160 * 10u128.pow(ETH_DECIMALS); // 160 ETH
 
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
@@ -114,7 +38,7 @@ mod tests {
             &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
         )
         .unwrap();
-
+  
         let user_deposited_balance_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
@@ -174,7 +98,7 @@ mod tests {
         // Only the ETH deposit counts as collateral =>
         // available_to_borrow_eth = user_deposited_balance_eth * LTV_ETH =
         // 200 ETH * 0.85 = 170 ETH
-        assert_eq!(available_to_borrow_eth.u128(), 170000000000000000000); // 170 ETH == 340_000$
+        assert_eq!(available_to_borrow_eth.u128(), 170000000000000000000); // 170 ETH = 340_000$
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -187,7 +111,34 @@ mod tests {
         )
         .unwrap();
 
+        let user_collateral_usd: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetUserCollateralUsd {
+                    address: "user".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(user_collateral_usd.u128(), 40000000000000); // 200 ETH * 2000 = 400_000$
+
+        let user_borrowed_usd: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                addr.clone(),
+                &QueryMsg::GetUserBorrowedUsd {
+                    address: "user".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(user_borrowed_usd.u128(), 32000000000000); // 160 ETH * 2000 = 320_000$
+
         // toggle attempt unsuccessful since the user has a debt
+        // and excluding the ETH deposit from the collateral will result in insufficient collateral.
+        // user_collateral_usd - user_eth_deposited_usd < user_borrowed_usd / user_liquidation_threshold
+        // 400_000$ - (200 ETH * 2000) = 0
         app.execute_contract(
             Addr::unchecked("user"),
             addr.clone(),
