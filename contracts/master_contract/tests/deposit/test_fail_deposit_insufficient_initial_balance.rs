@@ -4,7 +4,6 @@ mod tests {
     use cw_multi_test::{App, ContractWrapper, Executor};
     use std::vec;
 
-    use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
 

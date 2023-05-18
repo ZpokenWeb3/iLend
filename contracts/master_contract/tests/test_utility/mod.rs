@@ -7,7 +7,6 @@ mod test_get_interest_rate;
 mod test_get_liquidity_rate;
 mod test_get_mm_token_price;
 mod test_get_supported_tokens;
-mod test_get_tokens_interest_rate_model_params;
 mod test_get_total_borrow_data;
 mod test_get_total_borrowed_by_token;
 mod test_get_total_deposited_by_token;

@@ -2,7 +2,7 @@
 mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
     use master_contract::msg::{ExecuteMsg, GetReserveConfigurationResponse, QueryMsg};
-    use cw_multi_test::{App, Executor};
+    use cw_multi_test::{Executor};
     use cosmwasm_std::{Addr};
 
     #[test]

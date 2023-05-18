@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
-    use master_contract::msg::{ExecuteMsg, GetReserveConfigurationResponse, QueryMsg};
-    use cw_multi_test::{App, Executor};
+    use master_contract::msg::{ExecuteMsg};
+    use cw_multi_test::{Executor};
     use cosmwasm_std::{Addr};
 
     #[test]
@@ -13,8 +13,6 @@ mod tests {
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 92 * 10u128.pow(PERCENT_DECIMALS); // 92%
         const LIQUIDATION_THRESHOLD_ETH: u128 = 98 * 10u128.pow(PERCENT_DECIMALS); // 98%
-        const LTV_ATOM: u128 = 78 * 10u128.pow(PERCENT_DECIMALS); // 78%
-        const LIQUIDATION_THRESHOLD_ATOM: u128 = 86 * 10u128.pow(PERCENT_DECIMALS); // 86%
 
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
@@ -39,8 +37,6 @@ mod tests {
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 92 * 10u128.pow(PERCENT_DECIMALS); // 92%
         const LIQUIDATION_THRESHOLD_ETH: u128 = 98 * 10u128.pow(PERCENT_DECIMALS); // 98%
-        const LTV_ATOM: u128 = 78 * 10u128.pow(PERCENT_DECIMALS); // 78%
-        const LIQUIDATION_THRESHOLD_ATOM: u128 = 86 * 10u128.pow(PERCENT_DECIMALS); // 86%
 
         let (mut app, addr) = success_deposit_of_diff_token_with_prices();
 
