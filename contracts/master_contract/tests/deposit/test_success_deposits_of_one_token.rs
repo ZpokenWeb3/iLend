@@ -9,6 +9,7 @@ mod tests {
         ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg, TotalBorrowData,
     };
     use master_contract::{execute, instantiate, query};
+    use pyth_sdk_cw::PriceIdentifier;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -64,6 +65,23 @@ mod tests {
                 code_id,
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
+                    price_ids: vec![
+                        (
+                            "inj".to_string(),
+                            PriceIdentifier::from_hex(
+                                "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                            )
+                            .unwrap(),
+                        ),
+                        (
+                            "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
+                            PriceIdentifier::from_hex(
+                                "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                            )
+                            .unwrap(),
+                        ),
+                    ],
+                    pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                     admin: "owner".to_string(),
                     supported_tokens: vec![
                         (
