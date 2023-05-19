@@ -1,6 +1,5 @@
 #[cfg(test)]
 mod tests {
-    //     use super::*;
     use crate::utils::success_borrow_setup;
     use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
@@ -8,7 +7,8 @@ mod tests {
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
-    fn test_success_repay() {
+    fn test_success_repay_more_than_needed() {
+        // user borrowed 50 ETH
         let (mut app, addr) = success_borrow_setup();
 
         let now = SystemTime::now()

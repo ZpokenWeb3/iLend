@@ -491,8 +491,9 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp, A
 pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
 
-    const INIT_BALANCE_ETH: u128 = 10000 * 10u128.pow(TOKENS_DECIMALS);
-    const INIT_BALANCE_ATOM: u128 = 10000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+    const INIT_BALANCE_ETH: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 ETH
+    const INIT_BALANCE_ATOM: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 ATOM
+    const INIT_BALANCE_USDT: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 USDT
 
     const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const DEPOSIT_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
@@ -528,6 +529,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                 vec![
                     coin(INIT_BALANCE_ETH, "eth"),
                     coin(INIT_BALANCE_ATOM, "atom"),
+                    coin(INIT_BALANCE_USDT, "usdt"),
                 ],
             )
             .unwrap();

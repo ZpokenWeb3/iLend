@@ -9,9 +9,10 @@ mod tests {
 
     #[test]
     fn test_success_repay_by_parts() {
-        const TOKEN_DECIMAL: u128 = 10u128.pow(18);
-        const BORROW_OF_FIRST_TOKEN: u128 = 50 * TOKEN_DECIMAL;
+        const TOKENS_DECIMALS: u32 = 18;
+        const BORROW_AMOUNT_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS); // 50 ETH
 
+        // user borrowed 50 ETH
         let (mut app, addr) = success_borrow_setup();
 
         let now = SystemTime::now()
@@ -38,7 +39,7 @@ mod tests {
 
         assert_eq!(
             borrow_info_before_first_repay.u128(),
-            BORROW_OF_FIRST_TOKEN * 105 / 100
+            BORROW_AMOUNT_ETH * 105 / 100
         );
 
         app.execute_contract(

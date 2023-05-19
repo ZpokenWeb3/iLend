@@ -383,7 +383,7 @@ pub fn execute(
 
             assert!(
                 available_to_borrow_amount >= amount.u128(),
-                "User don't have enough deposit to borrow that much"
+                "The amount to be borrowed is not available"
             );
 
             assert!(
@@ -649,7 +649,7 @@ pub fn execute(
         ExecuteMsg::Repay {} => {
             if info.funds.is_empty() {
                 return Err(ContractError::CustomError {
-                    val: "No funds deposited!".to_string(),
+                    val: "Funds not transferred!".to_string(),
                 });
             }
 
@@ -658,11 +658,9 @@ pub fn execute(
             let repay_token = info.funds.first().unwrap();
             let mut repay_amount = repay_token.amount.u128();
 
-            assert!(repay_amount > 0);
-
             assert!(
                 SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
-                "There is no such token to repay yet"
+                "There is no such supported token yet"
             );
 
             let user_borrowing_info = get_user_borrowing_info(
