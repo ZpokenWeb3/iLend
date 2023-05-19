@@ -14,6 +14,9 @@ mod tests {
         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
         const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
@@ -57,6 +60,18 @@ mod tests {
                     ],
                 )
                 .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    vec![
+                        coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                        coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                    ],
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -68,6 +83,7 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![
                         (
                             "eth".to_string(),

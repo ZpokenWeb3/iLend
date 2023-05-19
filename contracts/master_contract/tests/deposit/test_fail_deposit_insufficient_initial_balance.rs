@@ -9,11 +9,13 @@ mod tests {
 
     #[test]
     fn test_fail_deposit_insufficient_initial_balance() {
-        const TOKEN_DECIMALS: u32 = 18;
-        
-        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKEN_DECIMALS);
-        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKEN_DECIMALS);
-        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKEN_DECIMALS);
+        const TOKENS_DECIMALS: u32 = 18;
+
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+
+        const CONTRACT_RESERVES_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKENS_DECIMALS);
 
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -41,9 +43,18 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("owner"),
-                    coins(CONTRACT_RESERVES, "eth"),
+                    coins(CONTRACT_RESERVES_ETH, "eth"),
                 )
-                .unwrap()
+                .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    coins(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -55,6 +66,7 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![(
                         "eth".to_string(),
                         "ethereum".to_string(),
@@ -76,7 +88,7 @@ mod tests {
                         OPTIMAL_UTILISATION_RATIO,
                     )],
                 },
-                &[coin(CONTRACT_RESERVES, "eth")],
+                &[coin(CONTRACT_RESERVES_ETH, "eth")],
                 "Contract",
                 Some("owner".to_string()), // contract that can execute migrations
             )

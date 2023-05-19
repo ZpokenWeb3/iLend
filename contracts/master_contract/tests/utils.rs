@@ -11,6 +11,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
 
     const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+    const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
 
     const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
     const FIRST_DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
@@ -46,7 +47,16 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                 &Addr::unchecked("owner"),
                 coins(CONTRACT_RESERVES, "eth"),
             )
-            .unwrap()
+            .unwrap();
+
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("liquidator"),
+                coins(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+            )
+            .unwrap();
     });
 
     let code = ContractWrapper::new(execute, instantiate, query);
@@ -58,6 +68,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             Addr::unchecked("owner"),
             &InstantiateMsg {
                 admin: "owner".to_string(),
+                liquidator: "liquidator".to_string(),
                 supported_tokens: vec![
                     (
                         "eth".to_string(),
@@ -200,6 +211,9 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const INIT_BALANCE_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
     const INIT_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
 
+    const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+    const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
     const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const DEPOSIT_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
@@ -247,6 +261,18 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                 ],
             )
             .unwrap();
+
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("liquidator"),
+                vec![
+                    coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                    coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                ],
+            )
+            .unwrap();
     });
 
     let code = ContractWrapper::new(execute, instantiate, query);
@@ -258,6 +284,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
             Addr::unchecked("owner"),
             &InstantiateMsg {
                 admin: "owner".to_string(),
+                liquidator: "liquidator".to_string(),
                 supported_tokens: vec![
                     (
                         "eth".to_string(),
@@ -495,6 +522,9 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const INIT_BALANCE_ATOM: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 ATOM
     const INIT_BALANCE_USDT: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 USDT
 
+    const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+    const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
     const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const DEPOSIT_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
@@ -545,6 +575,18 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                 ],
             )
             .unwrap();
+
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("liquidator"),
+                vec![
+                    coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                    coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                ],
+            )
+            .unwrap();
     });
 
     let code = ContractWrapper::new(execute, instantiate, query);
@@ -556,6 +598,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
             Addr::unchecked("owner"),
             &InstantiateMsg {
                 admin: "owner".to_string(),
+                liquidator: "liquidator".to_string(),
                 supported_tokens: vec![
                     (
                         "eth".to_string(),

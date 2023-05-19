@@ -12,6 +12,8 @@ mod tests {
         const ETH_DECIMALS: u32 = 18;
 
         const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(ETH_DECIMALS);
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(ETH_DECIMALS); // 1M ETH
+
         const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(ETH_DECIMALS);
         const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(ETH_DECIMALS);
 
@@ -43,6 +45,15 @@ mod tests {
                     &Addr::unchecked("owner"),
                     coins(CONTRACT_RESERVES, "eth"),
                 )
+                .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    coins(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                )
                 .unwrap()
         });
 
@@ -55,6 +66,7 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![(
                         "eth".to_string(),
                         "ethereum".to_string(),

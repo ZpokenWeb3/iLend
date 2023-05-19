@@ -9,6 +9,7 @@ use cosmwasm_std::Uint128;
 #[cw_serde]
 pub struct InstantiateMsg {
     pub admin: String,
+    pub liquidator: String,
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
@@ -66,6 +67,9 @@ pub enum ExecuteMsg {
     Repay {},
     ToggleCollateralSetting {
         denom: String,
+    },
+    Liquidation {
+        user: String,
     },
 }
 

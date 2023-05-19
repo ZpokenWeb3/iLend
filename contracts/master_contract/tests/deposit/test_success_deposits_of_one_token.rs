@@ -13,12 +13,15 @@ mod tests {
 
     #[test]
     fn test_successful_deposits_of_one_token() {
-        const TOKEN_DECIMALS: u32 = 18;
+        const TOKENS_DECIMALS: u32 = 18;
 
-        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKEN_DECIMALS);
-        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKEN_DECIMALS);
-        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKEN_DECIMALS);
-        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKEN_DECIMALS);
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
+        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
+        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
+        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -61,6 +64,18 @@ mod tests {
                     ],
                 )
                 .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    vec![
+                        coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                        coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                    ],
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -72,6 +87,7 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![
                          (
                             "atom".to_string(),
@@ -110,7 +126,7 @@ mod tests {
                 denom: "eth".to_string(),
                 name: "ethereum".to_string(),
                 symbol: "ETH".to_string(),
-                decimals: TOKEN_DECIMALS as u128,
+                decimals: TOKENS_DECIMALS as u128,
                 loan_to_value_ratio: LTV_ETH,
                 liquidation_threshold: LIQUIDATION_THRESHOLD_ETH,
                 min_interest_rate: MIN_INTEREST_RATE,
