@@ -6,6 +6,7 @@ mod tests {
 
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
+    use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_fail_deposit_insufficient_balance_after_successful_deposit() {
@@ -54,6 +55,7 @@ mod tests {
                 code_id,
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
+                    is_testing: true,
                     admin: "owner".to_string(),
                     supported_tokens: vec![(
                         "eth".to_string(),
@@ -75,6 +77,23 @@ mod tests {
                         RATE_GROWTH_FACTOR,
                         OPTIMAL_UTILISATION_RATIO,
                     )],
+                    price_ids: vec![
+                        (
+                            "inj".to_string(),
+                            PriceIdentifier::from_hex(
+                                "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                            )
+                            .unwrap(),
+                        ),
+                        (
+                            "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
+                            PriceIdentifier::from_hex(
+                                "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                            )
+                            .unwrap(),
+                        ),
+                    ],
+                    pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],
                 "Contract",
