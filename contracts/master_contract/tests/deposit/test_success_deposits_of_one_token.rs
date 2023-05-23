@@ -65,6 +65,7 @@ mod tests {
                 code_id,
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
+                    is_testing: true,
                     price_ids: vec![
                         (
                             "inj".to_string(),
@@ -154,8 +155,8 @@ mod tests {
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::SetPrice {
-                denom: "eth".to_string(),
-                price: PRICE_ETH,
+                denom: Some("eth".to_string()),
+                price: Some(PRICE_ETH),
             },
             &[],
         )
@@ -165,8 +166,8 @@ mod tests {
             Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::SetPrice {
-                denom: "atom".to_string(),
-                price: PRICE_ATOM,
+                denom: Some("atom".to_string()),
+                price: Some(PRICE_ATOM),
             },
             &[],
         )

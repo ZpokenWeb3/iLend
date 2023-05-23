@@ -72,3 +72,5 @@ pub const PRICE_FEED_IDS: Map<String, PriceIdentifier> = Map::new("price_feed_id
 
 // Contract address of Pyth on  Injective testnet
 pub const PYTH_CONTRACT: Item<Addr> = Item::new("pyth_contract");
+
+pub const IS_TESTING: Item<bool> = Item::new("is_testing");

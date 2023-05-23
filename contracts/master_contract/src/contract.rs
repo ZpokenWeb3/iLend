@@ -1,12 +1,13 @@
 use crate::contract::query::{
     fetch_price_by_token, get_available_liquidity_by_token, get_available_to_borrow,
     get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate,
-    get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price, get_price,
-    get_supported_tokens, get_token_decimal, get_tokens_interest_rate_model_params,
-    get_total_borrow_data, get_total_borrowed_by_token, get_total_deposited_by_token,
-    get_total_reserves_by_token, get_user_borrow_amount_with_interest, get_user_borrowed_usd,
-    get_user_borrowing_info, get_user_collateral_usd, get_user_deposited_usd,
-    get_user_utilization_rate, get_utilization_rate_by_token, user_deposit_as_collateral,
+    get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price,
+    get_price_from_contract, get_supported_tokens, get_token_decimal,
+    get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token,
+    get_total_deposited_by_token, get_total_reserves_by_token,
+    get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
+    get_user_collateral_usd, get_user_deposited_usd, get_user_utilization_rate,
+    get_utilization_rate_by_token, user_deposit_as_collateral,
 };
 
 use crate::msg::{
@@ -14,7 +15,7 @@ use crate::msg::{
 };
 
 use crate::state::{
-    LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, TOTAL_BORROW_DATA,
+    IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, TOTAL_BORROW_DATA,
     USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
 };
 
@@ -81,10 +82,30 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    IS_TESTING.save(deps.storage, &msg.is_testing)?;
 
     ADMIN.save(deps.storage, &msg.admin)?;
 
+    PYTH_CONTRACT.save(
+        deps.storage,
+        &deps.api.addr_validate(msg.pyth_contract_addr.as_ref())?,
+    )?;
+
+    for price_id in msg.price_ids.iter() {
+        let price_id = price_id.clone();
+        PRICE_FEED_IDS.save(deps.storage, price_id.0.clone(), &price_id.1.clone())?;
+    }
+
     for token in msg.supported_tokens {
+        // saving price whilst initialisation in case when Pyth price is not available so that we can get price from contract
+        if !msg.is_testing {
+            let price = fetch_price_by_token(deps.as_ref(), env.clone(), token.0.clone())
+                .unwrap()
+                .u128();
+
+            PRICES.save(deps.storage, token.0.clone(), &price)?;
+        }
+
         SUPPORTED_TOKENS.save(
             deps.storage,
             token.0.clone(),
@@ -117,16 +138,6 @@ pub fn instantiate(
                 timestamp: env.block.time,
             },
         )?;
-    }
-
-    PYTH_CONTRACT.save(
-        deps.storage,
-        &deps.api.addr_validate(msg.pyth_contract_addr.as_ref())?,
-    )?;
-
-    for price_id in msg.price_ids.iter() {
-        let price_id = price_id.clone();
-        PRICE_FEED_IDS.save(deps.storage, price_id.0.clone(), &price_id.1.clone())?;
     }
 
     for params in msg.tokens_interest_rate_model_params {
@@ -494,13 +505,29 @@ pub fn execute(
             }))
         }
         ExecuteMsg::SetPrice { denom, price } => {
-            assert_eq!(
-                info.sender.to_string(),
-                ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
-            );
+            // if not testing mode, fetching and saving prices from the Pyth oracle
+            if !IS_TESTING.load(deps.storage).unwrap() {
+                for token in get_supported_tokens(deps.as_ref())
+                    .unwrap()
+                    .supported_tokens
+                    .iter()
+                {
+                    let price =
+                        fetch_price_by_token(deps.as_ref(), env.clone(), token.denom.clone())
+                            .unwrap()
+                            .u128();
 
-            PRICES.save(deps.storage, denom, &price)?;
+                    PRICES.save(deps.storage, token.denom.clone(), &price)?;
+                }
+            } else {
+                assert_eq!(
+                    info.sender.to_string(),
+                    ADMIN.load(deps.storage).unwrap(),
+                    "This functionality is allowed for admin only"
+                );
+
+                PRICES.save(deps.storage, denom.unwrap(), &price.unwrap())?;
+            }
 
             Ok(Response::new())
         }
@@ -703,7 +730,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::UserDepositAsCollateral { address, denom } => {
             to_binary(&user_deposit_as_collateral(deps, address, denom)?)
         }
-        QueryMsg::GetPrice { denom } => to_binary(&get_price(deps, denom)?),
+        QueryMsg::GetPrice { denom } => to_binary(&get_price_from_contract(deps, denom)?),
         QueryMsg::GetUserBorrowAmountWithInterest { address, denom } => to_binary(
             &query::get_user_borrow_amount_with_interest(deps, env, address, denom)?,
         ),
@@ -759,25 +786,19 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetLiquidityIndexLastUpdate { denom } => {
             to_binary(&get_liquidity_index_last_update(deps, denom)?)
         }
-        QueryMsg::FetchPrice { denom } => to_binary(&fetch_price_by_token(deps, env, denom)?),
     }
 }
 
 pub mod query {
     use super::*;
-    //     use std::fmt::Debug;
     use std::ops::Mul;
 
-    //     use std::str::FromStr;
-
     use crate::msg::{
-        FetchPriceResponse, GetBalanceResponse, GetSupportedTokensResponse,
-        GetTokensInterestRateModelParamsResponse, TotalBorrowData, UserBorrowingInfo,
+        GetBalanceResponse, GetSupportedTokensResponse, GetTokensInterestRateModelParamsResponse,
+        TotalBorrowData, UserBorrowingInfo,
     };
     use cosmwasm_std::{Coin, Order, StdError};
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
-    //     use near_sdk::json_types::U128;
-    //     use rust_decimal::prelude::ToPrimitive;
 
     pub fn get_deposit(
         deps: Deps,
@@ -964,7 +985,7 @@ pub mod query {
         Ok(Uint128::from(mm_token_price))
     }
 
-    pub fn get_price(deps: Deps, denom: String) -> StdResult<Uint128> {
+    pub fn get_price_from_contract(deps: Deps, denom: String) -> StdResult<Uint128> {
         let price = PRICES.load(deps.storage, denom).unwrap_or(0u128);
 
         Ok(Uint128::from(price))
@@ -1088,7 +1109,15 @@ pub mod query {
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-            let price = get_price(deps, token.denom.clone()).unwrap().u128();
+            let price = if IS_TESTING.load(deps.storage).unwrap() {
+                get_price_from_contract(deps, token.denom.clone())
+                    .unwrap()
+                    .u128()
+            } else {
+                fetch_price_by_token(deps, env.clone(), token.denom.clone())
+                    .unwrap()
+                    .u128()
+            };
 
             user_deposited_usd +=
                 Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
@@ -1117,7 +1146,15 @@ pub mod query {
                 let token_decimals =
                     get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-                let price = get_price(deps, token.denom.clone()).unwrap().u128();
+                let price = if IS_TESTING.load(deps.storage).unwrap() {
+                    get_price_from_contract(deps, token.denom.clone())
+                        .unwrap()
+                        .u128()
+                } else {
+                    fetch_price_by_token(deps, env.clone(), token.denom.clone())
+                        .unwrap()
+                        .u128()
+                };
 
                 user_collateral_usd +=
                     Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
@@ -1145,7 +1182,15 @@ pub mod query {
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-            let price = get_price(deps, token.denom.clone()).unwrap().u128();
+            let price = if IS_TESTING.load(deps.storage).unwrap() {
+                get_price_from_contract(deps, token.denom.clone())
+                    .unwrap()
+                    .u128()
+            } else {
+                fetch_price_by_token(deps, env.clone(), token.denom.clone())
+                    .unwrap()
+                    .u128()
+            };
 
             user_borrowed_usd += Decimal::from_i128_with_scale(
                 user_borrow_amount_with_interest as i128,
@@ -1197,7 +1242,13 @@ pub mod query {
         if max_allowed_borrow_amount_usd > sum_user_borrow_balance_usd {
             let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
 
-            let price = get_price(deps, denom.clone()).unwrap().u128();
+            let price = if IS_TESTING.load(deps.storage).unwrap() {
+                get_price_from_contract(deps, denom.clone()).unwrap().u128()
+            } else {
+                fetch_price_by_token(deps, env.clone(), denom.clone())
+                    .unwrap()
+                    .u128()
+            };
 
             available_to_borrow = Decimal::from_i128_with_scale(
                 (max_allowed_borrow_amount_usd - sum_user_borrow_balance_usd) as i128,
@@ -1258,8 +1309,13 @@ pub mod query {
                     let token_decimals =
                         get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
 
-                    let price = get_price(deps, denom.clone()).unwrap().u128();
-
+                    let price = if IS_TESTING.load(deps.storage).unwrap() {
+                        get_price_from_contract(deps, denom.clone()).unwrap().u128()
+                    } else {
+                        fetch_price_by_token(deps, env.clone(), denom.clone())
+                            .unwrap()
+                            .u128()
+                    };
                     available_to_redeem = Decimal::from_i128_with_scale(
                         (sum_collateral_balance_usd - required_collateral_balance_usd) as i128,
                         USD_DECIMALS,
@@ -1385,14 +1441,10 @@ pub mod query {
         }
     }
 
-    pub fn fetch_price_by_token(
-        deps: Deps,
-        env: Env,
-        denom: String,
-    ) -> StdResult<FetchPriceResponse> {
+    pub fn fetch_price_by_token(deps: Deps, env: Env, denom: String) -> StdResult<Uint128> {
         let pyth_contract = PYTH_CONTRACT.load(deps.storage)?;
 
-        let price_identifier = PRICE_FEED_IDS.load(deps.storage, denom)?;
+        let price_identifier = PRICE_FEED_IDS.load(deps.storage, denom.clone())?;
 
         // query_price_feed is the standard way to read the current price from a Pyth price feed.
         // It takes the address of the Pyth contract (which is fixed for each network) and the id of the
@@ -1411,19 +1463,18 @@ pub mod query {
         // The example code below throws an error if the price is not available. It is recommended that
         // you handle this scenario more carefully. Consult the [consumer best practices](https://docs.pyth.network/consumers/best-practices)
         // for recommendations.
-        let current_price = price_feed
-            .get_price_no_older_than(env.block.time.seconds() as i64, 60)
-            .ok_or_else(|| StdError::not_found("Current price is not available"))?;
 
-        // Get an exponentially-weighted moving average price and confidence interval.
-        // The same notes about availability apply to this price.
-        let ema_price = price_feed
-            .get_ema_price_no_older_than(env.block.time.seconds() as i64, 60)
-            .ok_or_else(|| StdError::not_found("EMA price is not available"))?;
+        let mut current_price =
+            Uint128::from(get_price_from_contract(deps, denom.clone()).unwrap().u128());
 
-        Ok(FetchPriceResponse {
-            current_price,
-            ema_price,
-        })
+        // if Pyth price is available getting most recent price
+        let pyth_current_price =
+            price_feed.get_price_no_older_than(env.block.time.seconds() as i64, 60);
+
+        if pyth_current_price.is_some() {
+            current_price = Uint128::from(pyth_current_price.unwrap().price as u128)
+        }
+
+        Ok(current_price)
     }
 }

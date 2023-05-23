@@ -60,6 +60,7 @@ mod tests {
                 code_id,
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
+                    is_testing: true,
                     price_ids: vec![
                         (
                             "inj".to_string(),

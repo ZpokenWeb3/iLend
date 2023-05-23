@@ -49,6 +49,7 @@ mod tests {
                 code_id,
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
+                    is_testing: true,
                     admin: "owner".to_string(),
                     supported_tokens: vec![(
                         "eth".to_string(),

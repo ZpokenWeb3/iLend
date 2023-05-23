@@ -51,6 +51,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             code_id,
             Addr::unchecked("owner"),
             &InstantiateMsg {
+                is_testing: true,
                 price_ids: vec![
                     (
                         "inj".to_string(),
@@ -247,6 +248,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
             code_id,
             Addr::unchecked("owner"),
             &InstantiateMsg {
+                is_testing: true,
                 admin: "owner".to_string(),
                 supported_tokens: vec![
                     (
@@ -313,8 +315,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         Addr::unchecked("owner"),
         addr.clone(),
         &ExecuteMsg::SetPrice {
-            denom: "eth".to_string(),
-            price: PRICE_ETH,
+            denom: Some("eth".to_string()),
+            price: Some(PRICE_ETH),
         },
         &[],
     )
@@ -324,8 +326,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         Addr::unchecked("owner"),
         addr.clone(),
         &ExecuteMsg::SetPrice {
-            denom: "atom".to_string(),
-            price: PRICE_ATOM,
+            denom: Some("atom".to_string()),
+            price: Some(PRICE_ATOM),
         },
         &[],
     )
@@ -537,6 +539,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
             code_id,
             Addr::unchecked("owner"),
             &InstantiateMsg {
+                is_testing: true,
                 admin: "owner".to_string(),
                 supported_tokens: vec![
                     (
@@ -603,8 +606,8 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         Addr::unchecked("owner"),
         addr.clone(),
         &ExecuteMsg::SetPrice {
-            denom: "eth".to_string(),
-            price: PRICE_ETH,
+            denom: Some("eth".to_string()),
+            price: Some(PRICE_ETH),
         },
         &[],
     )
@@ -614,8 +617,8 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         Addr::unchecked("owner"),
         addr.clone(),
         &ExecuteMsg::SetPrice {
-            denom: "atom".to_string(),
-            price: PRICE_ATOM,
+            denom: Some("atom".to_string()),
+            price: Some(PRICE_ATOM),
         },
         &[],
     )

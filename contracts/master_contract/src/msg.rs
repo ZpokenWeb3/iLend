@@ -10,8 +10,12 @@ use pyth_sdk_cw::{Price, PriceIdentifier};
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    // different sources for testing and production
+    pub is_testing: bool,
+
     pub admin: String,
-    // name, denom, symbol, decimals
+
+    // denom, name, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
     pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
@@ -28,9 +32,10 @@ pub enum ExecuteMsg {
     // Admin-only functionality for funding contract with reserves
     // to be able to operate borrows and repayments
     Fund {},
+    // if args is None, updates price via Pyth oracle, otherwise set price (only for testing)
     SetPrice {
-        denom: String,
-        price: u128,
+        denom: Option<String>,
+        price: Option<u128>,
     },
     AddMarkets {
         denom: String,
@@ -134,15 +139,6 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetLiquidityIndexLastUpdate { denom: String },
-
-    #[returns(FetchPriceResponse)]
-    FetchPrice { denom: String },
-}
-
-#[cw_serde]
-pub struct FetchPriceResponse {
-    pub current_price: Price,
-    pub ema_price: Price,
 }
 
 #[cw_serde]
