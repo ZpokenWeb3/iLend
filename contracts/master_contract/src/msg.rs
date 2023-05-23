@@ -2,17 +2,29 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Timestamp;
 use cosmwasm_std::Uint128;
 
+use pyth_sdk_cw::{Price, PriceIdentifier};
+
 // cw_serde attribute is equivalent to
 // #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema)]
 // #[serde(rename_all = "snake_case")]
 
 #[cw_serde]
 pub struct InstantiateMsg {
+    // different sources for testing and production
+    pub is_testing: bool,
+
     pub admin: String,
-    // name, denom, symbol, decimals
+
+    // denom, name, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
     pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
+
+    // vector of (token denom, price_identifier) got from https://pyth.network/developers/price-feed-ids#cosmwasm-testnet
+    pub price_ids: Vec<(String, PriceIdentifier)>,
+
+    // pyth contract on a given network - testnet for now
+    pub pyth_contract_addr: String,
 }
 
 #[cw_serde]
@@ -20,9 +32,10 @@ pub enum ExecuteMsg {
     // Admin-only functionality for funding contract with reserves
     // to be able to operate borrows and repayments
     Fund {},
-    SetPrice {
-        denom: String,
-        price: u128,
+    // if args is None, updates price via Pyth oracle, otherwise set price (only for testing)
+    UpdatePrice {
+        denom: Option<String>,
+        price: Option<u128>,
     },
     AddMarkets {
         denom: String,
