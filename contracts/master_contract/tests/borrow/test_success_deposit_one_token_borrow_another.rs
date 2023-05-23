@@ -121,7 +121,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPrice {
+            &ExecuteMsg::UpdatePrice {
                 denom: Some("eth".to_string()),
                 price: Some(PRICE_ETH),
             },
@@ -132,7 +132,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPrice {
+            &ExecuteMsg::UpdatePrice {
                 denom: Some("atom".to_string()),
                 price: Some(PRICE_ATOM),
             },

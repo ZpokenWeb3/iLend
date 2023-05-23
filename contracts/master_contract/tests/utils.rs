@@ -314,7 +314,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     app.execute_contract(
         Addr::unchecked("owner"),
         addr.clone(),
-        &ExecuteMsg::SetPrice {
+        &ExecuteMsg::UpdatePrice {
             denom: Some("eth".to_string()),
             price: Some(PRICE_ETH),
         },
@@ -325,7 +325,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     app.execute_contract(
         Addr::unchecked("owner"),
         addr.clone(),
-        &ExecuteMsg::SetPrice {
+        &ExecuteMsg::UpdatePrice {
             denom: Some("atom".to_string()),
             price: Some(PRICE_ATOM),
         },
@@ -605,7 +605,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     app.execute_contract(
         Addr::unchecked("owner"),
         addr.clone(),
-        &ExecuteMsg::SetPrice {
+        &ExecuteMsg::UpdatePrice {
             denom: Some("eth".to_string()),
             price: Some(PRICE_ETH),
         },
@@ -616,7 +616,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     app.execute_contract(
         Addr::unchecked("owner"),
         addr.clone(),
-        &ExecuteMsg::SetPrice {
+        &ExecuteMsg::UpdatePrice {
             denom: Some("atom".to_string()),
             price: Some(PRICE_ATOM),
         },

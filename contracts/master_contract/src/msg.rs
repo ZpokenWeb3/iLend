@@ -33,7 +33,7 @@ pub enum ExecuteMsg {
     // to be able to operate borrows and repayments
     Fund {},
     // if args is None, updates price via Pyth oracle, otherwise set price (only for testing)
-    SetPrice {
+    UpdatePrice {
         denom: Option<String>,
         price: Option<u128>,
     },

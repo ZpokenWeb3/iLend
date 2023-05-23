@@ -504,7 +504,7 @@ pub fn execute(
                 amount: coins(amount.u128(), denom.clone()),
             }))
         }
-        ExecuteMsg::SetPrice { denom, price } => {
+        ExecuteMsg::UpdatePrice { denom, price } => {
             // if not testing mode, fetching and saving prices from the Pyth oracle
             if !IS_TESTING.load(deps.storage).unwrap() {
                 for token in get_supported_tokens(deps.as_ref())
