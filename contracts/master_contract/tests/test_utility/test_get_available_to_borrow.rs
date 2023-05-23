@@ -41,7 +41,7 @@ mod tests {
             )
             .unwrap();
 
-        // (deposit_eth * ltv_eth * price_eth + deposit_atom * ltv_atom * price_atom) / price = 
+        // (deposit_eth * ltv_eth * price_eth + deposit_atom * ltv_atom * price_atom) / price =
         // (200 * 0.85 * 2000 + 300 * 0.75 * 10) / price = 342250$ / price
         assert_eq!(available_to_borrow_eth.u128(), 171125000000000000000); // 342250$ / 2000 == 171.125 ETH
 
@@ -108,7 +108,7 @@ mod tests {
             )
             .unwrap();
 
-        // (deposit_eth * ltv_eth * price_eth + deposit_atom * ltv_atom * price_atom - user_borrowed_usd) / price = 
+        // (deposit_eth * ltv_eth * price_eth + deposit_atom * ltv_atom * price_atom - user_borrowed_usd) / price =
         // (200 * 0.85 * 2000 + 300 * 0.75 * 10 - 210000$) / price = 132250$ / price
         assert_eq!(available_to_borrow_eth.u128(), 66125000000000000000); // 132250$ / 2000 == 66.125 ETH
 
@@ -154,7 +154,7 @@ mod tests {
             )
             .unwrap();
 
-        // (deposit_eth * ltv_eth * price_eth + deposit_atom * ltv_atom * price_atom - user_borrowed_usd) / price = 
+        // (deposit_eth * ltv_eth * price_eth + deposit_atom * ltv_atom * price_atom - user_borrowed_usd) / price =
         // (230 * 0.85 * 2000 + 700 * 0.75 * 10 - 210000$) / price = 186250$ / price
         assert_eq!(available_to_borrow_eth.u128(), 93125000000000000000); // 186250$ / 2000 == 93.125 ETH
 

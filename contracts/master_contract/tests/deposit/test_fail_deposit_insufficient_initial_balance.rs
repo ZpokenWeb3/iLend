@@ -11,7 +11,7 @@ mod tests {
     #[test]
     fn test_fail_deposit_insufficient_initial_balance() {
         const TOKEN_DECIMALS: u32 = 18;
-        
+
         const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKEN_DECIMALS);
         const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKEN_DECIMALS);
         const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKEN_DECIMALS);
@@ -80,13 +80,11 @@ mod tests {
                         "ETH".to_string(),
                         18,
                     )],
-                    reserve_configuration: vec![
-                        (
-                            "eth".to_string(),
-                            LTV_ETH,
-                            LIQUIDATION_THRESHOLD_ETH,
-                        ),
-                    ],
+                    reserve_configuration: vec![(
+                        "eth".to_string(),
+                        LTV_ETH,
+                        LIQUIDATION_THRESHOLD_ETH,
+                    )],
                     tokens_interest_rate_model_params: vec![(
                         "eth".to_string(),
                         MIN_INTEREST_RATE,

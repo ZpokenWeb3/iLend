@@ -68,9 +68,9 @@ mod tests {
             40300000000000 // 200 ETH * 2000$ + 300 ATOM * 10$ = 403_000$
         );
 
-        // user_liquidation_threshold = 
-        // (deposit_eth * LIQUIDATION_THRESHOLD_ETH * price_eth 
-        //    + deposit_atom * LIQUIDATION_THRESHOLD_ATOM * price_atom) / user_collateral_usd = 
+        // user_liquidation_threshold =
+        // (deposit_eth * LIQUIDATION_THRESHOLD_ETH * price_eth
+        //    + deposit_atom * LIQUIDATION_THRESHOLD_ATOM * price_atom) / user_collateral_usd =
         // (200 ETH * 0.9 * 2000 + 300 ATOM * 0.8 * 10) / 403_000$ = 362_400$ / 403_000$ ~= 89.92555%
         let user_liquidation_threshold: Uint128 = app
             .wrap()

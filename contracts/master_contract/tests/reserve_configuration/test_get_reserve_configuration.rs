@@ -15,48 +15,39 @@ mod tests {
         // user deposited 200 ETH and 300 ATOM
         let (app, addr) = success_deposit_of_diff_token_with_prices();
 
-        let reserve_configuration_response: GetReserveConfigurationResponse =
-            app.wrap()
-                .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
-                .unwrap();
+        let reserve_configuration_response: GetReserveConfigurationResponse = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
+            .unwrap();
 
         println!(
             "{}",
-            format!(
-                "{:?}",
-                reserve_configuration_response.reserve_configuration
-            )
+            format!("{:?}", reserve_configuration_response.reserve_configuration)
         );
 
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .denom,
+            reserve_configuration_response.reserve_configuration[0].denom,
             "atom".to_string()
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .loan_to_value_ratio,
+            reserve_configuration_response.reserve_configuration[0].loan_to_value_ratio,
             LTV_ATOM
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .liquidation_threshold,
+            reserve_configuration_response.reserve_configuration[0].liquidation_threshold,
             LIQUIDATION_THRESHOLD_ATOM
         );
 
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .denom,
+            reserve_configuration_response.reserve_configuration[1].denom,
             "eth".to_string()
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .loan_to_value_ratio,
+            reserve_configuration_response.reserve_configuration[1].loan_to_value_ratio,
             LTV_ETH
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .liquidation_threshold,
+            reserve_configuration_response.reserve_configuration[1].liquidation_threshold,
             LIQUIDATION_THRESHOLD_ETH
         );
     }

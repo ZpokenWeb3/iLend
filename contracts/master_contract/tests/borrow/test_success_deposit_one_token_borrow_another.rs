@@ -106,16 +106,8 @@ mod tests {
                         ),
                     ],
                     reserve_configuration: vec![
-                        (
-                            "eth".to_string(),
-                            LTV_ETH,
-                            LIQUIDATION_THRESHOLD_ETH,
-                        ),
-                        (
-                            "atom".to_string(),
-                            LTV_ATOM,
-                            LIQUIDATION_THRESHOLD_ATOM,
-                        ),
+                        ("eth".to_string(), LTV_ETH, LIQUIDATION_THRESHOLD_ETH),
+                        ("atom".to_string(), LTV_ATOM, LIQUIDATION_THRESHOLD_ATOM),
                     ],
                     tokens_interest_rate_model_params: vec![
                         (

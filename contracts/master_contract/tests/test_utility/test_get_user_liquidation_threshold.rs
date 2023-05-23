@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
-    use cosmwasm_std::{Addr, coins, Uint128};
+    use cosmwasm_std::{coins, Addr, Uint128};
     use cw_multi_test::Executor;
     use master_contract::msg::{ExecuteMsg, QueryMsg};
 
@@ -42,9 +42,9 @@ mod tests {
             )
             .unwrap();
 
-        // user_liquidation_threshold = 
-        // (deposit_eth * LIQUIDATION_THRESHOLD_ETH * price_eth 
-        //    + deposit_atom * LIQUIDATION_THRESHOLD_ATOM * price_atom) / user_collateral_usd = 
+        // user_liquidation_threshold =
+        // (deposit_eth * LIQUIDATION_THRESHOLD_ETH * price_eth
+        //    + deposit_atom * LIQUIDATION_THRESHOLD_ATOM * price_atom) / user_collateral_usd =
         // (200 ETH * 0.9 * 2000 + 300 ATOM * 0.8 * 10) / 403_000$ = 362_400$ / 403_000$ ~= 89.92555%
         assert_eq!(user_liquidation_threshold.u128(), 8992555);
 
@@ -89,9 +89,9 @@ mod tests {
             )
             .unwrap();
 
-        // user_liquidation_threshold = 
-        // (deposit_eth * LIQUIDATION_THRESHOLD_ETH * price_eth 
-        //    + deposit_atom * LIQUIDATION_THRESHOLD_ATOM * price_atom) / user_collateral_usd = 
+        // user_liquidation_threshold =
+        // (deposit_eth * LIQUIDATION_THRESHOLD_ETH * price_eth
+        //    + deposit_atom * LIQUIDATION_THRESHOLD_ATOM * price_atom) / user_collateral_usd =
         // (230 ETH * 0.9 * 2000 + 700 ATOM * 0.8 * 10) / 467_000$ = 419_600$ / 467_000$ ~= 89.85010%
         assert_eq!(user_liquidation_threshold.u128(), 8985010); // 89.85010%
     }

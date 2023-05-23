@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
-    use cosmwasm_std::{Addr};
+    use cosmwasm_std::Addr;
     use cw_multi_test::Executor;
     use master_contract::msg::{ExecuteMsg, QueryMsg};
 

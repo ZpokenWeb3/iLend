@@ -38,7 +38,7 @@ mod tests {
             &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
         )
         .unwrap();
-  
+
         let user_deposited_balance_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(

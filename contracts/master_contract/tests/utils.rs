@@ -92,16 +92,8 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                     ),
                 ],
                 reserve_configuration: vec![
-                    (
-                        "eth".to_string(),
-                        LTV_ETH,
-                        LIQUIDATION_THRESHOLD_ETH,
-                    ),
-                    (
-                        "atom".to_string(),
-                        LTV_ATOM,
-                        LIQUIDATION_THRESHOLD_ATOM,
-                    ),
+                    ("eth".to_string(), LTV_ETH, LIQUIDATION_THRESHOLD_ETH),
+                    ("atom".to_string(), LTV_ATOM, LIQUIDATION_THRESHOLD_ATOM),
                 ],
                 tokens_interest_rate_model_params: vec![
                     (
@@ -293,16 +285,8 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                     ),
                 ],
                 reserve_configuration: vec![
-                    (
-                        "eth".to_string(),
-                        LTV_ETH,
-                        LIQUIDATION_THRESHOLD_ETH,
-                    ),
-                    (
-                        "atom".to_string(),
-                        LTV_ATOM,
-                        LIQUIDATION_THRESHOLD_ATOM,
-                    ),
+                    ("eth".to_string(), LTV_ETH, LIQUIDATION_THRESHOLD_ETH),
+                    ("atom".to_string(), LTV_ATOM, LIQUIDATION_THRESHOLD_ATOM),
                 ],
                 tokens_interest_rate_model_params: vec![
                     (
@@ -609,16 +593,8 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                     ),
                 ],
                 reserve_configuration: vec![
-                    (
-                        "eth".to_string(),
-                        LTV_ETH,
-                        LIQUIDATION_THRESHOLD_ETH,
-                    ),
-                    (
-                        "atom".to_string(),
-                        LTV_ATOM,
-                        LIQUIDATION_THRESHOLD_ATOM,
-                    ),
+                    ("eth".to_string(), LTV_ETH, LIQUIDATION_THRESHOLD_ETH),
+                    ("atom".to_string(), LTV_ATOM, LIQUIDATION_THRESHOLD_ATOM),
                 ],
                 tokens_interest_rate_model_params: vec![
                     (

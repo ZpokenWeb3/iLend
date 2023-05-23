@@ -1,5 +1,6 @@
 use crate::msg::{
-    LiquidityIndexData, TokenInfo, ReserveConfiguration, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
+    LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
+    TotalBorrowData, UserBorrowingInfo,
 };
 use cosmwasm_std::Addr;
 use pyth_sdk_cw::PriceIdentifier;

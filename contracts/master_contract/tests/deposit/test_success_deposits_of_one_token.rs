@@ -91,30 +91,24 @@ mod tests {
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                     admin: "owner".to_string(),
-                    supported_tokens: vec![
-                         (
-                            "atom".to_string(),
-                            "atom".to_string(),
-                            "ATOM".to_string(),
-                            6,
-                        ),
-                    ],
-                    reserve_configuration: vec![
-                        (
-                            "atom".to_string(),
-                            LTV_ATOM,
-                            LIQUIDATION_THRESHOLD_ATOM,
-                        ),
-                    ],
-                    tokens_interest_rate_model_params: vec![
-                        (
-                            "atom".to_string(),
-                            5000000000000000000,
-                            20000000000000000000,
-                            100000000000000000000,
-                            OPTIMAL_UTILISATION_RATIO,
-                        ),
-                    ],
+                    supported_tokens: vec![(
+                        "atom".to_string(),
+                        "atom".to_string(),
+                        "ATOM".to_string(),
+                        6,
+                    )],
+                    reserve_configuration: vec![(
+                        "atom".to_string(),
+                        LTV_ATOM,
+                        LIQUIDATION_THRESHOLD_ATOM,
+                    )],
+                    tokens_interest_rate_model_params: vec![(
+                        "atom".to_string(),
+                        5000000000000000000,
+                        20000000000000000000,
+                        100000000000000000000,
+                        OPTIMAL_UTILISATION_RATIO,
+                    )],
                 },
                 &[],
                 "Contract",
@@ -140,7 +134,7 @@ mod tests {
             &[],
         )
         .unwrap();
-            
+
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),

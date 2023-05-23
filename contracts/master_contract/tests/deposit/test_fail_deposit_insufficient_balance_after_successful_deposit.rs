@@ -63,13 +63,11 @@ mod tests {
                         "ETH".to_string(),
                         18,
                     )],
-                    reserve_configuration: vec![
-                        (
-                            "eth".to_string(),
-                            LTV_ETH,
-                            LIQUIDATION_THRESHOLD_ETH,
-                        ),
-                    ],
+                    reserve_configuration: vec![(
+                        "eth".to_string(),
+                        LTV_ETH,
+                        LIQUIDATION_THRESHOLD_ETH,
+                    )],
                     tokens_interest_rate_model_params: vec![(
                         "eth".to_string(),
                         MIN_INTEREST_RATE,
