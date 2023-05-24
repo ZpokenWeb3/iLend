@@ -4,22 +4,28 @@ mod tests {
     use cw_multi_test::{App, ContractWrapper, Executor};
     use std::vec;
 
-    use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
     use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_fail_deposit_insufficient_balance_after_successful_deposit() {
-        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+        const ETH_DECIMALS: u32 = 18;
 
-        const INIT_USER_BALANCE: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-        const CONTRACT_RESERVES: u128 = 1000000 * DECIMAL_FRACTIONAL.u128();
-        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * DECIMAL_FRACTIONAL.u128();
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(ETH_DECIMALS);
+        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(ETH_DECIMALS);
+        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(ETH_DECIMALS);
 
-        const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
-        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
-        const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
+        const PERCENT_DECIMALS: u32 = 5;
+        const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
+        const LIQUIDATION_THRESHOLD_ETH: u128 = 90 * 10u128.pow(PERCENT_DECIMALS); // 90%
+
+        const INTEREST_RATE_DECIMALS: u32 = 18;
+        const MIN_INTEREST_RATE: u128 = 5 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
+        const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -57,11 +63,17 @@ mod tests {
                         "ETH".to_string(),
                         18,
                     )],
+                    reserve_configuration: vec![(
+                        "eth".to_string(),
+                        LTV_ETH,
+                        LIQUIDATION_THRESHOLD_ETH,
+                    )],
                     tokens_interest_rate_model_params: vec![(
                         "eth".to_string(),
                         MIN_INTEREST_RATE,
                         SAFE_BORROW_MAX_RATE,
                         RATE_GROWTH_FACTOR,
+                        OPTIMAL_UTILISATION_RATIO,
                     )],
                     price_ids: vec![
                         (

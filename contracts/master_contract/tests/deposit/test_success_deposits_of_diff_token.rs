@@ -4,27 +4,35 @@ mod tests {
     use cw_multi_test::{App, ContractWrapper, Executor};
     use std::vec;
 
-    use cosmwasm_std::Uint128;
     use master_contract::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use master_contract::{execute, instantiate, query};
     use pyth_sdk_cw::PriceIdentifier;
 
     #[test]
     fn test_successful_deposits_of_diff_token() {
-        const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
+        const TOKENS_DECIMALS: u32 = 18;
 
-        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
-        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * DECIMAL_FRACTIONAL.u128();
-        const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * DECIMAL_FRACTIONAL.u128();
+        const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
+        const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
-        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
-        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * DECIMAL_FRACTIONAL.u128();
+        const CONTRACT_RESERVES_FIRST_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const CONTRACT_RESERVES_SECOND_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
-        const MIN_INTEREST_RATE: u128 = 5u128 * DECIMAL_FRACTIONAL.u128();
-        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * DECIMAL_FRACTIONAL.u128();
-        const RATE_GROWTH_FACTOR: u128 = 70u128 * DECIMAL_FRACTIONAL.u128();
+        const PERCENT_DECIMALS: u32 = 5;
+        const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
+        const LIQUIDATION_THRESHOLD_ETH: u128 = 90 * 10u128.pow(PERCENT_DECIMALS); // 90%
+        const LTV_ATOM: u128 = 75 * 10u128.pow(PERCENT_DECIMALS); // 75%
+        const LIQUIDATION_THRESHOLD_ATOM: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
+
+        const INTEREST_RATE_DECIMALS: u32 = 18;
+        const MIN_INTEREST_RATE: u128 = 5 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
+        const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -93,18 +101,24 @@ mod tests {
                             18,
                         ),
                     ],
+                    reserve_configuration: vec![
+                        ("eth".to_string(), LTV_ETH, LIQUIDATION_THRESHOLD_ETH),
+                        ("atom".to_string(), LTV_ATOM, LIQUIDATION_THRESHOLD_ATOM),
+                    ],
                     tokens_interest_rate_model_params: vec![
                         (
                             "eth".to_string(),
                             MIN_INTEREST_RATE,
                             SAFE_BORROW_MAX_RATE,
                             RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                         (
                             "atom".to_string(),
                             MIN_INTEREST_RATE,
                             SAFE_BORROW_MAX_RATE,
                             RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                     ],
                 },

@@ -1,5 +1,6 @@
 use crate::msg::{
-    LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
+    LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
+    TotalBorrowData, UserBorrowingInfo,
 };
 use cosmwasm_std::Addr;
 use pyth_sdk_cw::PriceIdentifier;
@@ -47,6 +48,13 @@ Key: (user_address_1, token_A) -> Value: user_borrowing_info
 Key: (user_address_1, token_B) -> Value: user_borrowing_info
 Key: (user_address_2, token_A) -> Value: user_borrowing_info
  */
+
+pub const RESERVE_CONFIGURATION: Map<String, ReserveConfiguration> =
+    Map::new("reserve_configuration");
+/*
+RESERVE_CONFIGURATION STORAGE
+Key: token demon -> Value: ReserveConfiguration
+*/
 
 pub const TOKENS_INTEREST_RATE_MODEL_PARAMS: Map<String, TokenInterestRateModelParams> =
     Map::new("token_interest_rate_model_params");

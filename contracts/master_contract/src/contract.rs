@@ -2,16 +2,17 @@ use crate::contract::query::{
     fetch_price_by_token, get_available_liquidity_by_token, get_available_to_borrow,
     get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate,
     get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price,
-    get_price_from_contract, get_supported_tokens, get_token_decimal,
+    get_price_from_contract, get_reserve_configuration, get_supported_tokens, get_token_decimal,
     get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token,
     get_total_deposited_by_token, get_total_reserves_by_token,
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
-    get_user_collateral_usd, get_user_deposited_usd, get_user_utilization_rate,
-    get_utilization_rate_by_token, user_deposit_as_collateral,
+    get_user_collateral_usd, get_user_deposited_usd, get_user_liquidation_threshold,
+    get_user_utilization_rate, get_utilization_rate_by_token, user_deposit_as_collateral,
 };
 
 use crate::msg::{
-    LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo,
+    LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
+    TotalBorrowData, UserBorrowingInfo,
 };
 
 use crate::state::{
@@ -30,7 +31,8 @@ use {
         msg::InstantiateMsg,
         msg::{ExecuteMsg, QueryMsg},
         state::{
-            ADMIN, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS, USER_MM_TOKEN_BALANCE,
+            ADMIN, RESERVE_CONFIGURATION, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS,
+            USER_MM_TOKEN_BALANCE,
         },
     },
     cosmwasm_std::{
@@ -45,7 +47,6 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 const PERCENT_DECIMALS: u32 = 5;
 const HUNDRED_PERCENT: u128 = 100 * 10u128.pow(PERCENT_DECIMALS);
-const UTILIZATION_LIMIT: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
 
 const INTEREST_RATE_DECIMALS: u32 = 18;
 const INTEREST_RATE_MULTIPLIER: u128 = 10u128.pow(INTEREST_RATE_DECIMALS);
@@ -140,6 +141,18 @@ pub fn instantiate(
         )?;
     }
 
+    for params in msg.reserve_configuration {
+        RESERVE_CONFIGURATION.save(
+            deps.storage,
+            params.0.clone(),
+            &ReserveConfiguration {
+                denom: params.0,
+                loan_to_value_ratio: params.1,
+                liquidation_threshold: params.2,
+            },
+        )?;
+    }
+
     for params in msg.tokens_interest_rate_model_params {
         TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
             deps.storage,
@@ -149,6 +162,7 @@ pub fn instantiate(
                 min_interest_rate: params.1,
                 safe_borrow_max_rate: params.2,
                 rate_growth_factor: params.3,
+                optimal_utilisation_ratio: params.4,
             },
         )?;
     }
@@ -305,10 +319,18 @@ pub fn execute(
             name,
             symbol,
             decimals,
+            loan_to_value_ratio,
+            liquidation_threshold,
             min_interest_rate,
             safe_borrow_max_rate,
             rate_growth_factor,
+            optimal_utilisation_ratio,
         } => {
+            assert!(
+                !SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There already exists such a supported token"
+            );
+
             SUPPORTED_TOKENS.save(
                 deps.storage,
                 denom.clone(),
@@ -320,6 +342,16 @@ pub fn execute(
                 },
             )?;
 
+            RESERVE_CONFIGURATION.save(
+                deps.storage,
+                denom.clone(),
+                &ReserveConfiguration {
+                    denom: denom.clone(),
+                    loan_to_value_ratio,
+                    liquidation_threshold,
+                },
+            )?;
+
             TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
                 deps.storage,
                 denom.clone(),
@@ -328,6 +360,7 @@ pub fn execute(
                     min_interest_rate,
                     safe_borrow_max_rate,
                     rate_growth_factor,
+                    optimal_utilisation_ratio,
                 },
             )?;
 
@@ -372,7 +405,7 @@ pub fn execute(
 
             assert!(
                 available_to_borrow_amount >= amount.u128(),
-                "User don't have enough deposit to borrow that much"
+                "The amount to be borrowed is not available"
             );
 
             assert!(
@@ -526,27 +559,83 @@ pub fn execute(
                     "This functionality is allowed for admin only"
                 );
 
+                assert!(
+                    SUPPORTED_TOKENS.has(deps.storage, denom.as_ref().unwrap().clone()),
+                    "There is no such supported token yet"
+                );
+
                 PRICES.save(deps.storage, denom.unwrap(), &price.unwrap())?;
             }
 
             Ok(Response::new())
+        }
+        ExecuteMsg::SetReserveConfiguration {
+            denom,
+            loan_to_value_ratio,
+            liquidation_threshold,
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            assert!(
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There is no such supported token yet"
+            );
+
+            RESERVE_CONFIGURATION.save(
+                deps.storage,
+                denom.clone(),
+                &ReserveConfiguration {
+                    denom: denom.clone(),
+                    loan_to_value_ratio,
+                    liquidation_threshold,
+                },
+            )?;
+
+            Ok(Response::default())
+        }
+        ExecuteMsg::SetTokenInterestRateModelParams {
+            denom,
+            min_interest_rate,
+            safe_borrow_max_rate,
+            rate_growth_factor,
+            optimal_utilisation_ratio,
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            assert!(
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                "There is no such supported token yet"
+            );
+
+            TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
+                deps.storage,
+                denom.clone(),
+                &TokenInterestRateModelParams {
+                    denom: denom.clone(),
+                    min_interest_rate,
+                    safe_borrow_max_rate,
+                    rate_growth_factor,
+                    optimal_utilisation_ratio,
+                },
+            )?;
+
+            Ok(Response::default())
         }
         ExecuteMsg::ToggleCollateralSetting { denom } => {
             let use_user_deposit_as_collateral =
                 user_deposit_as_collateral(deps.as_ref(), info.sender.to_string(), denom.clone())
                     .unwrap();
 
-            if use_user_deposit_as_collateral == true {
-                let available_to_redeem = get_available_to_redeem(
-                    deps.as_ref(),
-                    env.clone(),
-                    info.sender.to_string(),
-                    denom.clone(),
-                )
-                .unwrap()
-                .u128();
-
-                let current_user_deposit = get_deposit(
+            if use_user_deposit_as_collateral {
+                let user_token_balance = get_deposit(
                     deps.as_ref(),
                     env.clone(),
                     info.sender.to_string(),
@@ -556,10 +645,45 @@ pub fn execute(
                 .balance
                 .u128();
 
-                assert!(
-                    available_to_redeem >= current_user_deposit,
-                    "The collateral has already using to collateralise the borrowing. Not enough available balance"
-                );
+                if user_token_balance != 0 {
+                    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+                        .unwrap()
+                        .u128() as u32;
+
+                    let price = get_price_from_contract(deps.as_ref(), denom.clone()).unwrap().u128();
+
+                    let user_token_balance_usd =
+                        Decimal::from_i128_with_scale(user_token_balance as i128, token_decimals)
+                            .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                            .to_u128_with_decimals(USD_DECIMALS)
+                            .unwrap();
+
+                    let sum_collateral_balance_usd = get_user_collateral_usd(
+                        deps.as_ref(),
+                        env.clone(),
+                        info.sender.to_string(),
+                    )
+                    .unwrap()
+                    .u128();
+
+                    let sum_borrow_balance_usd =
+                        get_user_borrowed_usd(deps.as_ref(), env.clone(), info.sender.to_string())
+                            .unwrap()
+                            .u128();
+
+                    let user_liquidation_threshold = get_user_liquidation_threshold(
+                        deps.as_ref(),
+                        env.clone(),
+                        info.sender.to_string(),
+                    )
+                    .unwrap()
+                    .u128();
+
+                    assert!(
+                        sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold < sum_collateral_balance_usd - user_token_balance_usd,
+                        "The collateral has already using to collateralise the borrowing. Not enough available balance"
+                    );
+                }
             }
 
             USER_DEPOSIT_AS_COLLATERAL.save(
@@ -573,7 +697,7 @@ pub fn execute(
         ExecuteMsg::Repay {} => {
             if info.funds.is_empty() {
                 return Err(ContractError::CustomError {
-                    val: "No funds deposited!".to_string(),
+                    val: "Funds not transferred!".to_string(),
                 });
             }
 
@@ -582,11 +706,9 @@ pub fn execute(
             let repay_token = info.funds.first().unwrap();
             let mut repay_amount = repay_token.amount.u128();
 
-            assert!(repay_amount > 0);
-
             assert!(
                 SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
-                "There is no such token to repay yet"
+                "There is no such supported token yet"
             );
 
             let user_borrowing_info = get_user_borrowing_info(
@@ -741,6 +863,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query::get_total_borrow_data(deps, denom)?)
         }
         QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
+        QueryMsg::GetReserveConfiguration {} => to_binary(&get_reserve_configuration(deps)?),
         QueryMsg::GetTokensInterestRateModelParams {} => {
             to_binary(&get_tokens_interest_rate_model_params(deps)?)
         }
@@ -761,6 +884,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::GetUserUtilizationRate { address } => {
             to_binary(&get_user_utilization_rate(deps, env, address)?)
+        }
+        QueryMsg::GetUserLiquidationThreshold { address } => {
+            to_binary(&get_user_liquidation_threshold(deps, env, address)?)
         }
         QueryMsg::GetAvailableToBorrow { address, denom } => {
             to_binary(&get_available_to_borrow(deps, env, address, denom)?)
@@ -794,8 +920,8 @@ pub mod query {
     use std::ops::Mul;
 
     use crate::msg::{
-        GetBalanceResponse, GetSupportedTokensResponse, GetTokensInterestRateModelParamsResponse,
-        TotalBorrowData, UserBorrowingInfo,
+        GetBalanceResponse, GetReserveConfigurationResponse, GetSupportedTokensResponse,
+        GetTokensInterestRateModelParamsResponse, TotalBorrowData, UserBorrowingInfo,
     };
     use cosmwasm_std::{Coin, Order, StdError};
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
@@ -1006,6 +1132,21 @@ pub mod query {
         })
     }
 
+    pub fn get_reserve_configuration(deps: Deps) -> StdResult<GetReserveConfigurationResponse> {
+        let mut result: Vec<ReserveConfiguration> = vec![];
+
+        let all: StdResult<Vec<_>> = RESERVE_CONFIGURATION
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
+        for el in all.unwrap() {
+            result.push(el.1)
+        }
+
+        Ok(GetReserveConfigurationResponse {
+            reserve_configuration: result,
+        })
+    }
+
     pub fn get_tokens_interest_rate_model_params(
         deps: Deps,
     ) -> StdResult<GetTokensInterestRateModelParamsResponse> {
@@ -1040,18 +1181,22 @@ pub mod query {
             .load(deps.storage, denom.clone())
             .unwrap()
             .rate_growth_factor;
+        let optimal_utilisation_ratio = TOKENS_INTEREST_RATE_MODEL_PARAMS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .optimal_utilisation_ratio;
 
-        if utilization_rate <= UTILIZATION_LIMIT {
+        if utilization_rate <= optimal_utilisation_ratio {
             Ok(Uint128::from(
                 min_interest_rate
                     + utilization_rate * (safe_borrow_max_rate - min_interest_rate)
-                        / UTILIZATION_LIMIT,
+                        / optimal_utilisation_ratio,
             ))
         } else {
             Ok(Uint128::from(
                 safe_borrow_max_rate
-                    + rate_growth_factor * (utilization_rate - UTILIZATION_LIMIT)
-                        / (HUNDRED_PERCENT - UTILIZATION_LIMIT),
+                    + rate_growth_factor * (utilization_rate - optimal_utilisation_ratio)
+                        / (HUNDRED_PERCENT - optimal_utilisation_ratio),
             ))
         }
     }
@@ -1220,6 +1365,96 @@ pub mod query {
         Ok(liquidity)
     }
 
+    pub fn get_user_liquidation_threshold(
+        deps: Deps,
+        env: Env,
+        user: String,
+    ) -> StdResult<Uint128> {
+        // the minimum borrowing amount in USD, upon reaching which the user's loan positions are liquidated
+        let mut liquidation_threshold_borrow_amount_usd = 0u128;
+        let mut user_collateral_usd = 0u128;
+
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
+            let use_user_deposit_as_collateral =
+                user_deposit_as_collateral(deps, user.clone(), token.denom.clone()).unwrap();
+
+            if use_user_deposit_as_collateral {
+                let user_deposit =
+                    get_deposit(deps, env.clone(), user.clone(), token.denom.clone())
+                        .unwrap()
+                        .balance
+                        .u128();
+
+                let liquidation_threshold = RESERVE_CONFIGURATION
+                    .load(deps.storage, token.denom.clone())
+                    .unwrap()
+                    .liquidation_threshold;
+
+                let token_decimals =
+                    get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
+
+                let price = get_price_from_contract(deps, token.denom.clone()).unwrap().u128();
+
+                let user_deposit_usd =
+                    Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
+                        .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                        .to_u128_with_decimals(USD_DECIMALS)
+                        .unwrap();
+
+                liquidation_threshold_borrow_amount_usd +=
+                    user_deposit_usd * liquidation_threshold / HUNDRED_PERCENT;
+                user_collateral_usd += user_deposit_usd;
+            }
+        }
+
+        Ok(Uint128::from(
+            liquidation_threshold_borrow_amount_usd * HUNDRED_PERCENT / user_collateral_usd,
+        ))
+    }
+
+    pub fn get_user_max_allowed_borrow_amount_usd(
+        deps: Deps,
+        env: Env,
+        user: String,
+    ) -> StdResult<Uint128> {
+        // the maximum amount in USD that a user can borrow
+        let mut max_allowed_borrow_amount_usd = 0u128;
+
+        for token in get_supported_tokens(deps).unwrap().supported_tokens {
+            let use_user_deposit_as_collateral =
+                user_deposit_as_collateral(deps, user.clone(), token.denom.clone()).unwrap();
+
+            if use_user_deposit_as_collateral {
+                let user_deposit =
+                    get_deposit(deps, env.clone(), user.clone(), token.denom.clone())
+                        .unwrap()
+                        .balance
+                        .u128();
+
+                let loan_to_value_ratio = RESERVE_CONFIGURATION
+                    .load(deps.storage, token.denom.clone())
+                    .unwrap()
+                    .loan_to_value_ratio;
+
+                let token_decimals =
+                    get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
+
+                let price = get_price_from_contract(deps, token.denom.clone()).unwrap().u128();
+
+                let user_deposit_usd =
+                    Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
+                        .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                        .to_u128_with_decimals(USD_DECIMALS)
+                        .unwrap();
+
+                max_allowed_borrow_amount_usd +=
+                    user_deposit_usd * loan_to_value_ratio / HUNDRED_PERCENT;
+            }
+        }
+
+        Ok(Uint128::from(max_allowed_borrow_amount_usd))
+    }
+
     pub fn get_available_to_borrow(
         deps: Deps,
         env: Env,
@@ -1228,12 +1463,11 @@ pub mod query {
     ) -> StdResult<Uint128> {
         let mut available_to_borrow = 0u128;
 
-        let sum_collateral_balance_usd = get_user_collateral_usd(deps, env.clone(), user.clone())
-            .unwrap()
-            .u128();
-
         // maximum amount allowed for borrowing
-        let max_allowed_borrow_amount_usd = sum_collateral_balance_usd * 8u128 / 10u128;
+        let max_allowed_borrow_amount_usd =
+            get_user_max_allowed_borrow_amount_usd(deps, env.clone(), user.clone())
+                .unwrap()
+                .u128();
 
         let sum_user_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
             .unwrap()
@@ -1284,10 +1518,7 @@ pub mod query {
             .balance
             .u128();
 
-        let use_user_deposit_as_collateral =
-            user_deposit_as_collateral(deps, user.clone(), denom.clone()).unwrap();
-
-        if use_user_deposit_as_collateral {
+        if user_deposit_as_collateral(deps, user.clone(), denom.clone()).unwrap() {
             if user_token_balance != 0 {
                 let sum_collateral_balance_usd =
                     get_user_collateral_usd(deps, env.clone(), user.clone())
@@ -1298,7 +1529,13 @@ pub mod query {
                     .unwrap()
                     .u128();
 
-                let required_collateral_balance_usd = sum_borrow_balance_usd * 10u128 / 8u128;
+                let user_liquidation_threshold =
+                    get_user_liquidation_threshold(deps, env.clone(), user.clone())
+                        .unwrap()
+                        .u128();
+
+                let required_collateral_balance_usd =
+                    sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold;
 
                 let token_liquidity =
                     get_available_liquidity_by_token(deps, env.clone(), denom.clone())

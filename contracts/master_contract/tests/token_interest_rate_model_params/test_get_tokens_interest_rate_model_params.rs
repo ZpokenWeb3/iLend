@@ -36,5 +36,10 @@ mod tests {
                 .rate_growth_factor,
             70000000000000000000
         ); // 70%
+        assert_eq!(
+            tokens_interest_rate_model_params_response.tokens_interest_rate_model_params[0]
+                .optimal_utilisation_ratio,
+            8000000
+        ); // 80%
     }
 }

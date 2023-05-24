@@ -17,9 +17,10 @@ pub struct InstantiateMsg {
 
     // denom, name, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
-    // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor
-    pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128)>,
-
+    // denom, loan_to_value_ratio, liquidation_threshold
+    pub reserve_configuration: Vec<(String, u128, u128)>,
+    // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor, optimal_utilisation_ratio
+    pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128, u128)>,
     // vector of (token denom, price_identifier) got from https://pyth.network/developers/price-feed-ids#cosmwasm-testnet
     pub price_ids: Vec<(String, PriceIdentifier)>,
 
@@ -37,14 +38,29 @@ pub enum ExecuteMsg {
         denom: Option<String>,
         price: Option<u128>,
     },
+    SetReserveConfiguration {
+        denom: String,
+        loan_to_value_ratio: u128,
+        liquidation_threshold: u128,
+    },
+    SetTokenInterestRateModelParams {
+        denom: String,
+        min_interest_rate: u128,
+        safe_borrow_max_rate: u128,
+        rate_growth_factor: u128,
+        optimal_utilisation_ratio: u128,
+    },
     AddMarkets {
         denom: String,
         name: String,
         symbol: String,
         decimals: u128,
+        loan_to_value_ratio: u128,
+        liquidation_threshold: u128,
         min_interest_rate: u128,
         safe_borrow_max_rate: u128,
         rate_growth_factor: u128,
+        optimal_utilisation_ratio: u128,
     },
 
     // Deposit / Redeem functionality
@@ -86,6 +102,9 @@ pub enum QueryMsg {
     #[returns(GetSupportedTokensResponse)]
     GetSupportedTokens {},
 
+    #[returns(GetReserveConfigurationResponse)]
+    GetReserveConfiguration {},
+
     #[returns(GetTokensInterestRateModelParamsResponse)]
     GetTokensInterestRateModelParams {},
 
@@ -115,6 +134,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetUserUtilizationRate { address: String },
+
+    #[returns(Uint128)]
+    GetUserLiquidationThreshold { address: String },
 
     #[returns(Uint128)]
     GetAvailableToBorrow { address: String, denom: String },
@@ -149,6 +171,11 @@ pub struct GetBalanceResponse {
 #[cw_serde]
 pub struct GetSupportedTokensResponse {
     pub supported_tokens: Vec<TokenInfo>,
+}
+
+#[cw_serde]
+pub struct GetReserveConfigurationResponse {
+    pub reserve_configuration: Vec<ReserveConfiguration>,
 }
 
 #[cw_serde]
@@ -192,11 +219,19 @@ pub struct TokenInfo {
 }
 
 #[cw_serde]
+pub struct ReserveConfiguration {
+    pub denom: String,
+    pub loan_to_value_ratio: u128, // LTV ratio
+    pub liquidation_threshold: u128,
+}
+
+#[cw_serde]
 pub struct TokenInterestRateModelParams {
     pub denom: String,
     pub min_interest_rate: u128,
     pub safe_borrow_max_rate: u128,
     pub rate_growth_factor: u128,
+    pub optimal_utilisation_ratio: u128,
 }
 
 #[cw_serde]

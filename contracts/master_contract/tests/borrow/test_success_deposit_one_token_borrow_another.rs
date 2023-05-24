@@ -11,24 +11,32 @@ mod tests {
         const ETH_DECIMALS: u32 = 18;
         const ATOM_DECIMALS: u32 = 18;
 
-        const INIT_BALANCE_ETH: u128 = 1000u128 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
-        const INIT_BALANCE_ATOM: u128 = 1000u128 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
+        const INIT_BALANCE_ETH: u128 = 1000 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
+        const INIT_BALANCE_ATOM: u128 = 1000 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
 
-        const DEPOSIT_AMOUNT_ETH: u128 = 200u128 * 10u128.pow(ETH_DECIMALS); // 200 ETH
+        const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(ETH_DECIMALS); // 200 ETH
 
-        const CONTRACT_RESERVES_ETH: u128 = 1000u128 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
-        const CONTRACT_RESERVES_ATOM: u128 = 1000u128 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
+        const CONTRACT_RESERVES_ETH: u128 = 1000 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
+        const CONTRACT_RESERVES_ATOM: u128 = 1000 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
 
-        const BORROW_AMOUNT_ATOM: u128 = 300u128 * 10u128.pow(ATOM_DECIMALS); // 300 ATOM
+        const BORROW_AMOUNT_ATOM: u128 = 300 * 10u128.pow(ATOM_DECIMALS); // 300 ATOM
+
+        const PERCENT_DECIMALS: u32 = 5;
+        const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
+        const LIQUIDATION_THRESHOLD_ETH: u128 = 90 * 10u128.pow(PERCENT_DECIMALS); // 90%
+        const LTV_ATOM: u128 = 75 * 10u128.pow(PERCENT_DECIMALS); // 75%
+        const LIQUIDATION_THRESHOLD_ATOM: u128 = 80 * 10u128.pow(PERCENT_DECIMALS); // 80%
 
         const INTEREST_RATE_DECIMALS: u32 = 18;
-        const MIN_INTEREST_RATE: u128 = 5u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const SAFE_BORROW_MAX_RATE: u128 = 30u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
-        const RATE_GROWTH_FACTOR: u128 = 70u128 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const MIN_INTEREST_RATE: u128 = 5 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const SAFE_BORROW_MAX_RATE: u128 = 30 * 10u128.pow(INTEREST_RATE_DECIMALS);
+        const RATE_GROWTH_FACTOR: u128 = 70 * 10u128.pow(INTEREST_RATE_DECIMALS);
+
+        const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
 
         const PRICE_DECIMALS: u32 = 8;
-        const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS); // 2000$/1ETH
-        const PRICE_ATOM: u128 = 10u128 * 10u128.pow(PRICE_DECIMALS); // 10$/1ATOM
+        const PRICE_ETH: u128 = 2000 * 10u128.pow(PRICE_DECIMALS); // 2000$/1ETH
+        const PRICE_ATOM: u128 = 10 * 10u128.pow(PRICE_DECIMALS); // 10$/1ATOM
 
         let mut app = App::new(|router, _, storage| {
             router
@@ -97,18 +105,24 @@ mod tests {
                             18,
                         ),
                     ],
+                    reserve_configuration: vec![
+                        ("eth".to_string(), LTV_ETH, LIQUIDATION_THRESHOLD_ETH),
+                        ("atom".to_string(), LTV_ATOM, LIQUIDATION_THRESHOLD_ATOM),
+                    ],
                     tokens_interest_rate_model_params: vec![
                         (
                             "eth".to_string(),
                             MIN_INTEREST_RATE,
                             SAFE_BORROW_MAX_RATE,
                             RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                         (
                             "atom".to_string(),
                             MIN_INTEREST_RATE,
                             SAFE_BORROW_MAX_RATE,
                             RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
                         ),
                     ],
                 },
@@ -212,12 +226,11 @@ mod tests {
             )
             .unwrap();
 
-        // sum_collateral_balance_usd = DEPOSIT_AMOUNT_ETH * PRICE_ETH = 200 ETH * 2000 = 400000$
-        // max_allowed_borrow_amount_usd = sum_collateral_balance_usd * 0.8 = 400000$ * 0.8 = 320000$
-        // user_available_to_borrow_eth = max_allowed_borrow_amount_usd / PRICE_ETH = 320000$ / 2000 = 160 ETH
+        // max_allowed_borrow_amount_usd = DEPOSIT_AMOUNT_ETH * PRICE_ETH * LTV_ETH = 200 ETH * 2000 * 0,85 = 340000$
+        // user_available_to_borrow_eth = max_allowed_borrow_amount_usd / PRICE_ETH = 340000$ / 2000 = 170 ETH
         assert_eq!(
             user_available_to_borrow_eth.u128(),
-            160000000000000000000 // 160 ETH
+            170000000000000000000 // 170 ETH
         );
 
         // user_available_to_borrow_atom = max_allowed_borrow_amount_usd / PRICE_ATOM = 320000$ / 10 = 32000 ATOM
