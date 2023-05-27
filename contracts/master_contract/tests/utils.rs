@@ -74,13 +74,13 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                     (
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                 ],
                 reserve_configuration: vec![
@@ -290,13 +290,13 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                     (
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                 ],
                 reserve_configuration: vec![
@@ -531,7 +531,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const CONTRACT_RESERVES_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
     const CONTRACT_RESERVES_ATOM: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
-    const BORROW_OF_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS);
+    const BORROW_AMOUNT_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS);
 
     const PERCENT_DECIMALS: u32 = 5;
     const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -604,13 +604,13 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                     (
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        6,
+                        TOKENS_DECIMALS as u128,
                     ),
                 ],
                 reserve_configuration: vec![
@@ -865,7 +865,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         addr.clone(),
         &ExecuteMsg::Borrow {
             denom: "eth".to_string(),
-            amount: Uint128::from(BORROW_OF_ETH),
+            amount: Uint128::from(BORROW_AMOUNT_ETH),
         },
         &[],
     )

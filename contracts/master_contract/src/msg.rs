@@ -153,6 +153,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetLiquidityIndexLastUpdate { denom: String },
+
+    #[returns(Uint128)]
+    GetUserMaxAllowedBorrowAmountUsd { address: String },
 }
 
 #[cw_serde]

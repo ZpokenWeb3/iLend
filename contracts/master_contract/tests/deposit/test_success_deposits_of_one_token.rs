@@ -93,7 +93,7 @@ mod tests {
                             "atom".to_string(),
                             "atom".to_string(),
                             "ATOM".to_string(),
-                            6,
+                            TOKENS_DECIMALS as u128,
                         ),
                     ],
                     reserve_configuration: vec![

@@ -71,7 +71,7 @@ mod tests {
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     )],
                     reserve_configuration: vec![
                         (

@@ -7,7 +7,7 @@ use crate::contract::query::{
     get_total_deposited_by_token, get_total_reserves_by_token,
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
     get_user_collateral_usd, get_user_deposited_usd, get_user_utilization_rate,
-    get_utilization_rate_by_token, user_deposit_as_collateral,
+    get_utilization_rate_by_token, user_deposit_as_collateral, get_user_max_allowed_borrow_amount_usd
 };
 
 use crate::msg::{
@@ -683,7 +683,7 @@ pub fn execute(
 
                 let mut user_token_balance = 0u128;
                 if use_user_deposit_as_collateral {
-                    let user_token_balance = get_deposit(
+                    user_token_balance = get_deposit(
                         deps.as_ref(),
                         env.clone(),
                         user.clone(),
@@ -1041,6 +1041,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::GetLiquidityIndexLastUpdate { denom } => {
             to_binary(&get_liquidity_index_last_update(deps, denom)?)
+        }
+        QueryMsg::GetUserMaxAllowedBorrowAmountUsd { address } => {
+            to_binary(&get_user_max_allowed_borrow_amount_usd(deps, env, address)?)
         }
     }
 }

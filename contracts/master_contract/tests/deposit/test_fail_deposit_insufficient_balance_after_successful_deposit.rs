@@ -9,13 +9,13 @@ mod tests {
 
     #[test]
     fn test_fail_deposit_insufficient_balance_after_successful_deposit() {
-        const ETH_DECIMALS: u32 = 18;
+        const TOKENS_DECIMALS: u32 = 18;
 
-        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(ETH_DECIMALS);
-        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(ETH_DECIMALS); // 1M ETH
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
 
-        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(ETH_DECIMALS);
-        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(ETH_DECIMALS);
+        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
+        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKENS_DECIMALS);
 
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -71,7 +71,7 @@ mod tests {
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     )],
                     reserve_configuration: vec![
                         (
