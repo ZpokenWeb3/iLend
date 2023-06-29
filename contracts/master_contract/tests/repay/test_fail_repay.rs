@@ -3,7 +3,7 @@ mod tests {
     use crate::utils::success_borrow_setup;
     use cosmwasm_std::{coin, Addr};
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg};
+    use master_contract::msg::ExecuteMsg;
 
     #[test]
     #[should_panic(expected = "Funds not transferred!")]

@@ -3,7 +3,9 @@ mod tests {
     use crate::utils::success_borrow_setup;
     use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{GetBalanceResponse, GetReserveConfigurationResponse, ExecuteMsg, QueryMsg};
+    use master_contract::msg::{
+        ExecuteMsg, GetBalanceResponse, GetReserveConfigurationResponse, QueryMsg,
+    };
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -40,7 +42,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_eth.balance.u128(), 200000000000000000000); // 200 ETH
+        assert_eq!(
+            user_deposited_balance_eth.balance.u128(),
+            200000000000000000000
+        ); // 200 ETH
 
         let user_deposited_balance_atom: GetBalanceResponse = app
             .wrap()
@@ -53,7 +58,10 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance_atom.balance.u128(), 300000000000000000000); // 300 ATOM
+        assert_eq!(
+            user_deposited_balance_atom.balance.u128(),
+            300000000000000000000
+        ); // 300 ATOM
 
         let user_collateral_usd: Uint128 = app
             .wrap()
@@ -68,20 +76,18 @@ mod tests {
         // 200 ETH * 2000 + 300 ATOM * 10 == 403_000$
         assert_eq!(user_collateral_usd.u128(), 40300000000000);
 
-        let reserve_configuration_response: GetReserveConfigurationResponse =
-            app.wrap()
-                .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
-                .unwrap();
+        let reserve_configuration_response: GetReserveConfigurationResponse = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
+            .unwrap();
 
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .loan_to_value_ratio,
+            reserve_configuration_response.reserve_configuration[0].loan_to_value_ratio,
             7500000
         ); // ltv_atom = 75%
 
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .loan_to_value_ratio,
+            reserve_configuration_response.reserve_configuration[1].loan_to_value_ratio,
             8500000
         ); // ltv_eth = 85%
 
@@ -175,7 +181,7 @@ mod tests {
 
         app.set_block(BlockInfo {
             height: 542,
-            time: Timestamp::from_seconds(now + 2*YEAR_IN_SECONDS + 10000), // after 2 years
+            time: Timestamp::from_seconds(now + 2 * YEAR_IN_SECONDS + 10000), // after 2 years
             chain_id: "custom_chain_id".to_string(),
         });
 
@@ -238,8 +244,14 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposit_amount_eth.balance.u128(), 203331286529000814400); // 203.331286529000814400 ETH
-        assert_eq!(user_deposit_amount_atom.balance.u128(), 300000000000000000000); // 300 ATOM
+        assert_eq!(
+            user_deposit_amount_eth.balance.u128(),
+            203331286529000814400
+        ); // 203.331286529000814400 ETH
+        assert_eq!(
+            user_deposit_amount_atom.balance.u128(),
+            300000000000000000000
+        ); // 300 ATOM
 
         let user_borrow_amount_eth: Uint128 = app
             .wrap()
@@ -252,10 +264,7 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(
-            user_borrow_amount_eth.u128(),
-            191850604584630250327
-        ); // 191.850604584630250327 ETH
+        assert_eq!(user_borrow_amount_eth.u128(), 191850604584630250327); // 191.850604584630250327 ETH
 
         app.execute_contract(
             Addr::unchecked("liquidator"),
@@ -288,7 +297,10 @@ mod tests {
             .unwrap();
 
         // TODO: need to correct the calculation inaccuracy
-        assert_eq!(liquidator_deposit_amount_eth.balance.u128(), 9999999999999999999999); // 9999.999999999999999999 ETH
+        assert_eq!(
+            liquidator_deposit_amount_eth.balance.u128(),
+            9999999999999999999999
+        ); // 9999.999999999999999999 ETH
         assert_eq!(liquidator_deposit_amount_atom.balance.u128(), 0); // 0
 
         app.execute_contract(
@@ -351,7 +363,13 @@ mod tests {
 
         // 9999.999999999999999999 ETH - 191.850604584630250327 ETH + 203.331286529000814400 ETH ~= 10011,480681944 ETH
         // TODO: need to correct the calculation inaccuracy
-        assert_eq!(liquidator_deposit_amount_eth.balance.u128(), 10008510511955314159271); // 10008.510511955314159271 ETH
-        assert_eq!(liquidator_deposit_amount_atom.balance.u128(), 300000000000000000000); // 300 ATOM
+        assert_eq!(
+            liquidator_deposit_amount_eth.balance.u128(),
+            10008510511955314159271
+        ); // 10008.510511955314159271 ETH
+        assert_eq!(
+            liquidator_deposit_amount_atom.balance.u128(),
+            300000000000000000000
+        ); // 300 ATOM
     }
 }

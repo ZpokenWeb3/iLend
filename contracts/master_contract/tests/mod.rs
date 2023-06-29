@@ -1,10 +1,10 @@
 mod borrow;
 mod deposit;
 mod deposit_as_collateral;
+mod liquidation;
 mod redeem;
 mod repay;
 mod reserve_configuration;
 mod test_utility;
-mod liquidation;
 mod token_interest_rate_model_params;
 pub mod utils;

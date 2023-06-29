@@ -1,10 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_of_one_token_setup;
-    use master_contract::msg::{
-        GetBalanceResponse,
-        QueryMsg,
-    };
+    use master_contract::msg::{GetBalanceResponse, QueryMsg};
 
     #[test]
     fn test_get_deposit() {

@@ -18,7 +18,6 @@ mod tests {
         const CONTRACT_RESERVES_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
         const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKENS_DECIMALS);
 
-
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
         const LIQUIDATION_THRESHOLD_ETH: u128 = 90 * 10u128.pow(PERCENT_DECIMALS); // 90%

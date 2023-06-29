@@ -15,7 +15,7 @@ pub struct InstantiateMsg {
 
     pub admin: String,
     pub liquidator: String,
-  
+
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
