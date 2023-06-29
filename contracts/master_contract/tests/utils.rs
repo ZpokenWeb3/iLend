@@ -12,6 +12,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
 
     const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+    const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
 
     const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
     const FIRST_DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
@@ -47,7 +48,16 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                 &Addr::unchecked("owner"),
                 coins(CONTRACT_RESERVES, "eth"),
             )
-            .unwrap()
+            .unwrap();
+
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("liquidator"),
+                coins(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+            )
+            .unwrap();
     });
 
     let code = ContractWrapper::new(execute, instantiate, query);
@@ -77,18 +87,19 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                 admin: "owner".to_string(),
+                liquidator: "liquidator".to_string(),
                 supported_tokens: vec![
                     (
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                     (
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                 ],
                 reserve_configuration: vec![
@@ -211,6 +222,9 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
     const INIT_BALANCE_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
     const INIT_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
 
+    const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+    const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
     const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const DEPOSIT_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
@@ -258,6 +272,18 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                 ],
             )
             .unwrap();
+
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("liquidator"),
+                vec![
+                    coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                    coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                ],
+            )
+            .unwrap();
     });
 
     let code = ContractWrapper::new(execute, instantiate, query);
@@ -270,18 +296,19 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
             &InstantiateMsg {
                 is_testing: true,
                 admin: "owner".to_string(),
+                liquidator: "liquidator".to_string(),
                 supported_tokens: vec![
                     (
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                     (
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                 ],
                 reserve_configuration: vec![
@@ -516,13 +543,16 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
     const INIT_BALANCE_ATOM: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 ATOM
     const INIT_BALANCE_USDT: u128 = 10_000 * 10u128.pow(TOKENS_DECIMALS); // 10_000 USDT
 
+    const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+    const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
     const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const DEPOSIT_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
     const CONTRACT_RESERVES_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
     const CONTRACT_RESERVES_ATOM: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
-    const BORROW_OF_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS);
+    const BORROW_AMOUNT_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS);
 
     const PERCENT_DECIMALS: u32 = 5;
     const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -566,6 +596,18 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                 ],
             )
             .unwrap();
+
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("liquidator"),
+                vec![
+                    coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                    coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                ],
+            )
+            .unwrap();
     });
 
     let code = ContractWrapper::new(execute, instantiate, query);
@@ -578,18 +620,19 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
             &InstantiateMsg {
                 is_testing: true,
                 admin: "owner".to_string(),
+                liquidator: "liquidator".to_string(),
                 supported_tokens: vec![
                     (
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     ),
                     (
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
-                        6,
+                        TOKENS_DECIMALS as u128,
                     ),
                 ],
                 reserve_configuration: vec![
@@ -853,7 +896,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         addr.clone(),
         &ExecuteMsg::Borrow {
             denom: "eth".to_string(),
-            amount: Uint128::from(BORROW_OF_ETH),
+            amount: Uint128::from(BORROW_AMOUNT_ETH),
         },
         &[],
     )

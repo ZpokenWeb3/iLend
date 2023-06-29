@@ -3,7 +3,7 @@ mod tests {
     use crate::utils::success_deposit_as_collateral_of_diff_token_with_prices;
     use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
-    use master_contract::msg::{ExecuteMsg, GetBalanceResponse, QueryMsg};
+    use master_contract::msg::{ExecuteMsg};
 
     #[test]
     #[should_panic(expected = "There is no such supported token yet")]

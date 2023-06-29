@@ -14,8 +14,9 @@ pub struct InstantiateMsg {
     pub is_testing: bool,
 
     pub admin: String,
-
-    // denom, name, symbol, decimals
+    pub liquidator: String,
+  
+    // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
     pub reserve_configuration: Vec<(String, u128, u128)>,
@@ -78,6 +79,9 @@ pub enum ExecuteMsg {
     Repay {},
     ToggleCollateralSetting {
         denom: String,
+    },
+    Liquidation {
+        user: String,
     },
 }
 
@@ -161,6 +165,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetLiquidityIndexLastUpdate { denom: String },
+
+    #[returns(Uint128)]
+    GetUserMaxAllowedBorrowAmountUsd { address: String },
 }
 
 #[cw_serde]

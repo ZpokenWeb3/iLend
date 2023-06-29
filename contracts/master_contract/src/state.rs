@@ -37,7 +37,12 @@ Key: token demon -> Value: TokenInfo
 
 pub const ADMIN: Item<String> = Item::new("admin");
 /*
-ADMIN that are eligible to fund contract with reserves [ contract itself by default ]
+ADMIN that is eligible to fund contract with reserves [ contract itself by default ]
+*/
+
+pub const LIQUIDATOR: Item<String> = Item::new("liquidator");
+/*
+LIQUIDATOR that is eligible to liquidate user positions
 */
 
 pub const USER_BORROWING_INFO: Map<(String, String), UserBorrowingInfo> =

@@ -8,18 +8,20 @@ mod tests {
 
     #[test]
     fn test_success_deposit_one_token_borrow_another() {
-        const ETH_DECIMALS: u32 = 18;
-        const ATOM_DECIMALS: u32 = 18;
+        const TOKENS_DECIMALS: u32 = 18;
 
-        const INIT_BALANCE_ETH: u128 = 1000 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
-        const INIT_BALANCE_ATOM: u128 = 1000 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
+        const INIT_BALANCE_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS); // 1000 ETH
+        const INIT_BALANCE_ATOM: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS); // 1000 ATOM
 
-        const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(ETH_DECIMALS); // 200 ETH
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
 
-        const CONTRACT_RESERVES_ETH: u128 = 1000 * 10u128.pow(ETH_DECIMALS); // 1000 ETH
-        const CONTRACT_RESERVES_ATOM: u128 = 1000 * 10u128.pow(ATOM_DECIMALS); // 1000 ATOM
+        const DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS); // 200 ETH
 
-        const BORROW_AMOUNT_ATOM: u128 = 300 * 10u128.pow(ATOM_DECIMALS); // 300 ATOM
+        const CONTRACT_RESERVES_ETH: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS); // 1000 ETH
+        const CONTRACT_RESERVES_ATOM: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS); // 1000 ATOM
+
+        const BORROW_AMOUNT_ATOM: u128 = 300 * 10u128.pow(TOKENS_DECIMALS); // 300 ATOM
 
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -62,6 +64,18 @@ mod tests {
                     ],
                 )
                 .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    vec![
+                        coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                        coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                    ],
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -74,6 +88,7 @@ mod tests {
                 &InstantiateMsg {
                     is_testing: true,
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     price_ids: vec![
                         (
                             "inj".to_string(),
@@ -91,18 +106,19 @@ mod tests {
                         ),
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
+
                     supported_tokens: vec![
                         (
                             "eth".to_string(),
                             "ethereum".to_string(),
                             "ETH".to_string(),
-                            18,
+                            TOKENS_DECIMALS as u128,
                         ),
                         (
                             "atom".to_string(),
                             "atom".to_string(),
                             "ATOM".to_string(),
-                            18,
+                            TOKENS_DECIMALS as u128,
                         ),
                     ],
                     reserve_configuration: vec![

@@ -15,6 +15,9 @@ mod tests {
         const INIT_BALANCE_FIRST_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
         const INIT_BALANCE_SECOND_TOKEN: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
 
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
         const DEPOSIT_OF_FIRST_TOKEN: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
         const DEPOSIT_OF_SECOND_TOKEN: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
@@ -58,6 +61,18 @@ mod tests {
                     ],
                 )
                 .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    vec![
+                        coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                        coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                    ],
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -87,18 +102,19 @@ mod tests {
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![
                         (
                             "eth".to_string(),
                             "ethereum".to_string(),
                             "ETH".to_string(),
-                            18,
+                            TOKENS_DECIMALS as u128,
                         ),
                         (
                             "atom".to_string(),
                             "atom".to_string(),
                             "ATOM".to_string(),
-                            18,
+                            TOKENS_DECIMALS as u128,
                         ),
                     ],
                     reserve_configuration: vec![

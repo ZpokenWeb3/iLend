@@ -14,12 +14,15 @@ mod tests {
 
     #[test]
     fn test_successful_deposits_of_one_token() {
-        const TOKEN_DECIMALS: u32 = 18;
+        const TOKENS_DECIMALS: u32 = 18;
 
-        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKEN_DECIMALS);
-        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKEN_DECIMALS);
-        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKEN_DECIMALS);
-        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKEN_DECIMALS);
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const INIT_LIQUIDATOR_BALANCE_ATOM: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ATOM
+
+        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
+        const FIRST_DEPOSIT_AMOUNT: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
+        const SECOND_DEPOSIT_AMOUNT: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -62,6 +65,18 @@ mod tests {
                     ],
                 )
                 .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    vec![
+                        coin(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                        coin(INIT_LIQUIDATOR_BALANCE_ATOM, "atom"),
+                    ],
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -73,24 +88,25 @@ mod tests {
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
                     is_testing: true,
+                    admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     price_ids: vec![
                         (
                             "inj".to_string(),
                             PriceIdentifier::from_hex(
                                 "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                             )
-                            .unwrap(),
+                                .unwrap(),
                         ),
                         (
                             "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                             PriceIdentifier::from_hex(
                                 "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                             )
-                            .unwrap(),
+                                .unwrap(),
                         ),
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
-                    admin: "owner".to_string(),
                     supported_tokens: vec![(
                         "atom".to_string(),
                         "atom".to_string(),
@@ -123,7 +139,7 @@ mod tests {
                 denom: "eth".to_string(),
                 name: "ethereum".to_string(),
                 symbol: "ETH".to_string(),
-                decimals: TOKEN_DECIMALS as u128,
+                decimals: TOKENS_DECIMALS as u128,
                 loan_to_value_ratio: LTV_ETH,
                 liquidation_threshold: LIQUIDATION_THRESHOLD_ETH,
                 min_interest_rate: MIN_INTEREST_RATE,
@@ -133,7 +149,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -141,7 +157,7 @@ mod tests {
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -149,7 +165,7 @@ mod tests {
             &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "atom"),
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -160,7 +176,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -171,7 +187,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -179,7 +195,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -187,7 +203,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(FIRST_DEPOSIT_AMOUNT * 15 / 10, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -197,7 +213,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -207,7 +223,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -248,7 +264,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(SECOND_DEPOSIT_AMOUNT, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -259,7 +275,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.set_block(BlockInfo {
             height: 0,

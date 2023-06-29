@@ -10,11 +10,14 @@ mod tests {
 
     #[test]
     fn test_fail_deposit_insufficient_initial_balance() {
-        const TOKEN_DECIMALS: u32 = 18;
+        const TOKENS_DECIMALS: u32 = 18;
 
-        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKEN_DECIMALS);
-        const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKEN_DECIMALS);
-        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKEN_DECIMALS);
+        const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+        const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+
+        const CONTRACT_RESERVES_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
+        const FIRST_DEPOSIT_AMOUNT: u128 = 2000 * 10u128.pow(TOKENS_DECIMALS);
+
 
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS); // 85%
@@ -42,9 +45,18 @@ mod tests {
                 .init_balance(
                     storage,
                     &Addr::unchecked("owner"),
-                    coins(CONTRACT_RESERVES, "eth"),
+                    coins(CONTRACT_RESERVES_ETH, "eth"),
                 )
-                .unwrap()
+                .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("liquidator"),
+                    coins(INIT_LIQUIDATOR_BALANCE_ETH, "eth"),
+                )
+                .unwrap();
         });
 
         let code = ContractWrapper::new(execute, instantiate, query);
@@ -57,6 +69,7 @@ mod tests {
                 &InstantiateMsg {
                     is_testing: true,
                     admin: "owner".to_string(),
+                    liquidator: "liquidator".to_string(),
                     price_ids: vec![
                         (
                             "inj".to_string(),
@@ -74,11 +87,12 @@ mod tests {
                         ),
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
+
                     supported_tokens: vec![(
                         "eth".to_string(),
                         "ethereum".to_string(),
                         "ETH".to_string(),
-                        18,
+                        TOKENS_DECIMALS as u128,
                     )],
                     reserve_configuration: vec![(
                         "eth".to_string(),
@@ -93,7 +107,7 @@ mod tests {
                         OPTIMAL_UTILISATION_RATIO,
                     )],
                 },
-                &[coin(CONTRACT_RESERVES, "eth")],
+                &[coin(CONTRACT_RESERVES_ETH, "eth")],
                 "Contract",
                 Some("owner".to_string()), // contract that can execute migrations
             )
