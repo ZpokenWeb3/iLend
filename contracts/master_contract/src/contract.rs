@@ -1,14 +1,4 @@
-use crate::contract::query::{
-    fetch_price_by_token, get_available_liquidity_by_token, get_available_to_borrow,
-    get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate,
-    get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price,
-    get_price_from_contract, get_reserve_configuration, get_supported_tokens, get_token_decimal,
-    get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token,
-    get_total_deposited_by_token, get_total_reserves_by_token,
-    get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
-    get_user_collateral_usd, get_user_deposited_usd, get_user_utilization_rate,
-    get_utilization_rate_by_token, user_deposit_as_collateral, get_user_max_allowed_borrow_amount_usd
-};
+use crate::contract::query::{fetch_price_by_token, get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate, get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price, get_price_from_contract, get_reserve_configuration, get_supported_tokens, get_token_decimal, get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token, get_total_deposited_by_token, get_total_reserves_by_token, get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info, get_user_collateral_usd, get_user_deposited_usd, get_user_utilization_rate, get_utilization_rate_by_token, user_deposit_as_collateral, get_user_max_allowed_borrow_amount_usd, get_user_liquidation_threshold};
 
 use crate::msg::{
     LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
