@@ -15,7 +15,7 @@ mod test_get_user_borrow_amount_with_interest;
 mod test_get_user_borrowed_usd;
 mod test_get_user_borrowing_info;
 mod test_get_user_deposited_usd;
+mod test_get_user_liquidation_threshold;
 mod test_get_user_utilization_rate;
 mod test_get_utilization_rate_by_token;
 mod test_set_get_price;
-mod test_get_user_liquidation_threshold;

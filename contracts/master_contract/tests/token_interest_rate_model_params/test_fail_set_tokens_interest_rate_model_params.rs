@@ -1,14 +1,12 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
-    use master_contract::msg::{ExecuteMsg};
-    use cw_multi_test::{Executor};
-    use cosmwasm_std::{Addr};
+    use cosmwasm_std::Addr;
+    use cw_multi_test::Executor;
+    use master_contract::msg::ExecuteMsg;
 
     #[test]
-    #[should_panic(
-        expected = "This functionality is allowed for admin only"
-    )]
+    #[should_panic(expected = "This functionality is allowed for admin only")]
     fn test_fail_set_tokens_interest_rate_model_params_if_caller_is_not_owner() {
         const PERCENT_DECIMALS: u32 = 5;
 
@@ -36,9 +34,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "There is no such supported token yet"
-    )]
+    #[should_panic(expected = "There is no such supported token yet")]
     fn test_fail_set_tokens_interest_rate_model_params_if_token_is_not_supported() {
         const PERCENT_DECIMALS: u32 = 5;
 

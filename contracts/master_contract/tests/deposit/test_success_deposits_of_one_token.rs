@@ -9,6 +9,7 @@ mod tests {
         ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg, TotalBorrowData,
     };
     use master_contract::{execute, instantiate, query};
+    use pyth_sdk_cw::PriceIdentifier;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -86,32 +87,46 @@ mod tests {
                 code_id,
                 Addr::unchecked("owner"),
                 &InstantiateMsg {
-                    admin: "owner".to_string(),
+
                     liquidator: "liquidator".to_string(),
-                    supported_tokens: vec![
-                         (
-                            "atom".to_string(),
-                            "atom".to_string(),
-                            "ATOM".to_string(),
-                            TOKENS_DECIMALS as u128,
-                        ),
-                    ],
                     reserve_configuration: vec![
+                    is_testing: true,
+                    price_ids: vec![
                         (
-                            "atom".to_string(),
-                            LTV_ATOM,
-                            LIQUIDATION_THRESHOLD_ATOM,
+                            "inj".to_string(),
+                            PriceIdentifier::from_hex(
+                                "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                            )
+                            .unwrap(),
+                        ),
+                        (
+                            "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
+                            PriceIdentifier::from_hex(
+                                "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                            )
+                            .unwrap(),
                         ),
                     ],
-                    tokens_interest_rate_model_params: vec![
-                        (
-                            "atom".to_string(),
-                            5000000000000000000,
-                            20000000000000000000,
-                            100000000000000000000,
-                            OPTIMAL_UTILISATION_RATIO,
-                        ),
-                    ],
+                    pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
+                    admin: "owner".to_string(),
+                    supported_tokens: vec![(
+                        "atom".to_string(),
+                        "atom".to_string(),
+                        "ATOM".to_string(),
+                        6,
+                    )],
+                    reserve_configuration: vec![(
+                        "atom".to_string(),
+                        LTV_ATOM,
+                        LIQUIDATION_THRESHOLD_ATOM,
+                    )],
+                    tokens_interest_rate_model_params: vec![(
+                        "atom".to_string(),
+                        5000000000000000000,
+                        20000000000000000000,
+                        100000000000000000000,
+                        OPTIMAL_UTILISATION_RATIO,
+                    )],
                 },
                 &[],
                 "Contract",
@@ -137,7 +152,7 @@ mod tests {
             &[],
         )
         .unwrap();
-            
+
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
@@ -157,9 +172,9 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPrice {
-                denom: "eth".to_string(),
-                price: PRICE_ETH,
+            &ExecuteMsg::UpdatePrice {
+                denom: Some("eth".to_string()),
+                price: Some(PRICE_ETH),
             },
             &[],
         )
@@ -168,9 +183,9 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPrice {
-                denom: "atom".to_string(),
-                price: PRICE_ATOM,
+            &ExecuteMsg::UpdatePrice {
+                denom: Some("atom".to_string()),
+                price: Some(PRICE_ATOM),
             },
             &[],
         )

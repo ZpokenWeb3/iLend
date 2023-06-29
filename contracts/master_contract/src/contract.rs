@@ -1,8 +1,8 @@
 use crate::contract::query::{
-    get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem,
-    get_current_liquidity_index_ln, get_interest_rate, get_liquidity_index_last_update,
-    get_liquidity_rate, get_mm_token_price, get_price, get_supported_tokens, get_token_decimal,
-    get_reserve_configuration, get_user_liquidation_threshold,
+    fetch_price_by_token, get_available_liquidity_by_token, get_available_to_borrow,
+    get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate,
+    get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price,
+    get_price_from_contract, get_reserve_configuration, get_supported_tokens, get_token_decimal,
     get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token,
     get_total_deposited_by_token, get_total_reserves_by_token,
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
@@ -11,17 +11,18 @@ use crate::contract::query::{
 };
 
 use crate::msg::{
-    LiquidityIndexData, TokenInfo, TokenInterestRateModelParams, TotalBorrowData, UserBorrowingInfo, ReserveConfiguration
+    LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
+    TotalBorrowData, UserBorrowingInfo,
 };
 
 use crate::state::{
-    LIQUIDITY_INDEX_DATA, PRICES, TOTAL_BORROW_DATA, USER_BORROWING_INFO,
-    USER_DEPOSIT_AS_COLLATERAL,
+    IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, TOTAL_BORROW_DATA,
+    USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
 };
 
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 
-use std::ops::{Add, Div, Mul};
+use std::ops::{Add, Deref, Div, Mul};
 
 use {
     crate::contract::query::get_deposit,
@@ -31,6 +32,7 @@ use {
         msg::{ExecuteMsg, QueryMsg},
         state::{
             ADMIN, LIQUIDATOR, SUPPORTED_TOKENS, RESERVE_CONFIGURATION, TOKENS_INTEREST_RATE_MODEL_PARAMS, USER_MM_TOKEN_BALANCE,
+
         },
     },
     cosmwasm_std::{
@@ -81,11 +83,31 @@ pub fn instantiate(
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    IS_TESTING.save(deps.storage, &msg.is_testing)?;
 
     ADMIN.save(deps.storage, &msg.admin)?;
     LIQUIDATOR.save(deps.storage, &msg.liquidator)?;
 
+    PYTH_CONTRACT.save(
+        deps.storage,
+        &deps.api.addr_validate(msg.pyth_contract_addr.as_ref())?,
+    )?;
+
+    for price_id in msg.price_ids.iter() {
+        let price_id = price_id.clone();
+        PRICE_FEED_IDS.save(deps.storage, price_id.0.clone(), &price_id.1.clone())?;
+    }
+
     for token in msg.supported_tokens {
+        // saving price whilst initialisation in case when Pyth price is not available so that we can get price from contract
+        if !msg.is_testing {
+            let price = fetch_price_by_token(deps.as_ref(), env.clone(), token.0.clone())
+                .unwrap()
+                .u128();
+
+            PRICES.save(deps.storage, token.0.clone(), &price)?;
+        }
+
         SUPPORTED_TOKENS.save(
             deps.storage,
             token.0.clone(),
@@ -524,19 +546,35 @@ pub fn execute(
                 amount: coins(amount.u128(), denom.clone()),
             }))
         }
-        ExecuteMsg::SetPrice { denom, price } => {
-            assert_eq!(
-                info.sender.to_string(),
-                ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
-            );
+        ExecuteMsg::UpdatePrice { denom, price } => {
+            // if not testing mode, fetching and saving prices from the Pyth oracle
+            if !IS_TESTING.load(deps.storage).unwrap() {
+                for token in get_supported_tokens(deps.as_ref())
+                    .unwrap()
+                    .supported_tokens
+                    .iter()
+                {
+                    let price =
+                        fetch_price_by_token(deps.as_ref(), env.clone(), token.denom.clone())
+                            .unwrap()
+                            .u128();
 
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There is no such supported token yet"
-            );
+                    PRICES.save(deps.storage, token.denom.clone(), &price)?;
+                }
+            } else {
+                assert_eq!(
+                    info.sender.to_string(),
+                    ADMIN.load(deps.storage).unwrap(),
+                    "This functionality is allowed for admin only"
+                );
 
-            PRICES.save(deps.storage, denom, &price)?;
+                assert!(
+                    SUPPORTED_TOKENS.has(deps.storage, denom.as_ref().unwrap().clone()),
+                    "There is no such supported token yet"
+                );
+
+                PRICES.save(deps.storage, denom.unwrap(), &price.unwrap())?;
+            }
 
             Ok(Response::new())
         }
@@ -606,39 +644,49 @@ pub fn execute(
                     .unwrap();
 
             if use_user_deposit_as_collateral {
-                let user_token_balance = get_deposit(deps.as_ref(), env.clone(), info.sender.to_string(), denom.clone())
-                    .unwrap()
-                    .balance
-                    .u128();
+                let user_token_balance = get_deposit(
+                    deps.as_ref(),
+                    env.clone(),
+                    info.sender.to_string(),
+                    denom.clone(),
+                )
+                .unwrap()
+                .balance
+                .u128();
 
                 if user_token_balance != 0 {
-                    let token_decimals =
-                        get_token_decimal(deps.as_ref(), denom.clone()).unwrap().u128() as u32;
+                    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+                        .unwrap()
+                        .u128() as u32;
 
-                    let price = get_price(deps.as_ref(), denom.clone()).unwrap().u128();
+                    let price = get_price_from_contract(deps.as_ref(), denom.clone()).unwrap().u128();
 
-                    let user_token_balance_usd = Decimal::from_i128_with_scale(
-                        user_token_balance as i128,
-                        token_decimals,
+                    let user_token_balance_usd =
+                        Decimal::from_i128_with_scale(user_token_balance as i128, token_decimals)
+                            .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                            .to_u128_with_decimals(USD_DECIMALS)
+                            .unwrap();
+
+                    let sum_collateral_balance_usd = get_user_collateral_usd(
+                        deps.as_ref(),
+                        env.clone(),
+                        info.sender.to_string(),
                     )
-                    .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                    .to_u128_with_decimals(USD_DECIMALS)
-                    .unwrap();
-
-                    let sum_collateral_balance_usd =
-                        get_user_collateral_usd(deps.as_ref(), env.clone(), info.sender.to_string())
-                            .unwrap()
-                            .u128();
+                    .unwrap()
+                    .u128();
 
                     let sum_borrow_balance_usd =
                         get_user_borrowed_usd(deps.as_ref(), env.clone(), info.sender.to_string())
                             .unwrap()
                             .u128();
 
-                    let user_liquidation_threshold =
-                        get_user_liquidation_threshold(deps.as_ref(), env.clone(), info.sender.to_string())
-                            .unwrap()
-                            .u128();
+                    let user_liquidation_threshold = get_user_liquidation_threshold(
+                        deps.as_ref(),
+                        env.clone(),
+                        info.sender.to_string(),
+                    )
+                    .unwrap()
+                    .u128();
 
                     assert!(
                         sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold < sum_collateral_balance_usd - user_token_balance_usd,
@@ -980,7 +1028,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::UserDepositAsCollateral { address, denom } => {
             to_binary(&user_deposit_as_collateral(deps, address, denom)?)
         }
-        QueryMsg::GetPrice { denom } => to_binary(&get_price(deps, denom)?),
+        QueryMsg::GetPrice { denom } => to_binary(&get_price_from_contract(deps, denom)?),
         QueryMsg::GetUserBorrowAmountWithInterest { address, denom } => to_binary(
             &query::get_user_borrow_amount_with_interest(deps, env, address, denom)?,
         ),
@@ -991,9 +1039,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&query::get_total_borrow_data(deps, denom)?)
         }
         QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
-        QueryMsg::GetReserveConfiguration {} => {
-            to_binary(&get_reserve_configuration(deps)?)
-        }
+        QueryMsg::GetReserveConfiguration {} => to_binary(&get_reserve_configuration(deps)?),
         QueryMsg::GetTokensInterestRateModelParams {} => {
             to_binary(&get_tokens_interest_rate_model_params(deps)?)
         }
@@ -1050,19 +1096,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
 
 pub mod query {
     use super::*;
-    //     use std::fmt::Debug;
     use std::ops::Mul;
 
-    //     use std::str::FromStr;
-
     use crate::msg::{
-        GetBalanceResponse, GetSupportedTokensResponse, 
-        GetReserveConfigurationResponse, GetTokensInterestRateModelParamsResponse,
-        TotalBorrowData, UserBorrowingInfo,
+        GetBalanceResponse, GetReserveConfigurationResponse, GetSupportedTokensResponse,
+        GetTokensInterestRateModelParamsResponse, TotalBorrowData, UserBorrowingInfo,
     };
-    use cosmwasm_std::{Coin, Order};
-    //     use near_sdk::json_types::U128;
-    //     use rust_decimal::prelude::ToPrimitive;
+    use cosmwasm_std::{Coin, Order, StdError};
+    use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
 
     pub fn get_deposit(
         deps: Deps,
@@ -1249,7 +1290,7 @@ pub mod query {
         Ok(Uint128::from(mm_token_price))
     }
 
-    pub fn get_price(deps: Deps, denom: String) -> StdResult<Uint128> {
+    pub fn get_price_from_contract(deps: Deps, denom: String) -> StdResult<Uint128> {
         let price = PRICES.load(deps.storage, denom).unwrap_or(0u128);
 
         Ok(Uint128::from(price))
@@ -1270,9 +1311,7 @@ pub mod query {
         })
     }
 
-    pub fn get_reserve_configuration(
-        deps: Deps,
-    ) -> StdResult<GetReserveConfigurationResponse> {
+    pub fn get_reserve_configuration(deps: Deps) -> StdResult<GetReserveConfigurationResponse> {
         let mut result: Vec<ReserveConfiguration> = vec![];
 
         let all: StdResult<Vec<_>> = RESERVE_CONFIGURATION
@@ -1394,7 +1433,15 @@ pub mod query {
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-            let price = get_price(deps, token.denom.clone()).unwrap().u128();
+            let price = if IS_TESTING.load(deps.storage).unwrap() {
+                get_price_from_contract(deps, token.denom.clone())
+                    .unwrap()
+                    .u128()
+            } else {
+                fetch_price_by_token(deps, env.clone(), token.denom.clone())
+                    .unwrap()
+                    .u128()
+            };
 
             user_deposited_usd +=
                 Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
@@ -1423,7 +1470,15 @@ pub mod query {
                 let token_decimals =
                     get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-                let price = get_price(deps, token.denom.clone()).unwrap().u128();
+                let price = if IS_TESTING.load(deps.storage).unwrap() {
+                    get_price_from_contract(deps, token.denom.clone())
+                        .unwrap()
+                        .u128()
+                } else {
+                    fetch_price_by_token(deps, env.clone(), token.denom.clone())
+                        .unwrap()
+                        .u128()
+                };
 
                 user_collateral_usd +=
                     Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
@@ -1451,7 +1506,15 @@ pub mod query {
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-            let price = get_price(deps, token.denom.clone()).unwrap().u128();
+            let price = if IS_TESTING.load(deps.storage).unwrap() {
+                get_price_from_contract(deps, token.denom.clone())
+                    .unwrap()
+                    .u128()
+            } else {
+                fetch_price_by_token(deps, env.clone(), token.denom.clone())
+                    .unwrap()
+                    .u128()
+            };
 
             user_borrowed_usd += Decimal::from_i128_with_scale(
                 user_borrow_amount_with_interest as i128,
@@ -1509,22 +1572,23 @@ pub mod query {
                 let token_decimals =
                     get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-                let price = get_price(deps, token.denom.clone()).unwrap().u128();
+                let price = get_price_from_contract(deps, token.denom.clone()).unwrap().u128();
 
-                let user_deposit_usd = Decimal::from_i128_with_scale(
-                    user_deposit as i128,
-                    token_decimals
-                )
-                    .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                    .to_u128_with_decimals(USD_DECIMALS)
-                    .unwrap();
+                let user_deposit_usd =
+                    Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
+                        .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                        .to_u128_with_decimals(USD_DECIMALS)
+                        .unwrap();
 
-                liquidation_threshold_borrow_amount_usd += user_deposit_usd * liquidation_threshold / HUNDRED_PERCENT;
+                liquidation_threshold_borrow_amount_usd +=
+                    user_deposit_usd * liquidation_threshold / HUNDRED_PERCENT;
                 user_collateral_usd += user_deposit_usd;
             }
         }
 
-        Ok(Uint128::from(liquidation_threshold_borrow_amount_usd * HUNDRED_PERCENT / user_collateral_usd))
+        Ok(Uint128::from(
+            liquidation_threshold_borrow_amount_usd * HUNDRED_PERCENT / user_collateral_usd,
+        ))
     }
 
     pub fn get_user_max_allowed_borrow_amount_usd(
@@ -1554,17 +1618,16 @@ pub mod query {
                 let token_decimals =
                     get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
-                let price = get_price(deps, token.denom.clone()).unwrap().u128();
+                let price = get_price_from_contract(deps, token.denom.clone()).unwrap().u128();
 
-                let user_deposit_usd = Decimal::from_i128_with_scale(
-                    user_deposit as i128,
-                    token_decimals
-                )
-                    .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                    .to_u128_with_decimals(USD_DECIMALS)
-                    .unwrap();
+                let user_deposit_usd =
+                    Decimal::from_i128_with_scale(user_deposit as i128, token_decimals)
+                        .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                        .to_u128_with_decimals(USD_DECIMALS)
+                        .unwrap();
 
-                max_allowed_borrow_amount_usd += user_deposit_usd * loan_to_value_ratio / HUNDRED_PERCENT;
+                max_allowed_borrow_amount_usd +=
+                    user_deposit_usd * loan_to_value_ratio / HUNDRED_PERCENT;
             }
         }
 
@@ -1580,9 +1643,10 @@ pub mod query {
         let mut available_to_borrow = 0u128;
 
         // maximum amount allowed for borrowing
-        let max_allowed_borrow_amount_usd = get_user_max_allowed_borrow_amount_usd(deps, env.clone(), user.clone())
-            .unwrap()
-            .u128();
+        let max_allowed_borrow_amount_usd =
+            get_user_max_allowed_borrow_amount_usd(deps, env.clone(), user.clone())
+                .unwrap()
+                .u128();
 
         let sum_user_borrow_balance_usd = get_user_borrowed_usd(deps, env.clone(), user.clone())
             .unwrap()
@@ -1591,7 +1655,13 @@ pub mod query {
         if max_allowed_borrow_amount_usd > sum_user_borrow_balance_usd {
             let token_decimals = get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
 
-            let price = get_price(deps, denom.clone()).unwrap().u128();
+            let price = if IS_TESTING.load(deps.storage).unwrap() {
+                get_price_from_contract(deps, denom.clone()).unwrap().u128()
+            } else {
+                fetch_price_by_token(deps, env.clone(), denom.clone())
+                    .unwrap()
+                    .u128()
+            };
 
             available_to_borrow = Decimal::from_i128_with_scale(
                 (max_allowed_borrow_amount_usd - sum_user_borrow_balance_usd) as i128,
@@ -1638,11 +1708,13 @@ pub mod query {
                     .unwrap()
                     .u128();
 
-                let user_liquidation_threshold = get_user_liquidation_threshold(deps, env.clone(), user.clone())
-                    .unwrap()
-                    .u128();
+                let user_liquidation_threshold =
+                    get_user_liquidation_threshold(deps, env.clone(), user.clone())
+                        .unwrap()
+                        .u128();
 
-                let required_collateral_balance_usd = sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold;
+                let required_collateral_balance_usd =
+                    sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold;
 
                 let token_liquidity =
                     get_available_liquidity_by_token(deps, env.clone(), denom.clone())
@@ -1653,8 +1725,13 @@ pub mod query {
                     let token_decimals =
                         get_token_decimal(deps, denom.clone()).unwrap().u128() as u32;
 
-                    let price = get_price(deps, denom.clone()).unwrap().u128();
-
+                    let price = if IS_TESTING.load(deps.storage).unwrap() {
+                        get_price_from_contract(deps, denom.clone()).unwrap().u128()
+                    } else {
+                        fetch_price_by_token(deps, env.clone(), denom.clone())
+                            .unwrap()
+                            .u128()
+                    };
                     available_to_redeem = Decimal::from_i128_with_scale(
                         (sum_collateral_balance_usd - required_collateral_balance_usd) as i128,
                         USD_DECIMALS,
@@ -1778,5 +1855,42 @@ pub mod query {
         } else {
             Ok(Uint128::from(0u128))
         }
+    }
+
+    pub fn fetch_price_by_token(deps: Deps, env: Env, denom: String) -> StdResult<Uint128> {
+        let pyth_contract = PYTH_CONTRACT.load(deps.storage)?;
+
+        let price_identifier = PRICE_FEED_IDS.load(deps.storage, denom.clone())?;
+
+        // query_price_feed is the standard way to read the current price from a Pyth price feed.
+        // It takes the address of the Pyth contract (which is fixed for each network) and the id of the
+        // price feed. The result is a PriceFeed object with fields for the current price and other
+        // useful information. The function will fail if the contract address or price feed id are
+        // invalid.
+        let price_feed_response: PriceFeedResponse =
+            query_price_feed(&deps.querier, pyth_contract, price_identifier)?;
+        let price_feed = price_feed_response.price_feed;
+
+        // Get the current price and confidence interval from the price feed.
+        // This function returns None if the price is not currently available.
+        // This condition can happen for various reasons. For example, some products only trade at
+        // specific times, or network outages may prevent the price feed from updating.
+        //
+        // The example code below throws an error if the price is not available. It is recommended that
+        // you handle this scenario more carefully. Consult the [consumer best practices](https://docs.pyth.network/consumers/best-practices)
+        // for recommendations.
+
+        let mut current_price =
+            Uint128::from(get_price_from_contract(deps, denom.clone()).unwrap().u128());
+
+        // if Pyth price is available getting most recent price
+        let pyth_current_price =
+            price_feed.get_price_no_older_than(env.block.time.seconds() as i64, 60);
+
+        if pyth_current_price.is_some() {
+            current_price = Uint128::from(pyth_current_price.unwrap().price as u128)
+        }
+
+        Ok(current_price)
     }
 }

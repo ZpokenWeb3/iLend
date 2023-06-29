@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
-    use master_contract::msg::{QueryMsg};
+    use master_contract::msg::QueryMsg;
 
     #[test]
     fn test_user_deposit_as_collateral() {

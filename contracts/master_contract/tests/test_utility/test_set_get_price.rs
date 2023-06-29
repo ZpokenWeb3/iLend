@@ -20,9 +20,9 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPrice {
-                denom: "eth".to_string(),
-                price: PRICE_ETH,
+            &ExecuteMsg::UpdatePrice {
+                denom: Some("eth".to_string()),
+                price: Some(PRICE_ETH),
             },
             &[],
         )
@@ -31,9 +31,9 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPrice {
-                denom: "atom".to_string(),
-                price: PRICE_ATOM,
+            &ExecuteMsg::UpdatePrice {
+                denom: Some("atom".to_string()),
+                price: Some(PRICE_ATOM),
             },
             &[],
         )

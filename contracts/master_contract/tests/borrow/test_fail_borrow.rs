@@ -6,9 +6,7 @@ mod tests {
     use master_contract::msg::{ExecuteMsg};
 
     #[test]
-    #[should_panic(
-        expected = "There is no such supported token yet"
-    )]
+    #[should_panic(expected = "There is no such supported token yet")]
     fn test_fail_borrow_if_token_is_not_supported() {
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_UNSUPPORTED_TOKEN: u128 = 10 * 10u128.pow(TOKENS_DECIMALS);
@@ -30,9 +28,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "The amount to be borrowed is not available"
-    )]
+    #[should_panic(expected = "The amount to be borrowed is not available")]
     fn test_fail_borrow_if_amount_to_be_borrowed_is_not_available() {
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_ETH: u128 = 300 * 10u128.pow(TOKENS_DECIMALS); // 300 ETH

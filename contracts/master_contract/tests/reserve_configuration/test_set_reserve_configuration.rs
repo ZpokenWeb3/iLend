@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::utils::success_deposit_of_diff_token_with_prices;
+    use cosmwasm_std::Addr;
+    use cw_multi_test::Executor;
     use master_contract::msg::{ExecuteMsg, GetReserveConfigurationResponse, QueryMsg};
-    use cw_multi_test::{Executor};
-    use cosmwasm_std::{Addr};
 
     #[test]
     fn test_set_reserve_configuration() {
@@ -28,7 +28,7 @@ mod tests {
             &[],
         )
         .unwrap();
-        
+
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
@@ -41,48 +41,39 @@ mod tests {
         )
         .unwrap();
 
-        let reserve_configuration_response: GetReserveConfigurationResponse =
-            app.wrap()
-                .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
-                .unwrap();
+        let reserve_configuration_response: GetReserveConfigurationResponse = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
+            .unwrap();
 
         println!(
             "{}",
-            format!(
-                "{:?}",
-                reserve_configuration_response.reserve_configuration
-            )
+            format!("{:?}", reserve_configuration_response.reserve_configuration)
         );
 
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .denom,
+            reserve_configuration_response.reserve_configuration[0].denom,
             "atom".to_string()
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .loan_to_value_ratio,
+            reserve_configuration_response.reserve_configuration[0].loan_to_value_ratio,
             LTV_ATOM
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[0]
-                .liquidation_threshold,
+            reserve_configuration_response.reserve_configuration[0].liquidation_threshold,
             LIQUIDATION_THRESHOLD_ATOM
         );
 
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .denom,
+            reserve_configuration_response.reserve_configuration[1].denom,
             "eth".to_string()
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .loan_to_value_ratio,
+            reserve_configuration_response.reserve_configuration[1].loan_to_value_ratio,
             LTV_ETH
         );
         assert_eq!(
-            reserve_configuration_response.reserve_configuration[1]
-                .liquidation_threshold,
+            reserve_configuration_response.reserve_configuration[1].liquidation_threshold,
             LIQUIDATION_THRESHOLD_ETH
         );
     }
