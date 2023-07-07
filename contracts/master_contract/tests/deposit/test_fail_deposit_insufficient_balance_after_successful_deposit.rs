@@ -104,6 +104,7 @@ mod tests {
                         ),
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
+                    price_updater_contract_addr: "".to_string(),
                 },
                 &[coin(CONTRACT_RESERVES, "eth")],
                 "Contract",

@@ -12,10 +12,8 @@ use pyth_sdk_cw::{Price, PriceIdentifier};
 pub struct InstantiateMsg {
     // different sources for testing and production
     pub is_testing: bool,
-
     pub admin: String,
     pub liquidator: String,
-
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
@@ -24,9 +22,10 @@ pub struct InstantiateMsg {
     pub tokens_interest_rate_model_params: Vec<(String, u128, u128, u128, u128)>,
     // vector of (token denom, price_identifier) got from https://pyth.network/developers/price-feed-ids#cosmwasm-testnet
     pub price_ids: Vec<(String, PriceIdentifier)>,
-
-    // pyth contract on a given network - testnet for now
+    // pyth contract on a given network that fetches prices | testnet & mainnet
     pub pyth_contract_addr: String,
+    // updater service that is eligible to update price whenever oracle is not available
+    pub price_updater_contract_addr: String,
 }
 
 #[cw_serde]
@@ -228,7 +227,8 @@ pub struct TokenInfo {
 #[cw_serde]
 pub struct ReserveConfiguration {
     pub denom: String,
-    pub loan_to_value_ratio: u128, // LTV ratio
+    pub loan_to_value_ratio: u128,
+    // LTV ratio
     pub liquidation_threshold: u128,
 }
 

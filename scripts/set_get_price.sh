@@ -1,26 +1,9 @@
 # get the contract address from explorer tx of instantiating
-CONTRACT="inj1fayztmra86ule94h8989wvx9uly568xj50969h"
+CONTRACT="inj1znmfkan4qpttv2rumzvwhcpfjju24lpvdz5a9y"
 readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
 
-GET_SUPPORTED_TOKENS_QUERY='{"get_supported_tokens": {}}'
-injectived query wasm contract-state smart $CONTRACT "$GET_SUPPORTED_TOKENS_QUERY" --node=https://k8s.testnet.tm.injective.network:443 --output json
-
-#sleep 2
-#
-## USDC price 1
-#SET_PRICE_USDC='{"set_price":{"denom": "peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5", "price": "100000000"}}'
-#yes 12345678 | injectived tx wasm execute $CONTRACT "$SET_PRICE_USDC" --from=$(echo $INJ_ADDRESS) --amount="0peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
-#
-#sleep 2
-#
-## INJ price 10
-#SET_PRICE_INJ='{"set_price":{"denom": "inj", "price": "1000000000"}}'
-#yes 12345678 | injectived tx wasm execute $CONTRACT "$SET_PRICE_INJ" --from=$(echo $INJ_ADDRESS) --amount="0peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
-#
-#sleep 2
-# APE price 4
-SET_PRICE_APE='{"update_price":{"denom": "", "price": ""}}'
-yes 12345678 | injectived tx wasm execute $CONTRACT "$SET_PRICE_APE" --from=$(echo $INJ_ADDRESS) --amount="0peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
+SET_PRICE_APE='{"update_price": {"denom": "inj", "price": "1"}}'
+yes 12345678 | injectived tx wasm execute $CONTRACT "$SET_PRICE_APE" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
 #
 #sleep 2
 

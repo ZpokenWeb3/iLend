@@ -40,6 +40,8 @@ pub const ADMIN: Item<String> = Item::new("admin");
 ADMIN that is eligible to fund contract with reserves [ contract itself by default ]
 */
 
+pub const PRICE_UPDATER_CONTRACT: Item<String> = Item::new("price_updater");
+
 pub const LIQUIDATOR: Item<String> = Item::new("liquidator");
 /*
 LIQUIDATOR that is eligible to liquidate user positions

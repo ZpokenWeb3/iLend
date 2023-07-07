@@ -125,6 +125,7 @@ mod tests {
                         100000000000000000000,
                         OPTIMAL_UTILISATION_RATIO,
                     )],
+                    price_updater_contract_addr: "".to_string(),
                 },
                 &[],
                 "Contract",
