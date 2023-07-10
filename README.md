@@ -9,9 +9,9 @@ i-Lend is a decentralized finance protocol developed on the Injective network. I
 
 
 
-|                       | description                                                | contract's link                                                                                 |
-|-----------------------|------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
-| master contract | operating all the core logic and storing users information | https://testnet.explorer.injective.network/contract/inj1gmk2w8mqcwwm4rwlqthksuyqvk3vnwu5vj05pt/ |
+|                                                                     | contract's link                                                                                |
+|----------------------|------------------------------------------------------------------------------------------------|
+| master contract | https://testnet.explorer.injective.network/contract/inj12ky27ufq6uru9f9ehttkjxhjfq7sprxf89guvg/ |
 
 
 
