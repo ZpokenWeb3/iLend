@@ -167,6 +167,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetUserMaxAllowedBorrowAmountUsd { address: String },
+
+    #[returns(Vec<String>)]
+    GetAllUsersWithBorrows {}
 }
 
 #[cw_serde]
