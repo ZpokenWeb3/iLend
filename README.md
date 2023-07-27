@@ -95,7 +95,7 @@ injectived tx wasm execute $CONTRACT "$REPAY" --from=$(echo $INJ_ADDRESS) --amou
 
 ## Tests
 
-run tests in /iLend/contracts/master_contract/ directory
+run tests in respective /iLend/contracts/*** directory
 ```
 cargo wasm && cargo test
 ```

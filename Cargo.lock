@@ -198,6 +198,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "collateral_vault"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus 1.0.1",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "pyth-sdk-cw",
+ "rust_decimal",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
 name = "const-oid"
 version = "0.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -653,13 +670,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "lending"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-multi-test",
+ "cw-storage-plus 1.0.1",
+ "cw2",
+ "cw20",
+ "cw20-base",
+ "pyth-sdk-cw",
+ "rust_decimal",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.139"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "201de327520df007757c1f0adce6e827fe8562fbc28bfd9c15571c66ca1f5f79"
 
 [[package]]
-name = "master_contract"
+name = "margin_positions"
 version = "0.1.0"
 dependencies = [
  "cosmwasm-schema",

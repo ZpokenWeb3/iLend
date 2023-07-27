@@ -1,8 +1,5 @@
-# step 1 query CODE_ID from deployed contract via command
-#readonly DEPLOYMENT_TX_HASH="0AD47AC425C0133910A3654368DDDF2AEA276C35E068D7D44581AC37ECCD809C"
-#injectived query tx $DEPLOYMENT_TX_HASH --node=https://k8s.testnet.tm.injective.network:443
-
-readonly CODE_ID="2013"
+# change CODE_ID parameter
+readonly CODE_ID="2075"
 readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
 
 # shellcheck disable=SC2089

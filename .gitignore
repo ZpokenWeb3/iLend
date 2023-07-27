@@ -27,3 +27,5 @@ tarpaulin-report.*
 contracts/*/schema
 
 .env
+contracts/collateral_vault/target
+contracts/lending/target
