@@ -19,11 +19,12 @@ mod tests {
 
         // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
-        let (mut app, addr) = success_deposit_of_one_token_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_one_token_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Redeem {
                 denom: "eth".to_string(),
                 amount: Uint128::from(FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT),
@@ -35,7 +36,7 @@ mod tests {
         let user_deposited_balance_after_first_withdrawal: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "eth".to_string(),

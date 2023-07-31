@@ -1,8 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Timestamp;
 use cosmwasm_std::Uint128;
-
-use pyth_sdk_cw::{Price, PriceIdentifier};
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -14,8 +11,23 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    SetLendingContract { contract: String },
-    SetMarginContract { contract: String },
+    SetLendingContract {
+        contract: String,
+    },
+    SetMarginContract {
+        contract: String,
+    },
+    RedeemFromVaultContract {
+        denom: String,
+        amount: Uint128,
+        user: String,
+    },
+    BorrowFromVaultContract {
+        denom: String,
+        amount: Uint128,
+        user: String,
+    },
+    Fund {},
 }
 
 #[cw_serde]
@@ -27,4 +39,3 @@ pub enum QueryMsg {
     #[returns(String)]
     GetMarginContract,
 }
-

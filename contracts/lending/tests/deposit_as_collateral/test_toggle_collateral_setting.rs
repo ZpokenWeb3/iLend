@@ -9,11 +9,12 @@ mod tests {
     fn test_toggle_collateral_setting() {
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::ToggleCollateralSetting {
                 denom: "eth".to_string(),
             },
@@ -24,7 +25,7 @@ mod tests {
         let user_eth_deposit_as_collateral: bool = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::UserDepositAsCollateral {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -35,7 +36,7 @@ mod tests {
         let user_atom_deposit_as_collateral: bool = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::UserDepositAsCollateral {
                     address: "user".to_string(),
                     denom: "atom".to_string(),

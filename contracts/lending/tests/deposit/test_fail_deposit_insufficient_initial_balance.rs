@@ -1,9 +1,17 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, coins, Addr};
-    use cw_multi_test::{App, ContractWrapper, Executor};
+    use cosmwasm_std::{coins, Addr, Empty};
+    use cw_multi_test::{custom_app, ContractWrapper, Executor};
     use std::vec;
 
+    use crate::utils::CustomMsg;
+    use collateral_vault::msg::{
+        InstantiateMsg as InstantiateMsgCollateralVault, QueryMsg as QueryMsgCollateralVault,
+    };
+    use collateral_vault::{
+        execute as execute_collateral_vault, instantiate as instantiate_collateral_vault,
+        query as query_collateral_vault,
+    };
     use lending::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use lending::{execute, instantiate, query};
     use pyth_sdk_cw::PriceIdentifier;
@@ -29,7 +37,7 @@ mod tests {
 
         const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
 
-        let mut app = App::new(|router, _, storage| {
+        let mut app = custom_app::<CustomMsg, Empty, _>(|router, _, storage| {
             router
                 .bank
                 .init_balance(
@@ -58,7 +66,29 @@ mod tests {
                 .unwrap();
         });
 
-        let code = ContractWrapper::new(execute, instantiate, query);
+        let code_collateral_vault = ContractWrapper::new_with_empty(
+            execute_collateral_vault,
+            instantiate_collateral_vault,
+            query_collateral_vault,
+        );
+        let code_id_collateral_vault = app.store_code(Box::new(code_collateral_vault));
+
+        let collateral_contract_addr = app
+            .instantiate_contract(
+                code_id_collateral_vault,
+                Addr::unchecked("collateral_vault"),
+                &InstantiateMsgCollateralVault {
+                    lending_contract: "owner".to_string(),
+                    margin_contract: "whatever".to_string(),
+                    admin: "collateral_vault".to_string(),
+                },
+                &[],
+                "Collateral Vault Contract",
+                Some("collateral_vault".to_string()), // contract that can execute migrations
+            )
+            .unwrap();
+
+        let code = ContractWrapper::new_with_empty(execute, instantiate, query);
         let code_id = app.store_code(Box::new(code));
 
         let addr = app
@@ -69,6 +99,41 @@ mod tests {
                     is_testing: true,
                     admin: "owner".to_string(),
                     liquidator: "liquidator".to_string(),
+                    supported_tokens: vec![
+                        (
+                            "eth".to_string(),
+                            "ethereum".to_string(),
+                            "ETH".to_string(),
+                            TOKENS_DECIMALS as u128,
+                        ),
+                        (
+                            "atom".to_string(),
+                            "atom".to_string(),
+                            "ATOM".to_string(),
+                            TOKENS_DECIMALS as u128,
+                        ),
+                    ],
+                    reserve_configuration: vec![(
+                        "eth".to_string(),
+                        LTV_ETH,
+                        LIQUIDATION_THRESHOLD_ETH,
+                    )],
+                    tokens_interest_rate_model_params: vec![
+                        (
+                            "eth".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
+                        ),
+                        (
+                            "atom".to_string(),
+                            MIN_INTEREST_RATE,
+                            SAFE_BORROW_MAX_RATE,
+                            RATE_GROWTH_FACTOR,
+                            OPTIMAL_UTILISATION_RATIO,
+                        ),
+                    ],
                     price_ids: vec![
                         (
                             "inj".to_string(),
@@ -86,32 +151,34 @@ mod tests {
                         ),
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
-
-                    supported_tokens: vec![(
-                        "eth".to_string(),
-                        "ethereum".to_string(),
-                        "ETH".to_string(),
-                        TOKENS_DECIMALS as u128,
-                    )],
-                    reserve_configuration: vec![(
-                        "eth".to_string(),
-                        LTV_ETH,
-                        LIQUIDATION_THRESHOLD_ETH,
-                    )],
-                    tokens_interest_rate_model_params: vec![(
-                        "eth".to_string(),
-                        MIN_INTEREST_RATE,
-                        SAFE_BORROW_MAX_RATE,
-                        RATE_GROWTH_FACTOR,
-                        OPTIMAL_UTILISATION_RATIO,
-                    )],
                     price_updater_contract_addr: "".to_string(),
+                    collateral_vault_contract: collateral_contract_addr.to_string(),
                 },
-                &[coin(CONTRACT_RESERVES_ETH, "eth")],
+                &[],
                 "Contract",
                 Some("owner".to_string()), // contract that can execute migrations
             )
             .unwrap();
+
+        let lending_contract: String = app
+            .wrap()
+            .query_wasm_smart(
+                collateral_contract_addr.clone(),
+                &QueryMsgCollateralVault::GetLendingContract {},
+            )
+            .unwrap();
+
+        assert_eq!(lending_contract, "owner".to_string());
+
+        let margin_contract: String = app
+            .wrap()
+            .query_wasm_smart(
+                collateral_contract_addr.clone(),
+                &QueryMsgCollateralVault::GetMarginContract {},
+            )
+            .unwrap();
+
+        assert_eq!(margin_contract, "whatever".to_string());
 
         assert!(app
             .execute_contract(

@@ -11,14 +11,15 @@ mod tests {
     fn test_get_current_liquidity_index_ln() {
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_as_collateral_of_diff_token_with_prices();
 
         const DECIMAL_FRACTIONAL: Uint128 = Uint128::new(1_000_000_000_000_000_000u128); // 1*10**18
         const BORROW_SECOND_TOKEN_FIRST_PART: u128 = 300 * DECIMAL_FRACTIONAL.u128();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "atom".to_string(),
                 amount: Uint128::from(BORROW_SECOND_TOKEN_FIRST_PART),
@@ -30,7 +31,7 @@ mod tests {
         let current_liquidity_index_ln_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetCurrentLiquidityIndexLn {
                     denom: "eth".to_string(),
                 },
@@ -40,7 +41,7 @@ mod tests {
         let current_liquidity_index_ln_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetCurrentLiquidityIndexLn {
                     denom: "atom".to_string(),
                 },

@@ -5,12 +5,13 @@ mod tests {
 
     #[test]
     fn test_user_deposit_as_collateral() {
-        let (app, addr) = success_deposit_of_diff_token_with_prices();
+        let (app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         let user_eth_deposit_as_collateral: bool = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::UserDepositAsCollateral {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -21,7 +22,7 @@ mod tests {
         let user_atom_deposit_as_collateral: bool = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::UserDepositAsCollateral {
                     address: "user".to_string(),
                     denom: "atom".to_string(),

@@ -15,12 +15,13 @@ mod tests {
         // user deposited 200 ETH and 300 ATOM
         // LIQUIDATION_THRESHOLD_ETH = 90%
         // LIQUIDATION_THRESHOLD_ATOM = 80%
-        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_as_collateral_of_diff_token_with_prices();
 
         let user_collateral_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserCollateralUsd {
                     address: "user".to_string(),
                 },
@@ -35,7 +36,7 @@ mod tests {
         let user_liquidation_threshold: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserLiquidationThreshold {
                     address: "user".to_string(),
                 },
@@ -50,7 +51,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ETH, "eth"),
         )
@@ -58,7 +59,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
         )
@@ -67,7 +68,7 @@ mod tests {
         let user_collateral_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserCollateralUsd {
                     address: "user".to_string(),
                 },
@@ -82,7 +83,7 @@ mod tests {
         let user_liquidation_threshold: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserLiquidationThreshold {
                     address: "user".to_string(),
                 },

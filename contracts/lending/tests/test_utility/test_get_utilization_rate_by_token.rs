@@ -9,7 +9,8 @@ mod tests {
     fn test_get_utilization_rate_by_token() {
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_as_collateral_of_diff_token_with_prices();
 
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_ETH: u128 = 10 * 10u128.pow(TOKENS_DECIMALS); // 10 ETH
@@ -18,7 +19,7 @@ mod tests {
         let utilization_rate_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUtilizationRateByToken {
                     denom: "eth".to_string(),
                 },
@@ -28,7 +29,7 @@ mod tests {
         let utilization_rate_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUtilizationRateByToken {
                     denom: "atom".to_string(),
                 },
@@ -41,7 +42,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "eth".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
@@ -52,7 +53,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "atom".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ATOM),
@@ -64,7 +65,7 @@ mod tests {
         let utilization_rate_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUtilizationRateByToken {
                     denom: "eth".to_string(),
                 },
@@ -74,7 +75,7 @@ mod tests {
         let utilization_rate_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUtilizationRateByToken {
                     denom: "atom".to_string(),
                 },

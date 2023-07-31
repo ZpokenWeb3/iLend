@@ -11,7 +11,8 @@ mod tests {
     fn test_set_get_price() {
         // having 500 deposited we want to redeem SECOND_DEPOSIT_AMOUNT
         // so that FIRST_DEPOSIT_AMOUNT is remaining
-        let (mut app, addr) = success_deposit_of_one_token_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_one_token_setup();
 
         const PRICE_DECIMALS: u32 = 8;
         const PRICE_ETH: u128 = 2000u128 * 10u128.pow(PRICE_DECIMALS);
@@ -19,7 +20,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("owner"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::UpdatePrice {
                 denom: Some("eth".to_string()),
                 price: Some(PRICE_ETH),
@@ -30,7 +31,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("owner"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::UpdatePrice {
                 denom: Some("atom".to_string()),
                 price: Some(PRICE_ATOM),
@@ -42,7 +43,7 @@ mod tests {
         let get_price_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetPrice {
                     denom: "eth".to_string(),
                 },
@@ -52,7 +53,7 @@ mod tests {
         let get_price_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetPrice {
                     denom: "atom".to_string(),
                 },

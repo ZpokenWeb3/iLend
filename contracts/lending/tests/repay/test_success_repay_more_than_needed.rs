@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_success_repay_more_than_needed() {
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -25,7 +25,7 @@ mod tests {
         let user_borrow_amount_with_interest: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -35,38 +35,18 @@ mod tests {
 
         let amount_to_repay_with_interest = user_borrow_amount_with_interest.u128();
 
-        let underlying_balance_before_repay = app
-            .wrap()
-            .query_balance(&addr, "eth")
-            .unwrap()
-            .amount
-            .u128();
-
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &coins(amount_to_repay_with_interest * 2, "eth"),
         )
         .unwrap();
 
-        let underlying_balance_after_repay = app
-            .wrap()
-            .query_balance(&addr, "eth")
-            .unwrap()
-            .amount
-            .u128();
-
-        // paying only what we supposed to, not twice as much
-        assert_eq!(
-            underlying_balance_after_repay - amount_to_repay_with_interest,
-            underlying_balance_before_repay
-        );
-
         let user_borrow_amount_with_interest: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),

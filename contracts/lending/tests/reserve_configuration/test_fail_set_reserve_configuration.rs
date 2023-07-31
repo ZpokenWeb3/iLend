@@ -12,11 +12,12 @@ mod tests {
         const LTV_ETH: u128 = 92 * 10u128.pow(PERCENT_DECIMALS); // 92%
         const LIQUIDATION_THRESHOLD_ETH: u128 = 98 * 10u128.pow(PERCENT_DECIMALS); // 98%
 
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::SetReserveConfiguration {
                 denom: "eth".to_string(),
                 loan_to_value_ratio: LTV_ETH,
@@ -34,11 +35,12 @@ mod tests {
         const LTV_ETH: u128 = 92 * 10u128.pow(PERCENT_DECIMALS); // 92%
         const LIQUIDATION_THRESHOLD_ETH: u128 = 98 * 10u128.pow(PERCENT_DECIMALS); // 98%
 
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("owner"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::SetReserveConfiguration {
                 denom: "usdt".to_string(),
                 loan_to_value_ratio: LTV_ETH,

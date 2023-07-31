@@ -1,7 +1,7 @@
 use {
     crate::{
         error::ContractError,
-        msg::{InstantiateMsg, ExecuteMsg, QueryMsg},
+        msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     },
     cosmwasm_std::{
         coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
@@ -12,7 +12,6 @@ use {
 
 const CONTRACT_NAME: &str = "crates.io:collateral_vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
-
 
 pub fn instantiate(
     deps: DepsMut,
@@ -31,7 +30,6 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {}
 }
-
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {}

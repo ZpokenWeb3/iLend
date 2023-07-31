@@ -9,11 +9,11 @@ mod tests {
     #[should_panic(expected = "Funds not transferred!")]
     fn test_fail_repay_if_funds_not_transferred() {
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &[],
         )
@@ -28,11 +28,11 @@ mod tests {
         const REPAY_AMOUNT_ATOM: u128 = 3000 * 10u128.pow(TOKENS_DECIMALS); // 3000 ATOM
 
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &[
                 coin(REPAY_AMOUNT_ETH, "eth"),
@@ -46,11 +46,11 @@ mod tests {
     #[should_panic(expected = "Cannot transfer empty coins amount")]
     fn test_fail_repay_if_repay_amount_is_zero() {
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &[coin(0, "eth")],
         )
@@ -64,11 +64,11 @@ mod tests {
         const BORROW_AMOUNT_UNSUPPORTED_TOKEN: u128 = 10 * 10u128.pow(TOKENS_DECIMALS);
 
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &[coin(BORROW_AMOUNT_UNSUPPORTED_TOKEN, "usdt")],
         )

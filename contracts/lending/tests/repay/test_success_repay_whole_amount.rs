@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_success_repay_whole_amount() {
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -25,7 +25,7 @@ mod tests {
         let user_borrow_amount_with_interest: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -37,7 +37,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &coins(amount_to_repay_with_interest, "eth"),
         )
@@ -46,7 +46,7 @@ mod tests {
         let user_borrow_amount_with_interest: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),

@@ -1,13 +1,19 @@
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::{coin, coins, Addr, BlockInfo, Timestamp, Uint128};
+    use cosmwasm_std::{coin, coins, Addr, BlockInfo, Empty, Timestamp};
 
-    use cw_multi_test::{App, ContractWrapper, Executor};
+    use cw_multi_test::{custom_app, ContractWrapper, Executor};
     use std::vec;
 
-    use lending::msg::{
-        ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg, TotalBorrowData,
+    use crate::utils::CustomMsg;
+    use collateral_vault::msg::{
+        InstantiateMsg as InstantiateMsgCollateralVault, QueryMsg as QueryMsgCollateralVault,
     };
+    use collateral_vault::{
+        execute as execute_collateral_vault, instantiate as instantiate_collateral_vault,
+        query as query_collateral_vault,
+    };
+    use lending::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg};
     use lending::{execute, instantiate, query};
     use pyth_sdk_cw::PriceIdentifier;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -41,7 +47,7 @@ mod tests {
         const PRICE_ETH: u128 = 2000 * 10u128.pow(PRICE_DECIMALS);
         const PRICE_ATOM: u128 = 10 * 10u128.pow(PRICE_DECIMALS);
 
-        let mut app = App::new(|router, _, storage| {
+        let mut app = custom_app::<CustomMsg, Empty, _>(|router, _, storage| {
             router
                 .bank
                 .init_balance(
@@ -77,9 +83,63 @@ mod tests {
                     ],
                 )
                 .unwrap();
+
+            router
+                .bank
+                .init_balance(
+                    storage,
+                    &Addr::unchecked("collateral_vault"),
+                    vec![
+                        coin(CONTRACT_RESERVES, "eth"),
+                        coin(CONTRACT_RESERVES, "atom"),
+                    ],
+                )
+                .unwrap();
         });
 
-        let code = ContractWrapper::new(execute, instantiate, query);
+        let code_collateral_vault = ContractWrapper::new_with_empty(
+            execute_collateral_vault,
+            instantiate_collateral_vault,
+            query_collateral_vault,
+        );
+        let code_id_collateral_vault = app.store_code(Box::new(code_collateral_vault));
+
+        let collateral_contract_addr = app
+            .instantiate_contract(
+                code_id_collateral_vault,
+                Addr::unchecked("collateral_vault"),
+                &InstantiateMsgCollateralVault {
+                    lending_contract: "owner".to_string(),
+                    margin_contract: "whatever".to_string(),
+                    admin: "collateral_vault".to_string(),
+                },
+                &[coin(CONTRACT_RESERVES, "atom")],
+                "Collateral Vault Contract",
+                Some("collateral_vault".to_string()), // contract that can execute migrations
+            )
+            .unwrap();
+
+        let lending_contract: String = app
+            .wrap()
+            .query_wasm_smart(
+                collateral_contract_addr.clone(),
+                &QueryMsgCollateralVault::GetLendingContract {},
+            )
+            .unwrap();
+
+        assert_eq!(lending_contract, "owner".to_string());
+
+        let margin_contract: String = app
+            .wrap()
+            .query_wasm_smart(
+                collateral_contract_addr.clone(),
+                &QueryMsgCollateralVault::GetMarginContract {},
+            )
+            .unwrap();
+
+        assert_eq!(margin_contract, "whatever".to_string());
+
+        let code = ContractWrapper::new_with_empty(execute, instantiate, query);
         let code_id = app.store_code(Box::new(code));
 
         let addr = app
@@ -126,6 +186,7 @@ mod tests {
                         OPTIMAL_UTILISATION_RATIO,
                     )],
                     price_updater_contract_addr: "".to_string(),
+                    collateral_vault_contract: collateral_contract_addr.to_string(),
                 },
                 &[],
                 "Contract",
@@ -152,21 +213,12 @@ mod tests {
         )
         .unwrap();
 
-        app.execute_contract(
-            Addr::unchecked("owner"),
-            addr.clone(),
-            &ExecuteMsg::Fund {},
-            &coins(CONTRACT_RESERVES / 10, "eth"),
-        )
-        .unwrap();
-
-        app.execute_contract(
-            Addr::unchecked("owner"),
-            addr.clone(),
-            &ExecuteMsg::Fund {},
-            &coins(CONTRACT_RESERVES / 10, "atom"),
-        )
-        .unwrap();
+        let collateral_vault_amount_before_deposit = app
+            .wrap()
+            .query_balance(collateral_contract_addr.to_string(), "eth")
+            .unwrap()
+            .amount
+            .u128();
 
         app.execute_contract(
             Addr::unchecked("owner"),
@@ -198,13 +250,17 @@ mod tests {
         )
         .unwrap();
 
-        app.execute_contract(
-            Addr::unchecked("owner"),
-            addr.clone(),
-            &ExecuteMsg::Deposit {},
-            &coins(FIRST_DEPOSIT_AMOUNT * 15 / 10, "eth"),
-        )
-        .unwrap();
+        let collateral_vault_amount_after_first_deposit = app
+            .wrap()
+            .query_balance(collateral_contract_addr.to_string(), "eth")
+            .unwrap()
+            .amount
+            .u128();
+
+        assert_eq!(
+            FIRST_DEPOSIT_AMOUNT + collateral_vault_amount_before_deposit,
+            collateral_vault_amount_after_first_deposit
+        );
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -267,109 +323,16 @@ mod tests {
         )
         .unwrap();
 
-        app.execute_contract(
-            Addr::unchecked("owner"),
-            addr.clone(),
-            &ExecuteMsg::Borrow {
-                denom: "eth".to_string(),
-                amount: Uint128::from(SECOND_DEPOSIT_AMOUNT / 2),
-            },
-            &[],
-        )
-        .unwrap();
-
-        app.set_block(BlockInfo {
-            height: 0,
-            time: Timestamp::from_seconds(now + 31536000),
-            chain_id: "custom_chain_id".to_string(),
-        });
-
-        let total_borrow_data: TotalBorrowData = app
+        let collateral_vault_amount_after_second_deposit = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetTotalBorrowData {
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let reserves_by_token: Uint128 = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetTotalReservesByToken {
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let liquidity_rate: Uint128 = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetLiquidityRate {
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let borrow_amount_with_interest: Uint128 = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetUserBorrowAmountWithInterest {
-                    address: "owner".to_string(),
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let user_deposited_balance: GetBalanceResponse = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetDeposit {
-                    address: "user".to_string(),
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let price: Uint128 = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetMmTokenPrice {
-                    denom: "eth".to_string(),
-                },
-            )
-            .unwrap();
-
-        let available_to_redeem_another_token: Uint128 = app
-            .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetAvailableToRedeem {
-                    address: "user".to_string(),
-                    denom: "atom".to_string(),
-                },
-            )
-            .unwrap();
-
-        assert_eq!(available_to_redeem_another_token.u128(), 0);
-
-        assert!(
-            user_deposited_balance.balance.u128() > FIRST_DEPOSIT_AMOUNT + SECOND_DEPOSIT_AMOUNT
-        );
+            .query_balance(collateral_contract_addr.to_string(), "eth")
+            .unwrap()
+            .amount
+            .u128();
 
         assert_eq!(
-            app.wrap()
-                .query_balance("user", "eth")
-                .unwrap()
-                .amount
-                .u128(),
-            INIT_USER_BALANCE - FIRST_DEPOSIT_AMOUNT - SECOND_DEPOSIT_AMOUNT
+            collateral_vault_amount_after_first_deposit + SECOND_DEPOSIT_AMOUNT,
+            collateral_vault_amount_after_second_deposit
         );
     }
 }

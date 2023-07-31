@@ -2,7 +2,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Timestamp;
 use cosmwasm_std::Uint128;
 
-use pyth_sdk_cw::{Price, PriceIdentifier};
+use pyth_sdk_cw::PriceIdentifier;
 
 // cw_serde attribute is equivalent to
 // #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema)]
@@ -26,13 +26,11 @@ pub struct InstantiateMsg {
     pub pyth_contract_addr: String,
     // updater service that is eligible to update price whenever oracle is not available
     pub price_updater_contract_addr: String,
+    pub collateral_vault_contract: String,
 }
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    // Admin-only functionality for funding contract with reserves
-    // to be able to operate borrows and repayments
-    Fund {},
     // if args is None, updates price via Pyth oracle, otherwise set price (only for testing)
     UpdatePrice {
         denom: Option<String>,
@@ -168,8 +166,11 @@ pub enum QueryMsg {
     #[returns(Uint128)]
     GetUserMaxAllowedBorrowAmountUsd { address: String },
 
-    #[returns(Vec<String>)]
-    GetAllUsersWithBorrows {}
+    #[returns(Vec < String >)]
+    GetAllUsersWithBorrows {},
+
+    #[returns(String)]
+    GetCollateralVaultContract {},
 }
 
 #[cw_serde]
@@ -259,4 +260,26 @@ pub struct TotalBorrowData {
     pub expected_annual_interest_income: u128,
     pub average_interest_rate: u128,
     pub timestamp: Timestamp,
+}
+
+#[cw_serde]
+#[serde(rename = "snake_case")]
+pub enum ExecuteLendingContract {
+    RedeemFromVaultContract {
+        denom: String,
+        amount: Uint128,
+        user: String,
+    },
+    BorrowFromVaultContract {
+        denom: String,
+        amount: Uint128,
+        user: String,
+    },
+    SetLendingContract {
+        contract: String,
+    },
+    SetMarginContract {
+        contract: String,
+    },
+    Fund {},
 }

@@ -22,11 +22,12 @@ mod tests {
 
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("owner"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::SetTokenInterestRateModelParams {
                 denom: "eth".to_string(),
                 min_interest_rate: MIN_INTEREST_RATE_ETH,
@@ -40,7 +41,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("owner"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::SetTokenInterestRateModelParams {
                 denom: "atom".to_string(),
                 min_interest_rate: MIN_INTEREST_RATE_ATOM,
@@ -54,7 +55,10 @@ mod tests {
 
         let tokens_interest_rate_model_params_response: GetTokensInterestRateModelParamsResponse =
             app.wrap()
-                .query_wasm_smart(addr.clone(), &QueryMsg::GetTokensInterestRateModelParams {})
+                .query_wasm_smart(
+                    lending_contract_addr.clone(),
+                    &QueryMsg::GetTokensInterestRateModelParams {},
+                )
                 .unwrap();
 
         println!(

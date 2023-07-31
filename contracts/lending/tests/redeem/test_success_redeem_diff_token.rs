@@ -20,11 +20,12 @@ mod tests {
         const WITHDRAW_AMOUNT_FIRST_TOKEN: u128 = 100 * DECIMAL_FRACTIONAL.u128();
         const WITHDRAW_AMOUNT_SECOND_TOKEN: u128 = 150 * DECIMAL_FRACTIONAL.u128();
 
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Redeem {
                 denom: "eth".to_string(),
                 amount: Uint128::from(WITHDRAW_AMOUNT_FIRST_TOKEN),
@@ -35,7 +36,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Redeem {
                 denom: "atom".to_string(),
                 amount: Uint128::from(WITHDRAW_AMOUNT_SECOND_TOKEN),
@@ -47,7 +48,7 @@ mod tests {
         let user_deposited_balance_of_first_token: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -72,7 +73,7 @@ mod tests {
         let user_deposited_balance_of_second_token: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "atom".to_string(),

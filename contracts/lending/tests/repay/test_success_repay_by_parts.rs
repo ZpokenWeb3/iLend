@@ -13,7 +13,7 @@ mod tests {
         const BORROW_AMOUNT_ETH: u128 = 50 * 10u128.pow(TOKENS_DECIMALS); // 50 ETH
 
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) = success_borrow_setup();
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -29,7 +29,7 @@ mod tests {
         let borrow_info_before_first_repay: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -44,16 +44,16 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &coins(borrow_info_before_first_repay.u128() / 2, "eth"),
         )
         .unwrap();
 
-        let borrow_info_after_first_repay: Uint128 = app
+        let _borrow_info_after_first_repay: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -63,7 +63,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Repay {},
             &coins(borrow_info_before_first_repay.u128(), "eth"),
         )
@@ -72,7 +72,7 @@ mod tests {
         let user_borrowed_balance: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),

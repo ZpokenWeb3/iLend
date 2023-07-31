@@ -19,11 +19,12 @@ mod tests {
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
         // LTV_ETH = 85%
-        let (mut app, addr) = success_deposit_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::ToggleCollateralSetting {
                 denom: "eth".to_string(),
             },
@@ -33,7 +34,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
         )
@@ -42,7 +43,7 @@ mod tests {
         let user_deposited_balance_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
@@ -58,7 +59,7 @@ mod tests {
         let user_deposited_balance_eth: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -74,7 +75,7 @@ mod tests {
         let sum_collateral_balance_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserDepositedUsd {
                     address: "user".to_string(),
                 },
@@ -87,7 +88,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -102,7 +103,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "eth".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
@@ -114,7 +115,7 @@ mod tests {
         let user_collateral_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserCollateralUsd {
                     address: "user".to_string(),
                 },
@@ -126,7 +127,7 @@ mod tests {
         let user_borrowed_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowedUsd {
                     address: "user".to_string(),
                 },
@@ -141,7 +142,7 @@ mod tests {
         // 400_000$ - (200 ETH * 2000) = 0
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::ToggleCollateralSetting {
                 denom: "eth".to_string(),
             },

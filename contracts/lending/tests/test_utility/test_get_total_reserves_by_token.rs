@@ -10,7 +10,8 @@ mod tests {
     fn test_get_total_reserves_by_token() {
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_as_collateral_of_diff_token_with_prices();
 
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_ETH: u128 = 10 * 10u128.pow(TOKENS_DECIMALS); // 10 ETH
@@ -23,7 +24,7 @@ mod tests {
         let total_reserves_by_token_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "eth".to_string(),
                 },
@@ -33,15 +34,15 @@ mod tests {
         let total_reserves_by_token_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(total_reserves_by_token_eth.u128(), 1200000000000000000000); // 1000 ETH + 200 ETH = 1200 ETH
-        assert_eq!(total_reserves_by_token_atom.u128(), 1300000000000000000000); // 1000 ATOM + 300 ATOM = 1300 ATOM
+        assert_eq!(total_reserves_by_token_eth.u128(), 1200000000000000000000);
+        assert_eq!(total_reserves_by_token_atom.u128(), 1300000000000000000000);
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -56,7 +57,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "eth".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
@@ -67,7 +68,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "atom".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ATOM),
@@ -79,7 +80,7 @@ mod tests {
         let total_reserves_by_token_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "eth".to_string(),
                 },
@@ -89,7 +90,7 @@ mod tests {
         let total_reserves_by_token_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "atom".to_string(),
                 },
@@ -97,12 +98,12 @@ mod tests {
             .unwrap();
 
         // the reserve includes all borrowings, so taking a new borrowing does not affect the reserve
-        assert_eq!(total_reserves_by_token_eth.u128(), 1200000000000000000000); // 1000 ETH + 200 ETH = 1200 ETH
-        assert_eq!(total_reserves_by_token_atom.u128(), 1300000000000000000000); // 1000 ATOM + 300 ATOM = 1300 ATOM
+        assert_eq!(total_reserves_by_token_eth.u128(), 1200000000000000000000);
+        assert_eq!(total_reserves_by_token_atom.u128(), 1300000000000000000000);
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ETH, "eth"),
         )
@@ -110,7 +111,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
         )
@@ -119,7 +120,7 @@ mod tests {
         let total_reserves_by_token_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "eth".to_string(),
                 },
@@ -129,15 +130,15 @@ mod tests {
         let total_reserves_by_token_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        assert_eq!(total_reserves_by_token_eth.u128(), 1230000000000000000000); // 1000 ETH + 200 ETH + 30 ETH = 1230 ETH
-        assert_eq!(total_reserves_by_token_atom.u128(), 1700000000000000000000); // 1000 ATOM + 300 ATOM + 400 ATOM = 1700 ATOM
+        assert_eq!(total_reserves_by_token_eth.u128(), 1230000000000000000000);
+        assert_eq!(total_reserves_by_token_atom.u128(), 1700000000000000000000);
 
         app.set_block(BlockInfo {
             height: 0,
@@ -148,7 +149,7 @@ mod tests {
         let total_reserves_by_token_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "eth".to_string(),
                 },
@@ -158,17 +159,14 @@ mod tests {
         let total_reserves_by_token_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetTotalReservesByToken {
                     denom: "atom".to_string(),
                 },
             )
             .unwrap();
 
-        // interest accrued for the year and included in total reserves
-        // 1230 ETH + 10 ETH * 5% borrow APY = 1230 ETH + 0.5 ETH = 1230.5 ETH
         assert_eq!(total_reserves_by_token_eth.u128(), 1230500000000000000000);
-        // 1700 ATOM + 200 ATOM * 5% borrow APY = 1700 ATOM + 10 ATOM = 1710 ATOM
         assert_eq!(total_reserves_by_token_atom.u128(), 1710000000000000000000);
     }
 }

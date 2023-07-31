@@ -1,27 +1,27 @@
+use crate::contract::query::{get_lending_contract, get_margin_contract};
+use crate::state::{ADMIN, LENDING, MARGIN_POSITIONS};
 use {
     crate::{
         error::ContractError,
-        msg::{InstantiateMsg, ExecuteMsg, QueryMsg},
+        msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
     },
     cosmwasm_std::{
         coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-        Timestamp, Uint128,
     },
     cw2::set_contract_version,
 };
-use crate::contract::query::{get_lending_contract, get_margin_contract};
-use crate::state::{ADMIN, LENDING, MARGIN_POSITIONS};
 
 const CONTRACT_NAME: &str = "crates.io:collateral_vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-
 pub fn instantiate(
     deps: DepsMut,
-    env: Env,
+    _env: Env,
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     LENDING.save(deps.storage, &msg.lending_contract)?;
     MARGIN_POSITIONS.save(deps.storage, &msg.margin_contract)?;
     ADMIN.save(deps.storage, &msg.admin)?;
@@ -30,9 +30,9 @@ pub fn instantiate(
 }
 
 pub fn execute(
-    mut deps: DepsMut,
+    deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
@@ -42,7 +42,6 @@ pub fn execute(
                 ADMIN.load(deps.storage).unwrap(),
                 "This functionality is allowed for admin only"
             );
-
 
             LENDING.save(deps.storage, &contract)?;
             Ok(Response::default())
@@ -58,22 +57,74 @@ pub fn execute(
 
             Ok(Response::default())
         }
+        ExecuteMsg::RedeemFromVaultContract {
+            denom,
+            amount,
+            user,
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                LENDING.load(deps.storage).unwrap(),
+                "This functionality is allowed for lending contract only"
+            );
+
+            Ok(Response::new().add_message(BankMsg::Send {
+                to_address: user,
+                amount: coins(amount.u128(), denom),
+            }))
+        }
+        ExecuteMsg::BorrowFromVaultContract {
+            denom,
+            amount,
+            user,
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                LENDING.load(deps.storage).unwrap(),
+                "This functionality is allowed for lending contract only"
+            );
+
+            Ok(Response::new().add_message(BankMsg::Send {
+                to_address: user,
+                amount: coins(amount.u128(), denom),
+            }))
+        }
+        ExecuteMsg::Fund {} => {
+            // Admin-only functionality for funding contract with reserves
+            // to be able to operate borrows and repayments
+            if info.funds.is_empty() {
+                return Err(ContractError::CustomError {
+                    val: "No funds deposited!".to_string(),
+                });
+            }
+
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            Ok(Response::default())
+        }
     }
 }
 
-
-pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
+pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetLendingContract => { to_binary(&get_lending_contract(deps, env)?) }
-        QueryMsg::GetMarginContract => { to_binary(&get_margin_contract(deps, env)?) }
+        QueryMsg::GetLendingContract => to_binary(&get_lending_contract(deps)?),
+        QueryMsg::GetMarginContract => to_binary(&get_margin_contract(deps)?),
     }
 }
 
 pub mod query {
-    use cosmwasm_std::{Deps, Env, StdResult};
     use crate::state::{LENDING, MARGIN_POSITIONS};
+    use cosmwasm_std::{Deps, StdResult};
 
-    pub fn get_lending_contract(deps: Deps, env: Env) -> StdResult<String> { LENDING.load(deps.storage) }
+    pub fn get_lending_contract(deps: Deps) -> StdResult<String> {
+        LENDING.load(deps.storage)
+    }
 
-    pub fn get_margin_contract(deps: Deps, env: Env) -> StdResult<String> { MARGIN_POSITIONS.load(deps.storage) }
+    pub fn get_margin_contract(deps: Deps) -> StdResult<String> {
+        MARGIN_POSITIONS.load(deps.storage)
+    }
 }

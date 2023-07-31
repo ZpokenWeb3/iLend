@@ -13,11 +13,15 @@ mod tests {
 
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (app, addr) = success_deposit_of_diff_token_with_prices();
+        let (app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         let reserve_configuration_response: GetReserveConfigurationResponse = app
             .wrap()
-            .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
+            .query_wasm_smart(
+                lending_contract_addr.clone(),
+                &QueryMsg::GetReserveConfiguration {},
+            )
             .unwrap();
 
         println!(

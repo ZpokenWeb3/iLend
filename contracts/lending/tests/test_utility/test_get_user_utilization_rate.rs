@@ -16,12 +16,13 @@ mod tests {
 
         // contract reserves: 1000 ETH and 1000 ATOM
         // user deposited 200 ETH and 300 ATOM
-        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_as_collateral_of_diff_token_with_prices();
 
         let user_utilization_rate: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserUtilizationRate {
                     address: "user".to_string(),
                 },
@@ -44,7 +45,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "eth".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
@@ -55,7 +56,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "atom".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ATOM),
@@ -67,7 +68,7 @@ mod tests {
         let user_utilization_rate: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserUtilizationRate {
                     address: "user".to_string(),
                 },
@@ -85,7 +86,7 @@ mod tests {
         let user_utilization_rate: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserUtilizationRate {
                     address: "user".to_string(),
                 },

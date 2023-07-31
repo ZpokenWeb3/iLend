@@ -6,11 +6,15 @@ mod tests {
 
     #[test]
     fn test_get_tokens_interest_rate_model_params() {
-        let (app, addr) = success_deposit_of_diff_token_with_prices();
+        let (app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_of_diff_token_with_prices();
 
         let tokens_interest_rate_model_params_response: GetTokensInterestRateModelParamsResponse =
             app.wrap()
-                .query_wasm_smart(addr.clone(), &QueryMsg::GetTokensInterestRateModelParams {})
+                .query_wasm_smart(
+                    lending_contract_addr.clone(),
+                    &QueryMsg::GetTokensInterestRateModelParams {},
+                )
                 .unwrap();
 
         println!(

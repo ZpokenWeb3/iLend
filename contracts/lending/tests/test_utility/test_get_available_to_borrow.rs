@@ -11,7 +11,8 @@ mod tests {
         // user deposited 200 ETH and 300 ATOM
         // ltv_eth = 0.85
         // ltv_atom = 0.75
-        let (mut app, addr) = success_deposit_as_collateral_of_diff_token_with_prices();
+        let (mut app, lending_contract_addr, _collateral_contract_addr) =
+            success_deposit_as_collateral_of_diff_token_with_prices();
 
         const TOKENS_DECIMALS: u32 = 18;
         const DEPOSIT_AMOUNT_ETH: u128 = 30 * 10u128.pow(TOKENS_DECIMALS); // 30 ETH
@@ -22,7 +23,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -33,7 +34,7 @@ mod tests {
         let available_to_borrow_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
@@ -51,7 +52,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "eth".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
@@ -62,7 +63,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "atom".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ATOM),
@@ -74,7 +75,7 @@ mod tests {
         let user_borrowed_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowedUsd {
                     address: "user".to_string(),
                 },
@@ -89,7 +90,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -100,7 +101,7 @@ mod tests {
         let available_to_borrow_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
@@ -118,7 +119,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ETH, "eth"),
         )
@@ -126,7 +127,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
         )
@@ -135,7 +136,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -146,7 +147,7 @@ mod tests {
         let available_to_borrow_atom: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "atom".to_string(),

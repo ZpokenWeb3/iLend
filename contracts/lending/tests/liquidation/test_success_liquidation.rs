@@ -3,9 +3,7 @@ mod tests {
     use crate::utils::success_borrow_setup;
     use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use lending::msg::{
-        ExecuteMsg, GetBalanceResponse, GetReserveConfigurationResponse, QueryMsg,
-    };
+    use lending::msg::{ExecuteMsg, GetBalanceResponse, GetReserveConfigurationResponse, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]
@@ -18,7 +16,7 @@ mod tests {
         // contract reserves: 1000 ETH
         // user deposited 200 ETH and 300 ATOM
         // user borrowed 50 ETH
-        let (mut app, addr) = success_borrow_setup();
+        let (mut app, lending_contract_addr, _collateral_vault_contract) = success_borrow_setup();
 
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -34,7 +32,7 @@ mod tests {
         let user_deposited_balance_eth: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -50,7 +48,7 @@ mod tests {
         let user_deposited_balance_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
@@ -66,7 +64,7 @@ mod tests {
         let user_collateral_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserCollateralUsd {
                     address: "user".to_string(),
                 },
@@ -78,7 +76,10 @@ mod tests {
 
         let reserve_configuration_response: GetReserveConfigurationResponse = app
             .wrap()
-            .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
+            .query_wasm_smart(
+                lending_contract_addr.clone(),
+                &QueryMsg::GetReserveConfiguration {},
+            )
             .unwrap();
 
         assert_eq!(
@@ -94,7 +95,7 @@ mod tests {
         let user_max_allowed_borrow_amount_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserMaxAllowedBorrowAmountUsd {
                     address: "user".to_string(),
                 },
@@ -107,7 +108,7 @@ mod tests {
         let user_borrowed_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowedUsd {
                     address: "user".to_string(),
                 },
@@ -119,7 +120,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -133,7 +134,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("user"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Borrow {
                 denom: "eth".to_string(),
                 amount: Uint128::from(BORROW_AMOUNT_ETH),
@@ -145,7 +146,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -158,7 +159,7 @@ mod tests {
         let user_liquidation_threshold: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserLiquidationThreshold {
                     address: "user".to_string(),
                 },
@@ -170,7 +171,7 @@ mod tests {
         let user_utilization_rate: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserUtilizationRate {
                     address: "user".to_string(),
                 },
@@ -188,7 +189,7 @@ mod tests {
         let available_to_borrow_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetAvailableToBorrow {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -201,7 +202,7 @@ mod tests {
         let user_liquidation_threshold: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserLiquidationThreshold {
                     address: "user".to_string(),
                 },
@@ -213,7 +214,7 @@ mod tests {
         let user_utilization_rate: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserUtilizationRate {
                     address: "user".to_string(),
                 },
@@ -225,7 +226,7 @@ mod tests {
         let user_deposit_amount_eth: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -236,7 +237,7 @@ mod tests {
         let user_deposit_amount_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "user".to_string(),
                     denom: "atom".to_string(),
@@ -256,7 +257,7 @@ mod tests {
         let user_borrow_amount_eth: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowAmountWithInterest {
                     address: "user".to_string(),
                     denom: "eth".to_string(),
@@ -268,7 +269,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("liquidator"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Deposit {},
             &coins(LIQUIDATOR_DEPOSIT_AMOUNT_ETH, "eth"),
         )
@@ -277,7 +278,7 @@ mod tests {
         let liquidator_deposit_amount_eth: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "liquidator".to_string(),
                     denom: "eth".to_string(),
@@ -288,7 +289,7 @@ mod tests {
         let liquidator_deposit_amount_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "liquidator".to_string(),
                     denom: "atom".to_string(),
@@ -305,7 +306,7 @@ mod tests {
 
         app.execute_contract(
             Addr::unchecked("liquidator"),
-            addr.clone(),
+            lending_contract_addr.clone(),
             &ExecuteMsg::Liquidation {
                 user: "user".to_string(),
             },
@@ -316,7 +317,7 @@ mod tests {
         let user_collateral_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserCollateralUsd {
                     address: "user".to_string(),
                 },
@@ -329,7 +330,7 @@ mod tests {
         let user_borrowed_usd: Uint128 = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetUserBorrowedUsd {
                     address: "user".to_string(),
                 },
@@ -342,7 +343,7 @@ mod tests {
         let liquidator_deposit_amount_eth: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "liquidator".to_string(),
                     denom: "eth".to_string(),
@@ -353,7 +354,7 @@ mod tests {
         let liquidator_deposit_amount_atom: GetBalanceResponse = app
             .wrap()
             .query_wasm_smart(
-                addr.clone(),
+                lending_contract_addr.clone(),
                 &QueryMsg::GetDeposit {
                     address: "liquidator".to_string(),
                     denom: "atom".to_string(),
@@ -362,11 +363,10 @@ mod tests {
             .unwrap();
 
         // 9999.999999999999999999 ETH - 191.850604584630250327 ETH + 203.331286529000814400 ETH ~= 10011,480681944 ETH
-        // TODO: need to correct the calculation inaccuracy
         assert_eq!(
             liquidator_deposit_amount_eth.balance.u128(),
-            10008510511955314159271
-        ); // 10008.510511955314159271 ETH
+            10011480681944370564071
+        );
         assert_eq!(
             liquidator_deposit_amount_atom.balance.u128(),
             300000000000000000000
