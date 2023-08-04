@@ -2,6 +2,7 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 
 use cosmwasm_std::Uint128;
 
+use crate::utils::{OrderStatus, OrderType};
 use pyth_sdk_cw::PriceIdentifier;
 
 #[cw_serde]
@@ -35,6 +36,16 @@ pub enum ExecuteMsg {
     SetCollateralVaultContract {
         contract: String,
     },
+    CreateOrder {
+        order_type: OrderType,
+        amount: Uint128,
+        sell_token_denom: String,
+        // buy_token_denom: String,
+        leverage: u128,
+    },
+    CancelOrder {
+        order_id: u128,
+    },
 }
 
 #[cw_serde]
@@ -44,23 +55,20 @@ pub enum QueryMsg {
     GetPrice { denom: String },
 
     #[returns(Uint128)]
-    GetDeposit { address: String, denom: String },
+    GetDeposit { user: String, denom: String },
+
+    #[returns(Vec < OrderResponse >)]
+    GetOrdersByUser { user: String },
+
+    #[returns(OrderResponse)]
+    GetOrderById { order_id: u128 },
 }
 
 #[cw_serde]
-pub struct TokenInfo {
-    pub denom: String,
-    pub name: String,
-    pub symbol: String,
-    pub decimals: u128,
-}
-
-#[cw_serde]
-#[serde(rename = "snake_case")]
-pub enum ExecuteCollateralVaultFromMarginContract {
-    RedeemFromVaultContractMargin {
-        denom: String,
-        amount: Uint128,
-        user: String,
-    },
+pub struct OrderResponse {
+    pub order_status: OrderStatus,
+    pub order_type: OrderType,
+    pub amount: Uint128,
+    pub sell_token_denom: String,
+    pub leverage: u128,
 }

@@ -262,7 +262,7 @@ pub fn success_collateral_margin_setup_with_deposit() -> (BasicApp<CustomMsg>, A
         .query_wasm_smart(
             margin_positions_addr.clone(),
             &QueryMsgMarginPositions::GetDeposit {
-                address: "user".to_string(),
+                user: "user".to_string(),
                 denom: "eth".to_string(),
             },
         )
@@ -301,7 +301,7 @@ pub fn success_collateral_margin_setup_with_deposit() -> (BasicApp<CustomMsg>, A
         .query_wasm_smart(
             margin_positions_addr.clone(),
             &QueryMsgMarginPositions::GetDeposit {
-                address: "user".to_string(),
+                user: "user".to_string(),
                 denom: "eth".to_string(),
             },
         )

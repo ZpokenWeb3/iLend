@@ -31,7 +31,7 @@ mod tests {
             .query_wasm_smart(
                 margin_positions_addr.clone(),
                 &QueryMsg::GetDeposit {
-                    address: "user".to_string(),
+                    user: "user".to_string(),
                     denom: "eth".to_string(),
                 },
             )

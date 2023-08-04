@@ -1,12 +1,17 @@
-use crate::contract::query::{fetch_price_by_token, get_collateral_vault_contract, get_deposit};
-use crate::msg::TokenInfo;
-use crate::state::{
-    ADMIN, COLLATERAL_VAULT, IS_TESTING, LENDING_CONTRACT, PRICES, PRICE_FEED_IDS,
-    PRICE_UPDATER_CONTRACT, PYTH_CONTRACT, SUPPORTED_TOKENS, USER_MM_TOKEN_BALANCE,
+use crate::contract::query::{
+    fetch_price_by_token, get_collateral_vault_contract, get_deposit, get_margin_positions_count,
+    get_order_by_id, get_orders_by_user,
 };
+use crate::state::{
+    MarginPositionsCount, ADMIN, COLLATERAL_VAULT, IS_TESTING, LENDING_CONTRACT, MARGIN_POSITIONS,
+    MARGIN_POSITIONS_COUNT, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_CONTRACT, PYTH_CONTRACT,
+    SUPPORTED_TOKENS, USER_DEPOSITED_BALANCE,
+};
+use crate::utils::TokenInfo;
 use cosmwasm_std::{CosmosMsg, WasmMsg};
 
-use crate::msg::ExecuteCollateralVaultFromMarginContract::RedeemFromVaultContractMargin;
+use crate::utils::ExecuteCollateralVaultFromMarginContract::RedeemFromVaultContractMargin;
+use crate::utils::{OrderInfo, OrderStatus};
 use {
     crate::{
         error::ContractError,
@@ -21,6 +26,7 @@ use {
 
 const COLLATERAL_VAULT_CONTRACT: &str = "crates.io:collateral_vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+const LEVERAGE_DECIMALS: u128 = 2;
 
 pub fn instantiate(
     deps: DepsMut,
@@ -41,7 +47,10 @@ pub fn instantiate(
         &deps.api.addr_validate(msg.pyth_contract_addr.as_ref())?,
     )?;
     COLLATERAL_VAULT.save(deps.storage, &msg.collateral_vault_contract)?;
+
     LENDING_CONTRACT.save(deps.storage, &msg.lending_contract)?;
+
+    MARGIN_POSITIONS_COUNT.save(deps.storage, &MarginPositionsCount::default())?;
 
     for price_id in msg.price_ids.iter() {
         let price_id = price_id.clone();
@@ -112,7 +121,7 @@ pub fn execute(
             //     deposited_token.denom.clone(),
             // )?;
 
-            let user_current_token_balance = USER_MM_TOKEN_BALANCE
+            let user_current_token_balance = USER_DEPOSITED_BALANCE
                 .load(
                     deps.storage,
                     (info.sender.to_string(), deposited_token.denom.clone()),
@@ -121,7 +130,7 @@ pub fn execute(
 
             let new_user_token_balance = user_current_token_balance.u128() + deposited_token_amount;
 
-            USER_MM_TOKEN_BALANCE.save(
+            USER_DEPOSITED_BALANCE.save(
                 deps.storage,
                 (info.sender.to_string(), deposited_token.denom.clone()),
                 &Uint128::from(new_user_token_balance),
@@ -161,7 +170,7 @@ pub fn execute(
 
             let remaining = current_balance - amount;
 
-            USER_MM_TOKEN_BALANCE.save(
+            USER_DEPOSITED_BALANCE.save(
                 deps.storage,
                 (info.sender.to_string(), denom.clone()),
                 &Uint128::from(remaining),
@@ -218,28 +227,111 @@ pub fn execute(
             COLLATERAL_VAULT.save(deps.storage, &contract)?;
             Ok(Response::new())
         }
+        ExecuteMsg::CreateOrder {
+            order_type,
+            amount,
+            sell_token_denom,
+            leverage,
+        } => {
+            assert!(
+                leverage > 1 * 10u128.pow(LEVERAGE_DECIMALS as u32),
+                "Leverage should be greater than 1.0"
+            );
+
+            assert!(
+                SUPPORTED_TOKENS.has(deps.storage, sell_token_denom.clone()),
+                "There is no such supported token for positions"
+            );
+
+            let current_deposit = get_deposit(
+                deps.as_ref(),
+                env.clone(),
+                info.sender.to_string(),
+                sell_token_denom.clone(),
+            )
+            .unwrap()
+            .u128();
+
+            assert!(
+                current_deposit >= amount.u128(),
+                "The account doesn't have enough deposited tokens to do open position"
+            );
+
+            let order = OrderInfo {
+                order_status: OrderStatus::Pending,
+                order_type,
+                amount: Uint128::from(amount),
+                sell_token_denom: sell_token_denom.clone(),
+                leverage,
+            };
+
+            let mut margin_positions_count_old = get_margin_positions_count(deps.as_ref()).unwrap();
+            MARGIN_POSITIONS_COUNT.save(
+                deps.storage,
+                &(margin_positions_count_old.increase_count_by_one()),
+            )?;
+
+            let margin_positions_count_new = get_margin_positions_count(deps.as_ref()).unwrap();
+
+            MARGIN_POSITIONS.save(
+                deps.storage,
+                (info.sender.to_string(), margin_positions_count_new.count),
+                &order,
+            )?;
+
+            let remaining = current_deposit - amount.u128();
+
+            USER_DEPOSITED_BALANCE.save(
+                deps.storage,
+                (info.sender.to_string(), sell_token_denom.clone()),
+                &Uint128::from(remaining),
+            )?;
+
+            Ok(Response::default())
+        }
+        ExecuteMsg::CancelOrder { order_id } => {
+            let order = get_order_by_id(deps.as_ref(), order_id).unwrap();
+
+            let closed_order = OrderInfo {
+                order_status: OrderStatus::Canceled,
+                order_type: order.order_type,
+                amount: order.amount,
+                sell_token_denom: order.sell_token_denom,
+                leverage: order.leverage,
+            };
+
+            MARGIN_POSITIONS.save(
+                deps.storage,
+                (info.sender.to_string(), order_id),
+                &closed_order,
+            )?;
+
+            Ok(Response::default())
+        }
     }
 }
 
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetDeposit { address, denom } => {
-            to_binary(&get_deposit(deps, env, address, denom)?)
-        }
+        QueryMsg::GetDeposit { user, denom } => to_binary(&get_deposit(deps, env, user, denom)?),
         QueryMsg::GetPrice { denom } => to_binary(&fetch_price_by_token(deps, env, denom)?),
+        QueryMsg::GetOrdersByUser { user } => to_binary(&get_orders_by_user(deps, user)?),
+        QueryMsg::GetOrderById { order_id } => to_binary(&get_order_by_id(deps, order_id)?),
     }
 }
 
 pub mod query {
+    use crate::msg::OrderResponse;
     use crate::state::{
-        COLLATERAL_VAULT, IS_TESTING, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, SUPPORTED_TOKENS,
-        USER_MM_TOKEN_BALANCE,
+        MarginPositionsCount, COLLATERAL_VAULT, IS_TESTING, MARGIN_POSITIONS,
+        MARGIN_POSITIONS_COUNT, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, SUPPORTED_TOKENS,
+        USER_DEPOSITED_BALANCE,
     };
-    use cosmwasm_std::{Deps, Env, StdResult, Uint128};
+    use cosmwasm_std::{Deps, Env, Order, StdResult, Uint128};
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse};
 
     pub fn get_deposit(deps: Deps, _env: Env, user: String, denom: String) -> StdResult<Uint128> {
-        Ok(USER_MM_TOKEN_BALANCE
+        Ok(USER_DEPOSITED_BALANCE
             .load(deps.storage, (user, denom.clone()))
             .unwrap_or_else(|_| Uint128::zero()))
     }
@@ -283,5 +375,62 @@ pub mod query {
 
     pub fn get_collateral_vault_contract(deps: Deps) -> StdResult<String> {
         COLLATERAL_VAULT.load(deps.storage)
+    }
+
+    pub fn get_margin_positions_count(deps: Deps) -> StdResult<MarginPositionsCount> {
+        MARGIN_POSITIONS_COUNT.load(deps.storage)
+    }
+
+    pub fn get_orders_by_user(deps: Deps, user: String) -> StdResult<Vec<OrderResponse>> {
+        let all_positions: StdResult<Vec<_>> = MARGIN_POSITIONS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
+
+        Ok(all_positions
+            .unwrap()
+            .iter()
+            .filter(|((user_inner, _), _)| user == *user_inner)
+            .map(|((_, _), order)| OrderResponse {
+                order_status: order.order_status.clone(),
+                order_type: order.order_type.clone(),
+                amount: order.amount,
+                sell_token_denom: order.sell_token_denom.clone(),
+                leverage: order.leverage,
+            })
+            .collect())
+    }
+
+    pub fn get_order_by_id(deps: Deps, order_id: u128) -> StdResult<OrderResponse> {
+        let all_positions: StdResult<Vec<_>> = MARGIN_POSITIONS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
+
+        assert!(
+            all_positions
+                .unwrap()
+                .iter()
+                .any(|((_, order_id_inner), _)| *order_id_inner == order_id),
+            "There is no such order with give order_id"
+        );
+
+        let mut result = vec![];
+
+        let all_positions: StdResult<Vec<_>> = MARGIN_POSITIONS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect();
+
+        for ((_, order_id_inner), order) in all_positions.unwrap().iter() {
+            if *order_id_inner == order_id {
+                result.push(OrderResponse {
+                    order_status: order.order_status.clone(),
+                    order_type: order.order_type.clone(),
+                    amount: order.amount,
+                    sell_token_denom: order.sell_token_denom.clone(),
+                    leverage: order.leverage,
+                })
+            }
+        }
+
+        Ok(result.pop().unwrap())
     }
 }

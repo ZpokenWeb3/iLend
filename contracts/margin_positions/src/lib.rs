@@ -6,6 +6,7 @@ pub mod contract;
 mod error;
 pub mod msg;
 mod state;
+pub mod utils;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(

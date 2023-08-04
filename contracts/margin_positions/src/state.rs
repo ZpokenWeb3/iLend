@@ -1,10 +1,12 @@
-use crate::msg::TokenInfo;
+use crate::utils::{OrderInfo, TokenInfo};
 use cosmwasm_std::Addr;
 use pyth_sdk_cw::PriceIdentifier;
 use {
     cosmwasm_std::Uint128,
     cw_storage_plus::{Item, Map},
 };
+
+use cosmwasm_schema::cw_serde;
 
 // accounts that are responsible for storing collateral to initiate deposits and withdrawals
 pub const COLLATERAL_VAULT: Item<String> = Item::new("collateral_vault_margin");
@@ -24,7 +26,7 @@ pub const PRICE_UPDATER_CONTRACT: Item<String> = Item::new("price_updater_margin
 
 pub const SUPPORTED_TOKENS: Map<String, TokenInfo> = Map::new("tokens_margin");
 
-pub const USER_MM_TOKEN_BALANCE: Map<(String, String), Uint128> =
+pub const USER_DEPOSITED_BALANCE: Map<(String, String), Uint128> =
     Map::new("user_mm_token_balance_margin");
 /*
 USER_MM_TOKEN_BALANCE STORAGE
@@ -32,3 +34,21 @@ Key: (user_address_1, token_A) -> Value: balance_for_token_A
 Key: (user_address_1, token_B) -> Value: balance_for_token_B
 Key: (user_address_2, token_A) -> Value: balance_for_token_A
  */
+
+pub const MARGIN_POSITIONS: Map<(String, u128), OrderInfo> = Map::new("margin_positions");
+/// (user , order_id) ➝ Order
+
+pub const MARGIN_POSITIONS_COUNT: Item<MarginPositionsCount> = Item::new("margin_positions_count");
+
+#[cw_serde]
+#[derive(Default)]
+pub struct MarginPositionsCount {
+    pub count: u128,
+}
+
+impl MarginPositionsCount {
+    pub fn increase_count_by_one(&mut self) -> MarginPositionsCount {
+        self.count += 1;
+        self.clone()
+    }
+}
