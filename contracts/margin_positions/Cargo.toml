@@ -14,9 +14,13 @@ thiserror = "1.0.40"
 cw20 = "1.0.1"
 cw20-base = "1.0.1"
 uint = "0.9.5"
-rust_decimal = {version = "1.29.1", features = ["maths"]}
+rust_decimal = { version = "1.29.1", features = ["maths"] }
 pyth-sdk-cw = "1.0.0"
+serde = "1.0.177"
+schemars = "0.8.12"
+
 
 [dev-dependencies]
 cosmwasm-schema = "1.0.0"
 cw-multi-test = "0.13.2"
+collateral_vault = { path = "../collateral_vault" }

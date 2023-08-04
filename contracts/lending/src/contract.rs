@@ -12,7 +12,7 @@ use crate::contract::query::{
 };
 
 use crate::msg::{
-    ExecuteLendingContract::{BorrowFromVaultContract, RedeemFromVaultContract},
+    ExecuteCollateralVault::{BorrowFromVaultContract, RedeemFromVaultContract},
     LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
     TotalBorrowData, UserBorrowingInfo,
 };

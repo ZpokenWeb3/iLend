@@ -11,7 +11,7 @@ mod tests {
     use cosmwasm_std::{coin, coins, Addr, Empty, Uint128};
     use cw_multi_test::{custom_app, ContractWrapper, Executor};
     use lending::msg::{
-        ExecuteLendingContract, ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg,
+        ExecuteCollateralVault, ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg,
     };
     use lending::{execute, instantiate, query};
     use pyth_sdk_cw::PriceIdentifier;
@@ -124,7 +124,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("collateral_vault"),
             collateral_contract_addr.clone(),
-            &ExecuteLendingContract::Fund {},
+            &ExecuteCollateralVault::Fund {},
             &[coin(RESERVE_AMOUNT, "atom")],
         )
         .unwrap();
@@ -132,7 +132,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("collateral_vault"),
             collateral_contract_addr.clone(),
-            &ExecuteLendingContract::Fund {},
+            &ExecuteCollateralVault::Fund {},
             &[coin(RESERVE_AMOUNT, "eth")],
         )
         .unwrap();
@@ -211,7 +211,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("collateral_vault"),
             collateral_contract_addr.clone(),
-            &ExecuteLendingContract::SetLendingContract {
+            &ExecuteCollateralVault::SetLendingContract {
                 contract: lending_addr.to_string(),
             },
             &[],

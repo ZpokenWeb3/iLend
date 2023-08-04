@@ -1,0 +1,3 @@
+mod test_fail_insufficient_balance;
+mod test_success_deposit_of_different_tokens;
+mod test_success_deposit_one_token_in_a_row;

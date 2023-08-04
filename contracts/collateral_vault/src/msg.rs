@@ -28,6 +28,11 @@ pub enum ExecuteMsg {
         user: String,
     },
     Fund {},
+    RedeemFromVaultContractMargin {
+        denom: String,
+        amount: Uint128,
+        user: String,
+    },
 }
 
 #[cw_serde]

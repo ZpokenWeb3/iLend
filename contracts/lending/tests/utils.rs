@@ -13,7 +13,7 @@ use collateral_vault::{
 };
 use cosmwasm_std::Uint128;
 use lending::msg::{
-    ExecuteLendingContract, ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg,
+    ExecuteCollateralVault, ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg,
 };
 use lending::{execute, instantiate, query};
 use pyth_sdk_cw::PriceIdentifier;
@@ -107,7 +107,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::Fund {},
+        &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "eth")],
     )
     .unwrap();
@@ -186,7 +186,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::SetLendingContract {
+        &ExecuteCollateralVault::SetLendingContract {
             contract: lending_addr.to_string(),
         },
         &[],
@@ -399,7 +399,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::Fund {},
+        &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "eth")],
     )
     .unwrap();
@@ -407,7 +407,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::Fund {},
+        &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "atom")],
     )
     .unwrap();
@@ -486,7 +486,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::SetLendingContract {
+        &ExecuteCollateralVault::SetLendingContract {
             contract: lending_addr.to_string(),
         },
         &[],
@@ -791,7 +791,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::Fund {},
+        &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "eth")],
     )
     .unwrap();
@@ -799,7 +799,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::Fund {},
+        &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "atom")],
     )
     .unwrap();
@@ -878,7 +878,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
         collateral_contract_addr.clone(),
-        &ExecuteLendingContract::SetLendingContract {
+        &ExecuteCollateralVault::SetLendingContract {
             contract: lending_addr.to_string(),
         },
         &[],

@@ -73,6 +73,22 @@ pub fn execute(
                 amount: coins(amount.u128(), denom),
             }))
         }
+        ExecuteMsg::RedeemFromVaultContractMargin {
+            denom,
+            amount,
+            user,
+        } => {
+            assert_eq!(
+                info.sender.to_string(),
+                MARGIN_POSITIONS.load(deps.storage).unwrap(),
+                "This functionality is allowed for lending contract only"
+            );
+
+            Ok(Response::new().add_message(BankMsg::Send {
+                to_address: user,
+                amount: coins(amount.u128(), denom),
+            }))
+        }
         ExecuteMsg::BorrowFromVaultContract {
             denom,
             amount,

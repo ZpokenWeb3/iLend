@@ -264,7 +264,7 @@ pub struct TotalBorrowData {
 
 #[cw_serde]
 #[serde(rename = "snake_case")]
-pub enum ExecuteLendingContract {
+pub enum ExecuteCollateralVault {
     RedeemFromVaultContract {
         denom: String,
         amount: Uint128,
