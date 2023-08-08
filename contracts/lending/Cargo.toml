@@ -58,3 +58,4 @@ schemars = "0.8.12"
 cosmwasm-schema = "1.0.0"
 cw-multi-test = "0.16.5"
 collateral_vault = { path = "../collateral_vault" }
+margin_positions = { path = "../margin_positions" }

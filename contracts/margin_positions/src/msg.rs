@@ -36,6 +36,9 @@ pub enum ExecuteMsg {
     SetCollateralVaultContract {
         contract: String,
     },
+    SetLendingContract {
+        contract: String,
+    },
     CreateOrder {
         order_type: OrderType,
         amount: Uint128,
@@ -62,6 +65,12 @@ pub enum QueryMsg {
 
     #[returns(OrderResponse)]
     GetOrderById { order_id: u128 },
+
+    #[returns(String)]
+    GetLendingContract,
+
+    #[returns(String)]
+    GetCollateralVaultContract {},
 }
 
 #[cw_serde]

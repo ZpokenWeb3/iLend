@@ -153,6 +153,7 @@ mod tests {
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                     price_updater_contract_addr: "".to_string(),
                     collateral_vault_contract: collateral_contract_addr.to_string(),
+                    margin_positions_contract: "whatever".to_string(),
                 },
                 &[],
                 "Contract",

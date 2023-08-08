@@ -1,7 +1,4 @@
-use crate::contract::query::{
-    fetch_price_by_token, get_collateral_vault_contract, get_deposit, get_margin_positions_count,
-    get_order_by_id, get_orders_by_user,
-};
+use crate::contract::query::{fetch_price_by_token, get_collateral_vault_contract, get_deposit, get_lending_contract, get_margin_positions_count, get_order_by_id, get_orders_by_user};
 use crate::state::{
     MarginPositionsCount, ADMIN, COLLATERAL_VAULT, IS_TESTING, LENDING_CONTRACT, MARGIN_POSITIONS,
     MARGIN_POSITIONS_COUNT, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_CONTRACT, PYTH_CONTRACT,
@@ -10,7 +7,6 @@ use crate::state::{
 use crate::utils::TokenInfo;
 use cosmwasm_std::{CosmosMsg, WasmMsg};
 
-use crate::utils::ExecuteCollateralVaultFromMarginContract::RedeemFromVaultContractMargin;
 use crate::utils::{OrderInfo, OrderStatus};
 use {
     crate::{
@@ -23,6 +19,7 @@ use {
     },
     cw2::set_contract_version,
 };
+use crate::utils::ExecuteExternal::{Borrow, RedeemFromVaultContractMargin};
 
 const COLLATERAL_VAULT_CONTRACT: &str = "crates.io:collateral_vault";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -160,8 +157,8 @@ pub fn execute(
                 info.sender.to_string(),
                 denom.clone(),
             )
-            .unwrap()
-            .u128();
+                .unwrap()
+                .u128();
 
             assert!(
                 current_balance >= amount,
@@ -224,8 +221,24 @@ pub fn execute(
             Ok(Response::new())
         }
         ExecuteMsg::SetCollateralVaultContract { contract } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
             COLLATERAL_VAULT.save(deps.storage, &contract)?;
-            Ok(Response::new())
+            Ok(Response::default())
+        }
+        ExecuteMsg::SetLendingContract { contract } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            LENDING_CONTRACT.save(deps.storage, &contract)?;
+            Ok(Response::default())
         }
         ExecuteMsg::CreateOrder {
             order_type,
@@ -234,8 +247,8 @@ pub fn execute(
             leverage,
         } => {
             assert!(
-                leverage > 1 * 10u128.pow(LEVERAGE_DECIMALS as u32),
-                "Leverage should be greater than 1.0"
+                leverage >= 1 * 10u128.pow(LEVERAGE_DECIMALS as u32),
+                "Leverage should be not less than 1.0"
             );
 
             assert!(
@@ -249,8 +262,8 @@ pub fn execute(
                 info.sender.to_string(),
                 sell_token_denom.clone(),
             )
-            .unwrap()
-            .u128();
+                .unwrap()
+                .u128();
 
             assert!(
                 current_deposit >= amount.u128(),
@@ -286,8 +299,27 @@ pub fn execute(
                 (info.sender.to_string(), sell_token_denom.clone()),
                 &Uint128::from(remaining),
             )?;
+            if leverage != 1 * 10u128.pow(LEVERAGE_DECIMALS as u32) {
+                let amount_to_borrow =
+                    order.amount.u128() * order.leverage / 10u128.pow(LEVERAGE_DECIMALS as u32);
 
-            Ok(Response::default())
+                let msg_borrow_uncollateralazied = Borrow {
+                    denom: sell_token_denom,
+                    amount: Uint128::from(amount_to_borrow),
+                };
+
+                Ok(
+                    Response::new().add_message(CosmosMsg::Wasm(WasmMsg::Execute {
+                        contract_addr: get_lending_contract(deps.as_ref()).unwrap(),
+                        msg: to_binary(&msg_borrow_uncollateralazied)?,
+                        funds: vec![],
+                    })),
+                )
+            } else {
+                Ok(
+                    Response::default()
+                )
+            }
         }
         ExecuteMsg::CancelOrder { order_id } => {
             let order = get_order_by_id(deps.as_ref(), order_id).unwrap();
@@ -317,16 +349,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetPrice { denom } => to_binary(&fetch_price_by_token(deps, env, denom)?),
         QueryMsg::GetOrdersByUser { user } => to_binary(&get_orders_by_user(deps, user)?),
         QueryMsg::GetOrderById { order_id } => to_binary(&get_order_by_id(deps, order_id)?),
+        QueryMsg::GetLendingContract {} => to_binary(&get_lending_contract(deps)?),
+        QueryMsg::GetCollateralVaultContract {} => to_binary(&get_collateral_vault_contract(deps)?),
     }
 }
 
 pub mod query {
     use crate::msg::OrderResponse;
-    use crate::state::{
-        MarginPositionsCount, COLLATERAL_VAULT, IS_TESTING, MARGIN_POSITIONS,
-        MARGIN_POSITIONS_COUNT, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, SUPPORTED_TOKENS,
-        USER_DEPOSITED_BALANCE,
-    };
+    use crate::state::{MarginPositionsCount, COLLATERAL_VAULT, IS_TESTING, MARGIN_POSITIONS, MARGIN_POSITIONS_COUNT, PRICES, PRICE_FEED_IDS, PYTH_CONTRACT, SUPPORTED_TOKENS, USER_DEPOSITED_BALANCE, LENDING_CONTRACT};
     use cosmwasm_std::{Deps, Env, Order, StdResult, Uint128};
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse};
 
@@ -376,6 +406,11 @@ pub mod query {
     pub fn get_collateral_vault_contract(deps: Deps) -> StdResult<String> {
         COLLATERAL_VAULT.load(deps.storage)
     }
+
+    pub fn get_lending_contract(deps: Deps) -> StdResult<String> {
+        LENDING_CONTRACT.load(deps.storage)
+    }
+
 
     pub fn get_margin_positions_count(deps: Deps) -> StdResult<MarginPositionsCount> {
         MARGIN_POSITIONS_COUNT.load(deps.storage)

@@ -19,6 +19,11 @@ use lending::{execute, instantiate, query};
 use pyth_sdk_cw::PriceIdentifier;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+
+
+
+
+
 pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
 
@@ -110,7 +115,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
         &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "eth")],
     )
-    .unwrap();
+        .unwrap();
 
     let code = ContractWrapper::new_with_empty(execute, instantiate, query);
     let code_id = app.store_code(Box::new(code));
@@ -127,14 +132,14 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                        .unwrap(),
+                            .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                        .unwrap(),
+                            .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
@@ -176,6 +181,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
                 ],
                 price_updater_contract_addr: "".to_string(),
                 collateral_vault_contract: collateral_contract_addr.to_string(),
+                margin_positions_contract: "whatever".to_string(),
             },
             &[],
             "Contract",
@@ -191,7 +197,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let lending_contract: String = app
         .wrap()
@@ -209,7 +215,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT_ETH, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -251,7 +257,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp<CustomMsg>, Addr, Addr)
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT_ETH, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -402,7 +408,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "eth")],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
@@ -410,7 +416,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "atom")],
     )
-    .unwrap();
+        .unwrap();
 
     let code = ContractWrapper::new_with_empty(execute, instantiate, query);
     let code_id = app.store_code(Box::new(code));
@@ -463,19 +469,20 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                        .unwrap(),
+                            .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                        .unwrap(),
+                            .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                 price_updater_contract_addr: "".to_string(),
                 collateral_vault_contract: collateral_contract_addr.to_string(),
+                margin_positions_contract: "whatever".to_string(),
             },
             &[],
             "Contract",
@@ -491,7 +498,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let lending_contract: String = app
         .wrap()
@@ -512,7 +519,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -523,7 +530,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let get_price_eth: Uint128 = app
         .wrap()
@@ -554,7 +561,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ETH, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -593,7 +600,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp<CustomMsg>, Addr
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
     )
-    .unwrap();
+        .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -641,7 +648,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp<Cu
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -651,7 +658,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp<Cu
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -661,7 +668,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp<Cu
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -671,7 +678,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp<Cu
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     (app, addr, collateral_contract_addr)
 }
@@ -794,7 +801,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "eth")],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("collateral_vault"),
@@ -802,7 +809,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         &ExecuteCollateralVault::Fund {},
         &[coin(RESERVE_AMOUNT, "atom")],
     )
-    .unwrap();
+        .unwrap();
 
     let code = ContractWrapper::new_with_empty(execute, instantiate, query);
     let code_id = app.store_code(Box::new(code));
@@ -855,19 +862,20 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                        .unwrap(),
+                            .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                        .unwrap(),
+                            .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                 price_updater_contract_addr: "".to_string(),
                 collateral_vault_contract: collateral_contract_addr.to_string(),
+                margin_positions_contract: "whatever".to_string(),
             },
             &[],
             "Contract",
@@ -883,7 +891,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let lending_contract: String = app
         .wrap()
@@ -904,7 +912,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -915,7 +923,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     let get_price_eth: Uint128 = app
         .wrap()
@@ -959,7 +967,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -969,7 +977,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -979,7 +987,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -989,7 +997,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -997,7 +1005,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ETH, "eth"),
     )
-    .unwrap();
+        .unwrap();
 
     app.set_block(BlockInfo {
         height: 0,
@@ -1053,7 +1061,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
     )
-    .unwrap();
+        .unwrap();
 
     app.set_block(BlockInfo {
         height: 0,
@@ -1107,7 +1115,7 @@ pub fn success_borrow_setup() -> (BasicApp<CustomMsg>, Addr, Addr) {
         },
         &[],
     )
-    .unwrap();
+        .unwrap();
 
     (app, lending_addr, collateral_contract_addr)
 }

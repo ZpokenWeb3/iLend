@@ -89,4 +89,6 @@ pub const PYTH_CONTRACT: Item<Addr> = Item::new("pyth_contract");
 
 pub const IS_TESTING: Item<bool> = Item::new("is_testing");
 
-pub const COLLATERAL_VAULT: Item<String> = Item::new("collateral_vault");
+pub const COLLATERAL_VAULT_CONTRACT: Item<String> = Item::new("collateral_vault_contract_lending");
+
+pub const MARGIN_POSITIONS_CONTRACT: Item<String> = Item::new("margin_positions_lending");

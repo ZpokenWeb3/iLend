@@ -187,6 +187,7 @@ mod tests {
                     )],
                     price_updater_contract_addr: "".to_string(),
                     collateral_vault_contract: collateral_contract_addr.to_string(),
+                    margin_positions_contract: "whatever".to_string(),
                 },
                 &[],
                 "Contract",

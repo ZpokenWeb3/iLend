@@ -1,5 +1,5 @@
 use crate::contract::query::{get_lending_contract, get_margin_contract};
-use crate::state::{ADMIN, LENDING, MARGIN_POSITIONS};
+use crate::state::{ADMIN, LENDING_CONTRACT, MARGIN_POSITIONS_CONTRACT};
 use {
     crate::{
         error::ContractError,
@@ -22,8 +22,8 @@ pub fn instantiate(
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
-    LENDING.save(deps.storage, &msg.lending_contract)?;
-    MARGIN_POSITIONS.save(deps.storage, &msg.margin_contract)?;
+    LENDING_CONTRACT.save(deps.storage, &msg.lending_contract)?;
+    MARGIN_POSITIONS_CONTRACT.save(deps.storage, &msg.margin_contract)?;
     ADMIN.save(deps.storage, &msg.admin)?;
 
     Ok(Response::new().add_attribute("method", "instantiate"))
@@ -43,17 +43,17 @@ pub fn execute(
                 "This functionality is allowed for admin only"
             );
 
-            LENDING.save(deps.storage, &contract)?;
+            LENDING_CONTRACT.save(deps.storage, &contract)?;
             Ok(Response::default())
         }
-        ExecuteMsg::SetMarginContract { contract } => {
+        ExecuteMsg::SetMarginPositionsContract { contract } => {
             assert_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
                 "This functionality is allowed for admin only"
             );
 
-            MARGIN_POSITIONS.save(deps.storage, &contract)?;
+            MARGIN_POSITIONS_CONTRACT.save(deps.storage, &contract)?;
 
             Ok(Response::default())
         }
@@ -64,7 +64,7 @@ pub fn execute(
         } => {
             assert_eq!(
                 info.sender.to_string(),
-                LENDING.load(deps.storage).unwrap(),
+                LENDING_CONTRACT.load(deps.storage).unwrap(),
                 "This functionality is allowed for lending contract only"
             );
 
@@ -80,7 +80,7 @@ pub fn execute(
         } => {
             assert_eq!(
                 info.sender.to_string(),
-                MARGIN_POSITIONS.load(deps.storage).unwrap(),
+                MARGIN_POSITIONS_CONTRACT.load(deps.storage).unwrap(),
                 "This functionality is allowed for lending contract only"
             );
 
@@ -96,7 +96,7 @@ pub fn execute(
         } => {
             assert_eq!(
                 info.sender.to_string(),
-                LENDING.load(deps.storage).unwrap(),
+                LENDING_CONTRACT.load(deps.storage).unwrap(),
                 "This functionality is allowed for lending contract only"
             );
 
@@ -133,14 +133,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 pub mod query {
-    use crate::state::{LENDING, MARGIN_POSITIONS};
+    use crate::state::{LENDING_CONTRACT, MARGIN_POSITIONS_CONTRACT};
     use cosmwasm_std::{Deps, StdResult};
 
     pub fn get_lending_contract(deps: Deps) -> StdResult<String> {
-        LENDING.load(deps.storage)
+        LENDING_CONTRACT.load(deps.storage)
     }
 
     pub fn get_margin_contract(deps: Deps) -> StdResult<String> {
-        MARGIN_POSITIONS.load(deps.storage)
+        MARGIN_POSITIONS_CONTRACT.load(deps.storage)
     }
 }

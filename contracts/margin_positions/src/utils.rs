@@ -11,13 +11,18 @@ pub struct TokenInfo {
 
 #[cw_serde]
 #[serde(rename = "snake_case")]
-pub enum ExecuteCollateralVaultFromMarginContract {
+pub enum ExecuteExternal {
     RedeemFromVaultContractMargin {
         denom: String,
         amount: Uint128,
         user: String,
     },
+    Borrow {
+        denom: String,
+        amount: Uint128,
+    },
 }
+
 
 #[cw_serde]
 #[serde(rename = "snake_case")]

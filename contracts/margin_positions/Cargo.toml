@@ -24,3 +24,4 @@ schemars = "0.8.12"
 cosmwasm-schema = "1.0.0"
 cw-multi-test = "0.13.2"
 collateral_vault = { path = "../collateral_vault" }
+lending =  { path = "../lending" }

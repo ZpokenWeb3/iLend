@@ -14,7 +14,7 @@ pub enum ExecuteMsg {
     SetLendingContract {
         contract: String,
     },
-    SetMarginContract {
+    SetMarginPositionsContract {
         contract: String,
     },
     RedeemFromVaultContract {

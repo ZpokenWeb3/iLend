@@ -27,6 +27,7 @@ pub struct InstantiateMsg {
     // updater service that is eligible to update price whenever oracle is not available
     pub price_updater_contract_addr: String,
     pub collateral_vault_contract: String,
+    pub margin_positions_contract: String,
 }
 
 #[cw_serde]
@@ -79,6 +80,12 @@ pub enum ExecuteMsg {
     },
     Liquidation {
         user: String,
+    },
+    SetCollateralVaultContract {
+        contract: String,
+    },
+    SetMarginPositionsContract {
+        contract: String,
     },
 }
 
@@ -171,6 +178,9 @@ pub enum QueryMsg {
 
     #[returns(String)]
     GetCollateralVaultContract {},
+
+    #[returns(String)]
+    GetMarginPositionsContract {},
 }
 
 #[cw_serde]
