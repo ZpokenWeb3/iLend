@@ -2,6 +2,7 @@
 name = "master_contract"
 version = "0.1.0"
 edition = "2021"
+resolver = "2"
 
 exclude = [
     # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.

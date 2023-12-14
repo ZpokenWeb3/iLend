@@ -1,5 +1,7 @@
 [workspace]
 members = ["contracts/master_contract"]
+resolver = "2"
+
 
 [profile.release]
 rpath = false
