@@ -1,0 +1,12 @@
+injectived tx wasm submit-proposal wasm-store ../artifacts/master_contract-aarch64.wasm \
+--title "Upload the i-Lend contract" \
+--summary "i-Lend Protocol" \
+--instantiate-anyof-addresses inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z \
+--deposit=1000000000000000000inj \
+--gas=30000000 \
+--chain-id=injective-1 \
+--broadcast-mode=sync \
+--node https://sentry.tm.injective.network:443 \
+--yes \
+--from inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z \
+--gas-prices=500000000inj
