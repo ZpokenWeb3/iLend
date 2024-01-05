@@ -1,4 +1,4 @@
-use crate::contract::query::{fetch_price_by_token, get_all_users_with_borrows, get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate, get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price, get_reserve_configuration, get_supported_tokens, get_token_decimal, get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token, get_total_deposited_by_token, get_total_reserves_by_token, get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info, get_user_collateral_usd, get_user_deposited_usd, get_user_liquidation_threshold, get_user_max_allowed_borrow_amount_usd, get_user_utilization_rate, get_utilization_rate_by_token, user_deposit_as_collateral};
+use crate::contract::query::{fetch_price_by_token, get_all_users_with_borrows, get_available_liquidity_by_token, get_available_to_borrow, get_available_to_redeem, get_current_liquidity_index_ln, get_interest_rate, get_liquidity_index_last_update, get_liquidity_rate, get_mm_token_price, get_pyth_contract, get_pyth_price_feed_ids, get_reserve_configuration, get_supported_tokens, get_token_decimal, get_tokens_interest_rate_model_params, get_total_borrow_data, get_total_borrowed_by_token, get_total_deposited_by_token, get_total_reserves_by_token, get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info, get_user_collateral_usd, get_user_deposited_usd, get_user_liquidation_threshold, get_user_max_allowed_borrow_amount_usd, get_user_utilization_rate, get_utilization_rate_by_token, user_deposit_as_collateral};
 
 use crate::msg::{
     LiquidityIndexData, ReserveConfiguration, TokenInfo, TokenInterestRateModelParams,
@@ -13,6 +13,7 @@ use crate::state::{
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 
 use std::ops::{Add, Div, Mul};
+use cosmwasm_std::to_json_binary;
 
 use {
     crate::contract::query::get_deposit,
@@ -26,7 +27,7 @@ use {
         },
     },
     cosmwasm_std::{
-        coins, to_binary, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+        coins, BankMsg, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
         Timestamp, Uint128,
     },
     cw2::set_contract_version,
@@ -1003,6 +1004,36 @@ pub fn execute(
                 Ok(Response::default())
             }
         }
+        ExecuteMsg::SetPythContract { pyth_contract_addr } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            PYTH_CONTRACT.save(
+                deps.storage,
+                &deps.api.addr_validate(pyth_contract_addr.as_ref())?,
+            )?;
+
+            Ok(Response::default())
+        }
+        ExecuteMsg::AddPriceFeedIds { price_ids } => {
+            assert_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                "This functionality is allowed for admin only"
+            );
+
+            assert!(!price_ids.is_empty(), "Couldn't pass empty parameters");
+
+            for price_id in price_ids.iter() {
+                let price_id = price_id.clone();
+                PRICE_FEED_IDS.save(deps.storage, price_id.0.clone(), &price_id.1.clone())?;
+            }
+
+            Ok(Response::default())
+        }
     }
 }
 
@@ -1030,82 +1061,87 @@ pub fn execute_update_liquidity_index_data(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetDeposit { address, denom } => {
-            to_binary(&get_deposit(deps, env, address, denom)?)
+            to_json_binary(&get_deposit(deps, env, address, denom)?)
         }
         QueryMsg::UserDepositAsCollateral { address, denom } => {
-            to_binary(&user_deposit_as_collateral(deps, address, denom)?)
+            to_json_binary(&user_deposit_as_collateral(deps, address, denom)?)
         }
-        QueryMsg::GetPrice { denom } => to_binary(&fetch_price_by_token(deps, env, denom)?),
-        QueryMsg::GetUserBorrowAmountWithInterest { address, denom } => to_binary(
+        QueryMsg::GetPrice { denom } => to_json_binary(&fetch_price_by_token(deps, env, denom)?),
+        QueryMsg::GetUserBorrowAmountWithInterest { address, denom } => to_json_binary(
             &query::get_user_borrow_amount_with_interest(deps, env, address, denom)?,
         ),
         QueryMsg::GetUserBorrowingInfo { address, denom } => {
-            to_binary(&query::get_user_borrowing_info(deps, env, address, denom)?)
+            to_json_binary(&query::get_user_borrowing_info(deps, env, address, denom)?)
         }
         QueryMsg::GetTotalBorrowData { denom } => {
-            to_binary(&query::get_total_borrow_data(deps, denom)?)
+            to_json_binary(&query::get_total_borrow_data(deps, denom)?)
         }
-        QueryMsg::GetSupportedTokens {} => to_binary(&get_supported_tokens(deps)?),
-        QueryMsg::GetReserveConfiguration {} => to_binary(&get_reserve_configuration(deps)?),
+        QueryMsg::GetSupportedTokens {} => to_json_binary(&get_supported_tokens(deps)?),
+        QueryMsg::GetReserveConfiguration {} => to_json_binary(&get_reserve_configuration(deps)?),
         QueryMsg::GetTokensInterestRateModelParams {} => {
-            to_binary(&get_tokens_interest_rate_model_params(deps)?)
+            to_json_binary(&get_tokens_interest_rate_model_params(deps)?)
         }
-        QueryMsg::GetInterestRate { denom } => to_binary(&get_interest_rate(deps, env, denom)?),
-        QueryMsg::GetLiquidityRate { denom } => to_binary(&get_liquidity_rate(deps, env, denom)?),
+        QueryMsg::GetInterestRate { denom } => to_json_binary(&get_interest_rate(deps, env, denom)?),
+        QueryMsg::GetLiquidityRate { denom } => to_json_binary(&get_liquidity_rate(deps, env, denom)?),
         QueryMsg::GetCurrentLiquidityIndexLn { denom } => {
-            to_binary(&get_current_liquidity_index_ln(deps, env, denom)?)
+            to_json_binary(&get_current_liquidity_index_ln(deps, env, denom)?)
         }
-        QueryMsg::GetMmTokenPrice { denom } => to_binary(&get_mm_token_price(deps, env, denom)?),
+        QueryMsg::GetMmTokenPrice { denom } => to_json_binary(&get_mm_token_price(deps, env, denom)?),
         QueryMsg::GetUserDepositedUsd { address } => {
-            to_binary(&get_user_deposited_usd(deps, env, address)?)
+            to_json_binary(&get_user_deposited_usd(deps, env, address)?)
         }
         QueryMsg::GetUserCollateralUsd { address } => {
-            to_binary(&get_user_collateral_usd(deps, env, address)?)
+            to_json_binary(&get_user_collateral_usd(deps, env, address)?)
         }
         QueryMsg::GetUserBorrowedUsd { address } => {
-            to_binary(&get_user_borrowed_usd(deps, env, address)?)
+            to_json_binary(&get_user_borrowed_usd(deps, env, address)?)
         }
         QueryMsg::GetUserUtilizationRate { address } => {
-            to_binary(&get_user_utilization_rate(deps, env, address)?)
+            to_json_binary(&get_user_utilization_rate(deps, env, address)?)
         }
         QueryMsg::GetUserLiquidationThreshold { address } => {
-            to_binary(&get_user_liquidation_threshold(deps, env, address)?)
+            to_json_binary(&get_user_liquidation_threshold(deps, env, address)?)
         }
         QueryMsg::GetAvailableToBorrow { address, denom } => {
-            to_binary(&get_available_to_borrow(deps, env, address, denom)?)
+            to_json_binary(&get_available_to_borrow(deps, env, address, denom)?)
         }
         QueryMsg::GetAvailableToRedeem { address, denom } => {
-            to_binary(&get_available_to_redeem(deps, env, address, denom)?)
+            to_json_binary(&get_available_to_redeem(deps, env, address, denom)?)
         }
         QueryMsg::GetTotalReservesByToken { denom } => {
-            to_binary(&get_total_reserves_by_token(deps, env, denom)?)
+            to_json_binary(&get_total_reserves_by_token(deps, env, denom)?)
         }
         QueryMsg::GetTotalDepositedByToken { denom } => {
-            to_binary(&get_total_deposited_by_token(deps, env, denom)?)
+            to_json_binary(&get_total_deposited_by_token(deps, env, denom)?)
         }
         QueryMsg::GetTotalBorrowedByToken { denom } => {
-            to_binary(&get_total_borrowed_by_token(deps, env, denom)?)
+            to_json_binary(&get_total_borrowed_by_token(deps, env, denom)?)
         }
         QueryMsg::GetAvailableLiquidityByToken { denom } => {
-            to_binary(&get_available_liquidity_by_token(deps, env, denom)?)
+            to_json_binary(&get_available_liquidity_by_token(deps, env, denom)?)
         }
         QueryMsg::GetUtilizationRateByToken { denom } => {
-            to_binary(&get_utilization_rate_by_token(deps, env, denom)?)
+            to_json_binary(&get_utilization_rate_by_token(deps, env, denom)?)
         }
         QueryMsg::GetLiquidityIndexLastUpdate { denom } => {
-            to_binary(&get_liquidity_index_last_update(deps, denom)?)
+            to_json_binary(&get_liquidity_index_last_update(deps, denom)?)
         }
         QueryMsg::GetUserMaxAllowedBorrowAmountUsd { address } => {
-            to_binary(&get_user_max_allowed_borrow_amount_usd(deps, env, address)?)
+            to_json_binary(&get_user_max_allowed_borrow_amount_usd(deps, env, address)?)
         }
         QueryMsg::GetAllUsersWithBorrows {} => {
-            to_binary(&get_all_users_with_borrows(deps, env)?)
+            to_json_binary(&get_all_users_with_borrows(deps, env)?)
+        }
+        QueryMsg::GetPythContract {} => {
+            to_json_binary(&get_pyth_contract(deps)?)
+        }
+        QueryMsg::GetPriceFeedIds {} => {
+            to_json_binary(&get_pyth_price_feed_ids(deps)?)
         }
     }
 }
 
 pub mod query {
-    use std::collections::HashSet;
     use super::*;
     use std::ops::Mul;
 
@@ -1113,7 +1149,8 @@ pub mod query {
         GetBalanceResponse, GetReserveConfigurationResponse, GetSupportedTokensResponse,
         GetTokensInterestRateModelParamsResponse, TotalBorrowData, UserBorrowingInfo,
     };
-    use cosmwasm_std::{Coin, Order, StdError};
+    use cosmwasm_std::{Coin, Order};
+    use cosmwasm_std::Order::Ascending;
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
 
     pub fn get_deposit(
@@ -1154,6 +1191,21 @@ pub mod query {
 
         Ok(use_user_deposit_as_collateral)
     }
+
+    pub fn get_pyth_contract(deps: Deps) -> StdResult<String> {
+        Ok(PYTH_CONTRACT.load(deps.storage)?.to_string())
+    }
+
+    pub fn get_pyth_price_feed_ids(deps: Deps) -> StdResult<Vec<(String, PriceIdentifier)>> {
+        Ok(PRICE_FEED_IDS.keys(deps.storage, None, None, Ascending).map(|denom| {
+            let token_denom = denom.unwrap();
+
+            let price_identifier = PRICE_FEED_IDS.load(deps.storage, token_denom.clone()).unwrap();
+
+            (token_denom, price_identifier)
+        }).collect())
+    }
+
 
     pub fn calc_borrow_amount_with_interest(
         borrowed_amount: u128,

@@ -82,6 +82,12 @@ pub enum ExecuteMsg {
     Liquidation {
         user: String,
     },
+    SetPythContract {
+        pyth_contract_addr: String,
+    },
+    AddPriceFeedIds {
+        price_ids: Vec<(String, PriceIdentifier)>
+    },
 }
 
 #[cw_serde]
@@ -113,6 +119,9 @@ pub enum QueryMsg {
 
     #[returns(Uint128)]
     GetPrice { denom: String },
+
+    #[returns(String)]
+    GetPythContract {},
 
     #[returns(Uint128)]
     GetInterestRate { denom: String },
@@ -168,8 +177,11 @@ pub enum QueryMsg {
     #[returns(Uint128)]
     GetUserMaxAllowedBorrowAmountUsd { address: String },
 
-    #[returns(Vec<String>)]
-    GetAllUsersWithBorrows {}
+    #[returns(Vec < String >)]
+    GetAllUsersWithBorrows {},
+
+    #[returns(Vec < (String, PriceIdentifier) >)]
+    GetPriceFeedIds {},
 }
 
 #[cw_serde]
