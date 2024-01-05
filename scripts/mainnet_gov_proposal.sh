@@ -1,8 +1,7 @@
 injectived tx wasm submit-proposal wasm-store ../artifacts/master_contract-aarch64.wasm \
---title "Upload the i-Lend contract" \
---summary "i-Lend Protocol" \
+--title "Upload the iLend contract" \
+--summary "iLend Protocol: \n iLend is a decentralized finance protocol developed on the Injective network. It offers the ability to engage in lending and borrowing activities in a decentralized, transparent, and efficient manner. The protocol leverages Injective Protocol's ability to offer fast, secure, and EVM-compatible DeFi transactions across multiple blockchain ecosystems \n github: https://github.com/i-Lend-org/iLend-smart-contracts/tree/standalone_lending \n build by zpoken team https://zpoken.io/" \
 --instantiate-anyof-addresses inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z \
---deposit=1000000000000000000inj \
 --gas=30000000 \
 --chain-id=injective-1 \
 --broadcast-mode=sync \

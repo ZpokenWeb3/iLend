@@ -1,7 +1,7 @@
 # Overview
 
-## What is i-Lend Protocol?
-i-Lend is a decentralized finance protocol developed on the Injective network. It offers the ability to engage in lending and borrowing activities in a decentralized, transparent, and efficient manner. The protocol leverages Injective Protocol's ability to offer fast, secure, and EVM-compatible DeFi transactions across multiple blockchain ecosystems
+## What is iLend Protocol?
+iLend  is a decentralized finance protocol developed on the Injective network. It offers the ability to engage in lending and borrowing activities in a decentralized, transparent, and efficient manner. The protocol leverages Injective Protocol's ability to offer fast, secure, and EVM-compatible DeFi transactions across multiple blockchain ecosystems
 
 
 ## Contracts
@@ -43,21 +43,21 @@ To run the project you need:
 
 ## Core functionalities
 
-1) Deposit: Users can safely store their assets into the i-Lend protocol. Once deposited, these assets immediately start accruing interest, allowing users to grow their holdings over time.
-2) Redeem: i-Lend allows for easy and convenient withdrawal of assets, including any accrued interest, ensuring users have constant access to their funds.
+1) Deposit: Users can safely store their assets into the iLend Protocol. Once deposited, these assets immediately start accruing interest, allowing users to grow their holdings over time.
+2) Redeem: iLend allows for easy and convenient withdrawal of assets, including any accrued interest, ensuring users have constant access to their funds.
 3) Borrow: Users can leverage their deposited assets as collateral to secure loans. This provides an efficient method to access additional funds without needing to liquidate existing holdings.
-4) Repay: i-Lend facilitates seamless repayment of borrowed assets. On completion of repayment, the accumulated interest is settled, reducing potential risk against the user's collateral.
+4) Repay: iLend facilitates seamless repayment of borrowed assets. On completion of repayment, the accumulated interest is settled, reducing potential risk against the user's collateral.
 
 
 ## CLI commands (For Developers and Advanced Users)
 
-Make sure you have your injective address and i-lend contract set up
+Make sure you have your injective address and iLend contract set up
 - `readonly INJ_ADDRESS="YOUR_INJ_ADDRESS"`
 - `readonly CONTRACT="RESPECTIVE_CONTRACT_ADDR_FROM_TABLE_ABOVE"`
 - you can find respective supported tokens information above or via command
 ```
-  GET_SUPPORTED_TOKENS_QUERY='{"get_supported_tokens": {}}'
-  injectived query wasm contract-state smart $CONTRACT "$GET_SUPPORTED_TOKENS_QUERY" --node=https://k8s.testnet.tm.injective.network:443 --output json
+  GET_SUPPORTED_TOKENS_QUERY=
+  injectived query wasm contract-state smart inj1ulkyckufg8f0q20nsavcq5shcttq0n8nlc39t4 '{"get_supported_tokens": {}}' --node=https://k8s.testnet.tm.injective.network:443 --output json
 ```
 
 
