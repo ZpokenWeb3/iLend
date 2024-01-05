@@ -13,7 +13,8 @@ mod tests {
         // so that FIRST_DEPOSIT_AMOUNT is remaining
         let (mut app, addr) = success_deposit_of_one_token_setup();
 
-        let initial_pyth_contract: String = "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string();
+        let initial_pyth_contract: String =
+            "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string();
         let second_pyth_contract: String = "whatever-address-works".to_string();
 
         const PRICE_DECIMALS: u32 = 8;
@@ -22,12 +23,8 @@ mod tests {
 
         let pyth_contract: String = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetPythContract {},
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetPythContract {})
             .unwrap();
-
 
         assert_eq!(pyth_contract, initial_pyth_contract);
 
@@ -38,14 +35,12 @@ mod tests {
                 pyth_contract_addr: second_pyth_contract.clone(),
             },
             &[],
-        ).unwrap();
+        )
+        .unwrap();
 
         let pyth_contract_after: String = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetPythContract {},
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetPythContract {})
             .unwrap();
 
         assert_eq!(pyth_contract_after, second_pyth_contract);

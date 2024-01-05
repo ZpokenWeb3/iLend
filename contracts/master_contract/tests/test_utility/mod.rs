@@ -1,3 +1,4 @@
+mod test_get_all_user_with_borrow;
 mod test_get_available_liquidity_by_token;
 mod test_get_available_to_borrow;
 mod test_get_available_to_redeem;
@@ -19,6 +20,5 @@ mod test_get_user_liquidation_threshold;
 mod test_get_user_utilization_rate;
 mod test_get_utilization_rate_by_token;
 mod test_set_get_price;
-mod test_get_all_user_with_borrow;
-mod test_set_get_pyth_contract;
 mod test_set_get_price_feed_ids;
+mod test_set_get_pyth_contract;

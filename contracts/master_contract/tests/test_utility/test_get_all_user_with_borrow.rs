@@ -64,7 +64,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),
@@ -75,7 +75,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_borrow_amount_with_interest_eth: Uint128 = app
             .wrap()
@@ -147,16 +147,11 @@ mod tests {
             210000000000000000000
         );
 
-
         let users_with_borrow: Vec<String> = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetAllUsersWithBorrows {},
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetAllUsersWithBorrows {})
             .unwrap();
 
         assert!(!users_with_borrow.is_empty());
-
     }
 }

@@ -86,7 +86,7 @@ pub enum ExecuteMsg {
         pyth_contract_addr: String,
     },
     AddPriceFeedIds {
-        price_ids: Vec<(String, PriceIdentifier)>
+        price_ids: Vec<(String, PriceIdentifier)>,
     },
 }
 
