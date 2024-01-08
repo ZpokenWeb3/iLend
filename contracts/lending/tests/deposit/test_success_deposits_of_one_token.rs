@@ -5,9 +5,7 @@ mod tests {
     use cw_multi_test::{App, ContractWrapper, Executor};
     use std::vec;
 
-    use lending::msg::{
-        ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg, TotalBorrowData,
-    };
+    use lending::msg::{ExecuteMsg, GetBalanceResponse, InstantiateMsg, QueryMsg, TotalBorrowData};
     use lending::{execute, instantiate, query};
     use pyth_sdk_cw::PriceIdentifier;
     use std::time::{SystemTime, UNIX_EPOCH};

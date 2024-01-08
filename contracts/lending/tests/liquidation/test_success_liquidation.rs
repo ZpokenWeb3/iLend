@@ -3,9 +3,7 @@ mod tests {
     use crate::utils::success_borrow_setup;
     use cosmwasm_std::{coins, Addr, BlockInfo, Timestamp, Uint128};
     use cw_multi_test::Executor;
-    use lending::msg::{
-        ExecuteMsg, GetBalanceResponse, GetReserveConfigurationResponse, QueryMsg,
-    };
+    use lending::msg::{ExecuteMsg, GetBalanceResponse, GetReserveConfigurationResponse, QueryMsg};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     #[test]

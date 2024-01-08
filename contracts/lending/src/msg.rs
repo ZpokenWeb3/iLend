@@ -4,7 +4,6 @@ use cosmwasm_std::Uint128;
 
 use pyth_sdk_cw::{Price, PriceIdentifier};
 
-
 #[cw_serde]
 pub struct InstantiateMsg {
     // different sources for testing and production
