@@ -1,5 +1,5 @@
-readonly CONTRACT="inj1w0tyhhrfra6swj0aa0ewfhxpuu5wv4uyj0uc0w"
-readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
+readonly CONTRACT="inj1qunaqndmy45x6sa0uht09ve0n4a8cuvmsmqfm0"
+readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
 
 sleep 1
 

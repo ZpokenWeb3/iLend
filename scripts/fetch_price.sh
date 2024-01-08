@@ -7,8 +7,8 @@ readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
 
 wait
 
-UPDATE_PRICES='{"update_price": {"denom": "inj", "price": "0"}}'
-yes 12345678 | injectived tx wasm execute $CONTRACT "$UPDATE_PRICES" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
+#UPDATE_PRICES='{"update_price": {"denom": "inj", "price": "0"}}'
+#yes 12345678 | injectived tx wasm execute $CONTRACT "$UPDATE_PRICES" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
 
 
 

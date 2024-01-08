@@ -30,10 +30,35 @@
     {
       "type": "object",
       "required": [
-        "get_borrow_amount_with_interest"
+        "user_deposit_as_collateral"
       ],
       "properties": {
-        "get_borrow_amount_with_interest": {
+        "user_deposit_as_collateral": {
+          "type": "object",
+          "required": [
+            "address",
+            "denom"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            },
+            "denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_user_borrow_amount_with_interest"
+      ],
+      "properties": {
+        "get_user_borrow_amount_with_interest": {
           "type": "object",
           "required": [
             "address",
@@ -114,6 +139,19 @@
     {
       "type": "object",
       "required": [
+        "get_reserve_configuration"
+      ],
+      "properties": {
+        "get_reserve_configuration": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "get_tokens_interest_rate_model_params"
       ],
       "properties": {
@@ -140,6 +178,19 @@
               "type": "string"
             }
           },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_pyth_contract"
+      ],
+      "properties": {
+        "get_pyth_contract": {
+          "type": "object",
           "additionalProperties": false
         }
       },
@@ -253,6 +304,27 @@
     {
       "type": "object",
       "required": [
+        "get_user_collateral_usd"
+      ],
+      "properties": {
+        "get_user_collateral_usd": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
         "get_user_borrowed_usd"
       ],
       "properties": {
@@ -274,16 +346,37 @@
     {
       "type": "object",
       "required": [
-        "get_contract_balance"
+        "get_user_utilization_rate"
       ],
       "properties": {
-        "get_contract_balance": {
+        "get_user_utilization_rate": {
           "type": "object",
           "required": [
-            "denom"
+            "address"
           ],
           "properties": {
-            "denom": {
+            "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_user_liquidation_threshold"
+      ],
+      "properties": {
+        "get_user_liquidation_threshold": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
               "type": "string"
             }
           },
@@ -463,6 +556,53 @@
               "type": "string"
             }
           },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_user_max_allowed_borrow_amount_usd"
+      ],
+      "properties": {
+        "get_user_max_allowed_borrow_amount_usd": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_all_users_with_borrows"
+      ],
+      "properties": {
+        "get_all_users_with_borrows": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "get_price_feed_ids"
+      ],
+      "properties": {
+        "get_price_feed_ids": {
+          "type": "object",
           "additionalProperties": false
         }
       },

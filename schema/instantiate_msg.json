@@ -4,12 +4,69 @@
   "type": "object",
   "required": [
     "admin",
+    "is_testing",
+    "liquidator",
+    "price_ids",
+    "price_updater_addr",
+    "pyth_contract_addr",
+    "reserve_configuration",
     "supported_tokens",
     "tokens_interest_rate_model_params"
   ],
   "properties": {
     "admin": {
       "type": "string"
+    },
+    "is_testing": {
+      "type": "boolean"
+    },
+    "liquidator": {
+      "type": "string"
+    },
+    "price_ids": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": [
+          {
+            "type": "string"
+          },
+          {
+            "$ref": "#/definitions/Identifier"
+          }
+        ],
+        "maxItems": 2,
+        "minItems": 2
+      }
+    },
+    "price_updater_addr": {
+      "type": "string"
+    },
+    "pyth_contract_addr": {
+      "type": "string"
+    },
+    "reserve_configuration": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
+          }
+        ],
+        "maxItems": 3,
+        "minItems": 3
+      }
     },
     "supported_tokens": {
       "type": "array",
@@ -57,12 +114,22 @@
             "type": "integer",
             "format": "uint128",
             "minimum": 0.0
+          },
+          {
+            "type": "integer",
+            "format": "uint128",
+            "minimum": 0.0
           }
         ],
-        "maxItems": 4,
-        "minItems": 4
+        "maxItems": 5,
+        "minItems": 5
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "definitions": {
+    "Identifier": {
+      "type": "string"
+    }
+  }
 }

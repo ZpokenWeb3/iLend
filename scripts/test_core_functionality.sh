@@ -2,26 +2,27 @@
 
 source ../.env
 
-readonly CONTRACT="$CONTRACT_ADDRESS"
-readonly INJ_ADDRESS="$USER_ADDRESS"
+readonly CONTRACT="inj1qunaqndmy45x6sa0uht09ve0n4a8cuvmsmqfm0"
+readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
+readonly DENOM_USDT="peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5"
 
 # shellcheck disable=SC2046
 # shellcheck disable=SC2116
 
 get_query() {
-  sudo docker exec -it injective-core-v1.10.1 sh -c "injectived query wasm contract-state smart $CONTRACT \"$1\" --node=https://k8s.testnet.tm.injective.network:443 --output json"
+  injectived query wasm contract-state smart $CONTRACT \"$1\" --node=https://k8s.testnet.tm.injective.network:443 --output json
   sleep 3
   echo
 }
 
 execute_query() {
-  sudo docker exec -it injective-core-v1.10.1 sh -c "yes $PASSPHRASE | injectived tx wasm execute $CONTRACT \"$1\" --from=$INJ_ADDRESS --chain-id=\"injective-888\" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443"
+  yes 12345678 | injectived tx wasm execute $CONTRACT \"$1\" --from=$INJ_ADDRESS --chain-id=\"injective-888\" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
   sleep 3
   echo
 }
 
 execute_query_with_amount() {
-  sudo docker exec -it injective-core-v1.10.1 sh -c "yes $PASSPHRASE | injectived tx wasm execute $CONTRACT \"$1\" --from=$INJ_ADDRESS --amount=\"$2\" --chain-id=\"injective-888\" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443"
+  yes 12345678 | injectived tx wasm execute $CONTRACT \"$1\" --from=$INJ_ADDRESS --amount=\"$2\" --chain-id=\"injective-888\" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
   sleep 3
   echo
 }
