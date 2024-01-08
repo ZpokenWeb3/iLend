@@ -2,8 +2,8 @@
 CONTRACT="inj1znmfkan4qpttv2rumzvwhcpfjju24lpvdz5a9y"
 readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
 
-SET_PRICE_APE='{"update_price": {"denom": "inj", "price": "1"}}'
-yes 12345678 | injectived tx wasm execute $CONTRACT "$SET_PRICE_APE" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
+UPDATE_PRICE='{"update_price": {"denom": "inj", "price": "1"}}'
+yes 12345678 | injectived tx wasm execute $CONTRACT "$UPDATE_PRICE" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
 #
 #sleep 2
 

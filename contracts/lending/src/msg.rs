@@ -4,9 +4,6 @@ use cosmwasm_std::Uint128;
 
 use pyth_sdk_cw::{Price, PriceIdentifier};
 
-// cw_serde attribute is equivalent to
-// #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, JsonSchema)]
-// #[serde(rename_all = "snake_case")]
 
 #[cw_serde]
 pub struct InstantiateMsg {
@@ -24,8 +21,8 @@ pub struct InstantiateMsg {
     pub price_ids: Vec<(String, PriceIdentifier)>,
     // pyth contract on a given network that fetches prices | testnet & mainnet
     pub pyth_contract_addr: String,
-    // updater service that is eligible to update price whenever oracle is not available
-    pub price_updater_contract_addr: String,
+    // updater service that is eligible to update price
+    pub price_updater_addr: String,
 }
 
 #[cw_serde]

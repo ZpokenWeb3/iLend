@@ -1,5 +1,5 @@
 # address of user on testnet and received some faucet tokens
-readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
+readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
 
 
 yes 12345678 | injectived tx wasm store ../artifacts/lending-aarch64.wasm \

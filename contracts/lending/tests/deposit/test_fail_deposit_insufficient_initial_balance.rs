@@ -105,7 +105,7 @@ mod tests {
                         RATE_GROWTH_FACTOR,
                         OPTIMAL_UTILISATION_RATIO,
                     )],
-                    price_updater_contract_addr: "".to_string(),
+                    price_updater_addr: "".to_string(),
                 },
                 &[coin(CONTRACT_RESERVES_ETH, "eth")],
                 "Contract",
