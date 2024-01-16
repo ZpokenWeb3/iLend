@@ -31,7 +31,7 @@ mod tests {
         app.execute_contract(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::SetPythContract {
+            &ExecuteMsg::UpdatePythContract {
                 pyth_contract_addr: second_pyth_contract.clone(),
             },
             &[],

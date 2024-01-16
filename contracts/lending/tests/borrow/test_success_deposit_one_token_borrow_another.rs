@@ -88,7 +88,6 @@ mod tests {
                 &InstantiateMsg {
                     is_testing: true,
                     admin: "owner".to_string(),
-                    liquidator: "liquidator".to_string(),
                     price_ids: vec![
                         (
                             "inj".to_string(),
@@ -195,10 +194,9 @@ mod tests {
         assert_eq!(get_price_eth.u128(), 200000000000); // 2000$/1ETH
 
         // funding contract with second reserve
-        app.execute_contract(
+        app.send_tokens(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES_ETH, "eth"),
         )
         .unwrap();

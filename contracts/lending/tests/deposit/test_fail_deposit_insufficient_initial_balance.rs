@@ -68,7 +68,6 @@ mod tests {
                 &InstantiateMsg {
                     is_testing: true,
                     admin: "owner".to_string(),
-                    liquidator: "liquidator".to_string(),
                     price_ids: vec![
                         (
                             "inj".to_string(),

@@ -68,7 +68,6 @@ mod tests {
                 &InstantiateMsg {
                     is_testing: true,
                     admin: "owner".to_string(),
-                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![(
                         "eth".to_string(),
                         "ethereum".to_string(),

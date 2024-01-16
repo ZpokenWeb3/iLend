@@ -9,7 +9,6 @@ pub struct InstantiateMsg {
     // different sources for testing and production
     pub is_testing: bool,
     pub admin: String,
-    pub liquidator: String,
     // name, denom, symbol, decimals
     pub supported_tokens: Vec<(String, String, String, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
@@ -26,10 +25,19 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
-    // Admin-only functionality for funding contract with reserves
-    // to be able to operate borrows and repayments
-    Fund {},
-    // if args is None, updates price via Pyth oracle, otherwise set price (only for testing)
+    Deposit {},
+    Redeem {
+        denom: String,
+        amount: Uint128,
+    },
+    Borrow {
+        denom: String,
+        amount: Uint128,
+    },
+    Repay {},
+    Liquidation {
+        user: String,
+    },
     UpdatePrice {
         denom: Option<String>,
         price: Option<u128>,
@@ -59,30 +67,21 @@ pub enum ExecuteMsg {
         optimal_utilisation_ratio: u128,
     },
 
-    // Deposit / Redeem functionality
-    Deposit {},
-    Redeem {
-        denom: String,
-        amount: Uint128,
-    },
-
-    // Borrow / Repay functionality
-    Borrow {
-        denom: String,
-        amount: Uint128,
-    },
-    Repay {},
     ToggleCollateralSetting {
         denom: String,
     },
-    Liquidation {
-        user: String,
-    },
-    SetPythContract {
+
+    UpdatePythContract {
         pyth_contract_addr: String,
+    },
+    UpdatePriceUpdaterAddr {
+        price_updater_addr: String,
     },
     AddPriceFeedIds {
         price_ids: Vec<(String, PriceIdentifier)>,
+    },
+    UpdateAdmin {
+        admin: String
     },
 }
 
@@ -178,6 +177,12 @@ pub enum QueryMsg {
 
     #[returns(Vec < (String, PriceIdentifier) >)]
     GetPriceFeedIds {},
+
+    #[returns(String)]
+    GetAdmin {},
+
+    #[returns(Vec < (String, Uint128) >)]
+    GetUserBalances {address: String }
 }
 
 #[cw_serde]
@@ -206,6 +211,14 @@ pub struct UserBorrowingInfo {
     pub average_interest_rate: Uint128,
     pub timestamp: Timestamp,
 }
+
+
+#[cw_serde]
+pub struct UserDataByToken {
+    pub deposited: Uint128,
+    pub borrowed: Uint128,
+}
+
 
 impl Default for UserBorrowingInfo {
     fn default() -> Self {

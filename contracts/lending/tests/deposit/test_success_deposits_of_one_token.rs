@@ -87,7 +87,6 @@ mod tests {
                 &InstantiateMsg {
                     is_testing: true,
                     admin: "owner".to_string(),
-                    liquidator: "liquidator".to_string(),
                     price_ids: vec![
                         (
                             "inj".to_string(),
@@ -132,7 +131,7 @@ mod tests {
             .unwrap();
 
         app.execute_contract(
-            Addr::unchecked("user"),
+            Addr::unchecked("owner"),
             addr.clone(),
             &ExecuteMsg::AddMarkets {
                 denom: "eth".to_string(),
@@ -150,21 +149,19 @@ mod tests {
         )
         .unwrap();
 
-        app.execute_contract(
+        app.send_tokens(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
-        app.execute_contract(
+        app.send_tokens(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES / 10, "atom"),
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),

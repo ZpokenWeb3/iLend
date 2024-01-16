@@ -102,7 +102,6 @@ mod tests {
                     ],
                     pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
                     admin: "owner".to_string(),
-                    liquidator: "liquidator".to_string(),
                     supported_tokens: vec![
                         (
                             "eth".to_string(),
@@ -146,13 +145,13 @@ mod tests {
             .unwrap();
 
         // funding contract with second reserve
-        app.execute_contract(
+        app.send_tokens(
             Addr::unchecked("owner"),
             addr.clone(),
-            &ExecuteMsg::Fund {},
             &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
         )
-        .unwrap();
+            .unwrap();
+
 
         app.execute_contract(
             Addr::unchecked("user"),

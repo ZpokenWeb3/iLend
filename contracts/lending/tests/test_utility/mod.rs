@@ -22,3 +22,6 @@ mod test_get_utilization_rate_by_token;
 mod test_set_get_price;
 mod test_set_get_price_feed_ids;
 mod test_set_get_pyth_contract;
+mod test_get_update_admin;
+mod test_add_markets;
+mod test_get_users_balances;
