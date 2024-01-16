@@ -16,7 +16,6 @@ mod tests {
 
     const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
 
-
     use crate::utils::success_deposit_of_one_token_setup;
     use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
@@ -44,7 +43,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
     }
 
     #[test]
@@ -60,14 +59,11 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let new_admin: String = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetAdmin {},
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetAdmin {})
             .unwrap();
 
         assert_eq!(new_admin, "admin");
@@ -89,7 +85,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
     }
 
     #[test]
@@ -104,14 +100,11 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let new_admin: String = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetAdmin {},
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetAdmin {})
             .unwrap();
 
         assert_eq!(new_admin, "admin");
@@ -133,7 +126,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let supported_tokens_response: GetSupportedTokensResponse = app
             .wrap()

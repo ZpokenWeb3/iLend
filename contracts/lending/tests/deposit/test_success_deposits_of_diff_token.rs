@@ -150,8 +150,7 @@ mod tests {
             addr.clone(),
             &coins(CONTRACT_RESERVES_FIRST_TOKEN, "eth"),
         )
-            .unwrap();
-
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("user"),

@@ -154,14 +154,14 @@ mod tests {
             addr.clone(),
             &coins(CONTRACT_RESERVES / 10, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         app.send_tokens(
             Addr::unchecked("owner"),
             addr.clone(),
             &coins(CONTRACT_RESERVES / 10, "atom"),
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("owner"),

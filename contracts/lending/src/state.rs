@@ -42,7 +42,6 @@ ADMIN that is eligible to fund contract with reserves [ contract itself by defau
 
 pub const PRICE_UPDATER_ADDRESS: Item<String> = Item::new("price_updater");
 
-
 pub const USER_BORROWING_INFO: Map<(String, String), UserBorrowingInfo> =
     Map::new("user_borrowing_info");
 /*

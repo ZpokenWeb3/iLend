@@ -81,7 +81,7 @@ pub enum ExecuteMsg {
         price_ids: Vec<(String, PriceIdentifier)>,
     },
     UpdateAdmin {
-        admin: String
+        admin: String,
     },
 }
 
@@ -182,7 +182,7 @@ pub enum QueryMsg {
     GetAdmin {},
 
     #[returns(Vec < (String, Uint128) >)]
-    GetUserBalances {address: String }
+    GetUserBalances { address: String },
 }
 
 #[cw_serde]
@@ -212,13 +212,11 @@ pub struct UserBorrowingInfo {
     pub timestamp: Timestamp,
 }
 
-
 #[cw_serde]
 pub struct UserDataByToken {
     pub deposited: Uint128,
     pub borrowed: Uint128,
 }
-
 
 impl Default for UserBorrowingInfo {
     fn default() -> Self {

@@ -75,14 +75,14 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
@@ -134,7 +134,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         addr.clone(),
         &[coin(CONTRACT_RESERVES, "eth")],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -142,7 +142,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(FIRST_DEPOSIT_AMOUNT_ETH, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -184,7 +184,7 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(SECOND_DEPOSIT_AMOUNT_ETH, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -343,14 +343,14 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
@@ -367,14 +367,14 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         addr.clone(),
         &[coin(CONTRACT_RESERVES_ATOM, "atom")],
     )
-        .unwrap();
+    .unwrap();
 
     app.send_tokens(
         Addr::unchecked("owner"),
         addr.clone(),
         &coins(CONTRACT_RESERVES_ETH, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -385,7 +385,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -396,7 +396,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     let get_price_eth: Uint128 = app
         .wrap()
@@ -427,7 +427,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ETH, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -466,7 +466,7 @@ pub fn success_deposit_of_diff_token_with_prices() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
     )
-        .unwrap();
+    .unwrap();
 
     let user_deposited_balance: GetBalanceResponse = app
         .wrap()
@@ -513,7 +513,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp, A
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -523,7 +523,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp, A
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -533,7 +533,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp, A
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -543,7 +543,7 @@ pub fn success_deposit_as_collateral_of_diff_token_with_prices() -> (BasicApp, A
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     (app, addr)
 }
@@ -672,14 +672,14 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
@@ -697,15 +697,14 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         addr.clone(),
         &coins(CONTRACT_RESERVES_ETH, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.send_tokens(
         Addr::unchecked("owner"),
         addr.clone(),
         &[coin(CONTRACT_RESERVES_ATOM, "atom")],
     )
-        .unwrap();
-
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -716,7 +715,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -727,7 +726,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     let get_price_eth: Uint128 = app
         .wrap()
@@ -771,7 +770,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -781,7 +780,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -791,7 +790,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("owner"),
@@ -801,7 +800,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     app.execute_contract(
         Addr::unchecked("user"),
@@ -809,7 +808,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ETH, "eth"),
     )
-        .unwrap();
+    .unwrap();
 
     app.set_block(BlockInfo {
         height: 0,
@@ -865,7 +864,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         &ExecuteMsg::Deposit {},
         &coins(DEPOSIT_AMOUNT_ATOM, "atom"),
     )
-        .unwrap();
+    .unwrap();
 
     app.set_block(BlockInfo {
         height: 0,
@@ -919,7 +918,7 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
         },
         &[],
     )
-        .unwrap();
+    .unwrap();
 
     (app, addr)
 }

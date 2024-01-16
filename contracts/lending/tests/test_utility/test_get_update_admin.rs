@@ -11,11 +11,7 @@ mod tests {
 
         let old_admin: String = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetAdmin {
-                },
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetAdmin {})
             .unwrap();
 
         assert_eq!(old_admin, "owner");
@@ -28,15 +24,11 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let new_admin: String = app
             .wrap()
-            .query_wasm_smart(
-                addr.clone(),
-                &QueryMsg::GetAdmin {
-                },
-            )
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetAdmin {})
             .unwrap();
 
         assert_eq!(new_admin, "new_admin");
