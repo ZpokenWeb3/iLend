@@ -1,4 +1,4 @@
-readonly CONTRACT="inj1qunaqndmy45x6sa0uht09ve0n4a8cuvmsmqfm0"
+readonly CONTRACT="inj1ymx9m0pf85ppytkqmz4z3rh67lmqx8v6qgcuc8"
 readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
 
 sleep 1

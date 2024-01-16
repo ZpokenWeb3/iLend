@@ -1,5 +1,5 @@
-readonly CONTRACT="inj1w0tyhhrfra6swj0aa0ewfhxpuu5wv4uyj0uc0w"
-readonly INJ_ADDRESS="inj1lsuerzge89tyd4p2pj8wrj903v5ja5emmugntd"
+readonly CONTRACT="inj1ymx9m0pf85ppytkqmz4z3rh67lmqx8v6qgcuc8"
+readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
 
 sleep 1
 
@@ -24,5 +24,7 @@ yes 12345678 | injectived tx wasm execute $CONTRACT "$BORROW" --from=$(echo $INJ
 sleep 2
 
 # query borrows for user
-GET_BORROWS_QUERY='{"get_borrows": {"address": "'$(echo $INJ_ADDRESS)'", "denom": "peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5"}}'
+GET_BORROWS_QUERY='{"get_user_balances": {"address": "'$(echo $INJ_ADDRESS)'"}}'
 injectived query wasm contract-state smart $CONTRACT "$GET_BORROWS_QUERY" --node=https://k8s.testnet.tm.injective.network:443 --output json
+
+
