@@ -1,10 +1,10 @@
-readonly CODE_ID="6309"
+readonly CODE_ID="6319"
 readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
 
 # shellcheck disable=SC2046
 # shellcheck disable=SC2090
 yes 12345678 | injectived tx wasm instantiate $CODE_ID '{
-                                                           "is_testing": true,
+                                                           "is_testing": false,
                                                            "admin": "inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z",
                                                            "price_updater_addr": "inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z",
                                                            "pyth_contract_addr": "inj18rlflp3735h25jmjx97d22c72sxk260amdjxlu",
