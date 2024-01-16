@@ -25,6 +25,7 @@ use rust_decimal::prelude::{Decimal, MathematicalOps};
 
 use cosmwasm_std::to_json_binary;
 use std::ops::{Add, Div, Mul};
+use pyth_sdk_cw::{PriceFeedResponse, query_price_feed};
 
 use {
     crate::contract::query::get_deposit,
@@ -102,14 +103,6 @@ pub fn instantiate(
     }
 
     for token in msg.supported_tokens {
-        if !msg.is_testing {
-            let price = fetch_price_by_token(deps.as_ref(), env.clone(), token.0.clone())
-                .unwrap()
-                .u128();
-
-            PRICES.save(deps.storage, token.0.clone(), &price)?;
-        }
-
         SUPPORTED_TOKENS.save(
             deps.storage,
             token.0.clone(),
@@ -562,12 +555,20 @@ pub fn execute(
                         .unwrap()
                         .supported_tokens
                     {
-                        let price =
-                            fetch_price_by_token(deps.as_ref(), env.clone(), token.denom.clone())
-                                .unwrap()
-                                .u128();
+                        let pyth_contract = PYTH_CONTRACT.load(deps.storage)?;
 
-                        PRICES.save(deps.storage, token.denom, &price)?;
+                        let price_identifier = PRICE_FEED_IDS.load(deps.storage, token.denom.clone())?;
+
+                        let price_feed_response: PriceFeedResponse =
+                            query_price_feed(&deps.querier, pyth_contract, price_identifier)?;
+                        let price_feed = price_feed_response.price_feed;
+
+                        let pyth_current_price =
+                            price_feed.get_price_no_older_than(env.block.time.seconds() as i64, 60);
+
+                        if pyth_current_price.is_some() {
+                            PRICES.save(deps.storage, token.denom, &(pyth_current_price.unwrap().price as u128))?;
+                        }
                     }
                 }
             }
@@ -1632,7 +1633,7 @@ pub mod query {
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
 
             let price = fetch_price_by_token(deps, env.clone(), token.denom.clone())
-                .unwrap()
+                .unwrap_or_default()
                 .u128();
 
             user_borrowed_usd += Decimal::from_i128_with_scale(
