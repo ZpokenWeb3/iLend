@@ -1,103 +1,76 @@
-# Overview
+# iLend.xyz
 
-## What is iLend Protocol?
-iLend  is a decentralized finance protocol developed on the Injective network. It offers the ability to engage in lending and borrowing activities in a decentralized, transparent, and efficient manner. The protocol leverages Injective Protocol's ability to offer fast, secure, and EVM-compatible DeFi transactions across multiple blockchain ecosystems
+```                                                                                          
+                                                                                  dddddddd
+  iiii  LLLLLLLLLLL                                                               d::::::d
+ i::::i L:::::::::L                                                               d::::::d
+  iiii  L:::::::::L                                                               d::::::d
+        LL:::::::LL                                                               d:::::d 
+iiiiiii   L:::::L                   eeeeeeeeeeee    nnnn  nnnnnnnn        ddddddddd:::::d 
+i:::::i   L:::::L                 ee::::::::::::ee  n:::nn::::::::nn    dd::::::::::::::d 
+ i::::i   L:::::L                e::::::eeeee:::::een::::::::::::::nn  d::::::::::::::::d 
+ i::::i   L:::::L               e::::::e     e:::::enn:::::::::::::::nd:::::::ddddd:::::d 
+ i::::i   L:::::L               e:::::::eeeee::::::e  n:::::nnnn:::::nd::::::d    d:::::d 
+ i::::i   L:::::L               e:::::::::::::::::e   n::::n    n::::nd:::::d     d:::::d 
+ i::::i   L:::::L               e::::::eeeeeeeeeee    n::::n    n::::nd:::::d     d:::::d 
+ i::::i   L:::::L         LLLLLLe:::::::e             n::::n    n::::nd:::::d     d:::::d 
+i::::::iLL:::::::LLLLLLLLL:::::Le::::::::e            n::::n    n::::nd::::::ddddd::::::dd
+i::::::iL::::::::::::::::::::::L e::::::::eeeeeeee    n::::n    n::::n d:::::::::::::::::d
+i::::::iL::::::::::::::::::::::L  ee:::::::::::::e    n::::n    n::::n  d:::::::::ddd::::d
+iiiiiiiiLLLLLLLLLLLLLLLLLLLLLLLL    eeeeeeeeeeeeee    nnnnnn    nnnnnn   ddddddddd   ddddd
+                                                                       
+```
+
+ iLend Protocol
+=================
 
 
-## Contracts
+The iLend Protocol is an Injective smart contract for supplying or borrowing assets.  It offers the ability to engage in lending and borrowing activities in a decentralized, transparent, and efficient manner. The protocol leverages Injective Protocol's ability to offer fast, secure, and EVM-compatible DeFi transactions across multiple blockchain ecosystems
 
 
+Contracts
+=================
+
+There is a single core contract operating as iLend Protocol
+
+### Lending Contract
+Which are self-contained borrowing and lending contract. Lending Contract consists of Markets (also can be referred as  Supported Tokens).
+Each Market is assigned an interest rate and risk model, and allows accounts to *mint* (supply capital), *redeem* (withdraw capital), *borrow* and *repay a borrow*.
 
 
-|                                                                     | contract's link                                                                                |
-|----------------------|------------------------------------------------------------------------------------------------|
-| master contract | https://testnet.explorer.injective.network/contract/inj1ulkyckufg8f0q20nsavcq5shcttq0n8nlc39t4/ |
-
-
-
-
-
-## Prerequisites
-
+## Installation
 
 To run the project you need:
 
- - Rustup, Rustc  and Cargo installed. Check the detailed information [here](https://docs.injective.network/develop/guides/cosmwasm-dapps/Your_first_contract_on_injective#prerequisites)
- - [injectived](https://docs.injective.network/develop/guides/cosmwasm-dapps/Your_first_contract_on_injective#install-injectived) command-line interface installed. This enables to interact with the Injective blockchain.
-- You can mint yourself a test tokens [here](https://testnet.faucet.injective.network/)
+1. ```
+    git clone https://github.com/i-Lend-org/iLend-smart-contracts.git
+    cd iLend-smart-contracts
+    cargo build --release && cargo test 
+ 2. For Developers or Advanced Users: [injectived](https://docs.injective.network/develop/guides/cosmwasm-dapps/Your_first_contract_on_injective#install-injectived) command-line interface. This enables to interact with the Injective blockchain within CLI 
 
 
-### Supported tokens 
+Developers
+=================
+1. Having [injectived](https://docs.injective.network/develop/guides/cosmwasm-dapps/Your_first_contract_on_injective#install-injectived) install you can interact with iLend Smart Contract from the CLI
+2. See Injectived Docs at [injectived/welcome](https://docs.injective.network/develop/tools/injectived/welcome)
+3. Make any transaction adhering  Execute/Query Msgs [here](schema)
 
-```
-{"data":
-       {"supported_tokens":
-            [
-                {"denom":"inj","name":"Injective","symbol":"INJ","decimals":"18"},
-                {"denom":"peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7","name":"Ape Coin","symbol":"APE","decimals":"18"},
-                {"denom":"peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5","name":"Tether","symbol":"USDT","decimals":"6"}
-            ]
-       }
-}
-```
+Documentation
+=================
 
-## Core functionalities
+To see full detailed Documentation and Roadmap visit the [iLend Docs](https://docs.ilend.xyz/ilend-knowledge-hub/)
 
-1) Deposit: Users can safely store their assets into the iLend Protocol. Once deposited, these assets immediately start accruing interest, allowing users to grow their holdings over time.
-2) Redeem: iLend allows for easy and convenient withdrawal of assets, including any accrued interest, ensuring users have constant access to their funds.
-3) Borrow: Users can leverage their deposited assets as collateral to secure loans. This provides an efficient method to access additional funds without needing to liquidate existing holdings.
-4) Repay: iLend facilitates seamless repayment of borrowed assets. On completion of repayment, the accumulated interest is settled, reducing potential risk against the user's collateral.
+Discussion
+=================
+
+Both for community or security concerns  you can use the most convenient way to contact us:
+
+- [X / Twitter](https://twitter.com/ilendorg)
+- [Github](https://github.com/i-Lend-org/iLend-smart-contracts)
 
 
-## CLI commands (For Developers and Advanced Users)
-
-Make sure you have your injective address and iLend contract set up
-- `readonly INJ_ADDRESS="YOUR_INJ_ADDRESS"`
-- `readonly CONTRACT="RESPECTIVE_CONTRACT_ADDR_FROM_TABLE_ABOVE"`
-- you can find respective supported tokens information above or via command
-```
-  GET_SUPPORTED_TOKENS_QUERY=
-  injectived query wasm contract-state smart inj1ulkyckufg8f0q20nsavcq5shcttq0n8nlc39t4 '{"get_supported_tokens": {}}' --node=https://k8s.testnet.tm.injective.network:443 --output json
-```
 
 
-### DEPOSIT 
-
-amount attached to the call will be considered the deposited amount
-
-```
-DEPOSIT='{"deposit":{}}'
-injectived tx wasm execute $CONTRACT "$DEPOSIT" --from=$(echo $INJ_ADDRESS) --amount="100peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
-```
 
 
-### REDEEM
-
-```
-REDEEM='{"redeem":{"denom":"peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5","amount":"100"}}'
-injectived tx wasm execute $CONTRACT "$REDEEM" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
-```
-
-
-### BORROW
-```
-BORROW='{"borrow":{"denom":"peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5","amount":"10000"}}'
-injectived tx wasm execute $CONTRACT "$BORROW" --from=$(echo $INJ_ADDRESS) --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
-```
-
-### REPAY
- amount attached to the call will be considered to be a repay amount, remaining tokens will be refunded to user
-
-```
-REPAY='{"repay":{}}'
-injectived tx wasm execute $CONTRACT "$REPAY" --from=$(echo $INJ_ADDRESS) --amount="1000000peggy0x87aB3B4C8661e07D6372361211B96ed4Dc36B1B5" --chain-id="injective-888" --yes --gas-prices=500000000inj --gas=20000000 --node=https://k8s.testnet.tm.injective.network:443
-```
-
-## Tests
-
-run tests in /iLend/contracts/lending/ directory
-```
-cargo wasm && cargo test
-```
-
-
+© Copyright 2024, Zpoken Team
