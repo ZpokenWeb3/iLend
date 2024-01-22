@@ -1,4 +1,5 @@
 readonly INJ_ADDRESS="inj19ae4ukagwrlprva55q9skskunv5ve7sr6myx7z"
+readonly CODE_ID="319"
 
 # shellcheck disable=SC2089
 #  supported tokens arguments denom, name, symbol, decimals
