@@ -31,7 +31,7 @@ The iLend Protocol is an Injective smart contract for supplying or borrowing ass
 Contracts
 =================
 
-Current version of the contract address `inj1xjkfkfgjg60gh3duf5hyk3vfsluyurjljznwgu` deployed at https://explorer.injective.network/contract/inj1xjkfkfgjg60gh3duf5hyk3vfsluyurjljznwgu/
+Contract: https://explorer.injective.network/contract/inj1xjkfkfgjg60gh3duf5hyk3vfsluyurjljznwgu/
 
 There is a single core contract operating as iLend Protocol
 
