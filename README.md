@@ -1,4 +1,4 @@
-# iLend.xyz
+# [iLend.xyz](https://ilend.xyz/)
 
 ```                                                                                          
                                                                                   dddddddd
@@ -30,6 +30,8 @@ The iLend Protocol is an Injective smart contract for supplying or borrowing ass
 
 Contracts
 =================
+
+Contract: https://explorer.injective.network/contract/inj1xjkfkfgjg60gh3duf5hyk3vfsluyurjljznwgu/
 
 There is a single core contract operating as iLend Protocol
 
