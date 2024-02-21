@@ -1,6 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, Timestamp};
 use cosmwasm_std::Uint128;
+use cosmwasm_std::{Addr, Timestamp};
 use cw20::Cw20ReceiveMsg;
 
 use pyth_sdk_cw::{Price, PriceIdentifier};
@@ -11,7 +11,7 @@ pub struct InstantiateMsg {
     pub is_testing: bool,
     pub admin: String,
     // name, denom, symbol, decimals
-    pub supported_tokens: Vec<(String, String, String, u128)>,
+    pub supported_tokens: Vec<(String, String, String, Option<String>, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
     pub reserve_configuration: Vec<(String, u128, u128)>,
     // denom, min_interest_rate, safe_borrow_max_rate, rate_growth_factor, optimal_utilisation_ratio
@@ -65,6 +65,7 @@ pub enum ExecuteMsg {
         name: String,
         symbol: String,
         decimals: u128,
+        cw20_address: Option<String>,
         loan_to_value_ratio: u128,
         liquidation_threshold: u128,
         min_interest_rate: u128,
@@ -91,12 +92,10 @@ pub enum ExecuteMsg {
     },
 }
 
-
 #[cw_serde]
 pub enum Cw20HookMsg {
-    Deposit {},
+    Deposit { denom: String },
 }
-
 
 #[cw_serde]
 #[derive(QueryResponses)]
@@ -257,6 +256,7 @@ pub struct TokenInfo {
     pub name: String,
     pub symbol: String,
     pub decimals: u128,
+    pub cw20_address: Option<String>,
 }
 
 #[cw_serde]

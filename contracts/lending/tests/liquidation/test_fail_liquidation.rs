@@ -139,7 +139,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let available_to_borrow_eth: Uint128 = app
             .wrap()
@@ -271,7 +271,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(LIQUIDATOR_DEPOSIT_AMOUNT_ETH, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let liquidator_deposit_amount_eth: GetBalanceResponse = app
             .wrap()
@@ -309,7 +309,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_collateral_usd: Uint128 = app
             .wrap()

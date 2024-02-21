@@ -108,6 +108,7 @@ mod tests {
                         "atom".to_string(),
                         "atom".to_string(),
                         "ATOM".to_string(),
+                        None,
                         6,
                     )],
                     reserve_configuration: vec![(
@@ -138,6 +139,7 @@ mod tests {
                 name: "ethereum".to_string(),
                 symbol: "ETH".to_string(),
                 decimals: TOKENS_DECIMALS as u128,
+                cw20_address: None,
                 loan_to_value_ratio: LTV_ETH,
                 liquidation_threshold: LIQUIDATION_THRESHOLD_ETH,
                 min_interest_rate: MIN_INTEREST_RATE,

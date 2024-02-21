@@ -29,10 +29,10 @@ Key: (user_address_2, token_A) -> Value: user_deposit_as_collateral
 
 pub const PRICES: Map<String, u128> = Map::new("prices");
 
-pub const SUPPORTED_TOKENS: Map<String, TokenInfo> = Map::new("tokens");
+pub const SUPPORTED_TOKENS: Map<String, TokenInfo> = Map::new("supported_tokens");
 /*
 SUPPORTED_TOKENS STORAGE
-Key: token demon -> Value: TokenInfo
+Key: denom -> Value: TokenInfo
 */
 
 pub const ADMIN: Item<String> = Item::new("admin");
@@ -55,26 +55,26 @@ pub const RESERVE_CONFIGURATION: Map<String, ReserveConfiguration> =
     Map::new("reserve_configuration");
 /*
 RESERVE_CONFIGURATION STORAGE
-Key: token demon -> Value: ReserveConfiguration
+Key: denom -> Value: ReserveConfiguration
 */
 
 pub const TOKENS_INTEREST_RATE_MODEL_PARAMS: Map<String, TokenInterestRateModelParams> =
     Map::new("token_interest_rate_model_params");
 /*
 TOKENS_INTEREST_RATE_MODEL_PARAMS STORAGE
-Key: token demon -> Value: TokenInterestRateModelParams
+Key: denom -> Value: TokenInterestRateModelParams
 */
 
 pub const LIQUIDITY_INDEX_DATA: Map<String, LiquidityIndexData> = Map::new("liquidity_index_data");
 /*
 LIQUIDITY_INDEX_DATA STORAGE
-Key: token demon -> Value: LiquidityIndexData
+Key: denom -> Value: LiquidityIndexData
 */
 
 pub const TOTAL_BORROW_DATA: Map<String, TotalBorrowData> = Map::new("total_borrow_data");
 /*
 TOTAL_BORROW_DATA STORAGE
-Key: token demon -> Value: TotalBorrowData
+Key: denom -> Value: TotalBorrowData
 */
 
 // mapping of (token denom, price_identifier)
