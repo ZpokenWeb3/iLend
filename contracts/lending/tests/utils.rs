@@ -992,7 +992,6 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
     let code = ContractWrapper::new(execute, instantiate, query);
     let code_id = app.store_code(Box::new(code));
 
-
     let lending_addr = app
         .instantiate_contract(
             code_id,
@@ -1005,14 +1004,14 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
-                            .unwrap(),
+                        .unwrap(),
                     ),
                 ],
                 pyth_contract_addr: "inj1z60tg0tekdzcasenhuuwq3htjcd5slmgf7gpez".to_string(),
@@ -1061,7 +1060,6 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
         )
         .unwrap();
 
-
     let cw20_token_code =
         ContractWrapper::new_with_empty(execute_cw20, instantiate_cw20, query_cw20);
     let cw20_token_code_id = app.store_code(Box::new(cw20_token_code));
@@ -1086,7 +1084,7 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
             Cw20Coin {
                 address: lending_addr.to_string(),
                 amount: Uint128::from(1000000000000u128),
-            }
+            },
         ],
         mint: Some(MinterResponse {
             minter: "owner-token".to_string(),
@@ -1151,8 +1149,6 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
         20000000000,
         "Has to be equal to the initially obtained amount"
     );
-
-
 
     app.send_tokens(
         Addr::unchecked("owner"),

@@ -54,7 +54,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let supported_tokens_response_after: GetSupportedTokensResponse = app
             .wrap()
@@ -93,18 +93,18 @@ mod tests {
 
         let send_msg = ExecuteMsgCW20::Send {
             contract: lending_addr.clone().to_string(),
-            amount: Uint128::from(10000000000000u128),
+            amount: Uint128::from(100000000u128),
             msg: to_json_binary(&hook).unwrap(),
         };
 
-        assert!(app
+        (app
             .execute_contract(
                 Addr::unchecked("cw20-user"),
                 cw20_token_addr.clone(),
                 &send_msg,
                 &[],
             )
-            .is_err());
+            .unwrap());
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
             .wrap()
@@ -128,11 +128,11 @@ mod tests {
 
         assert_eq!(
             cw20_user_balance_before_deposit.balance.u128(),
-            cw20_user_balance_after_deposit.balance.u128()
+            cw20_user_balance_after_deposit.balance.u128() + 100000000u128
         );
         assert_eq!(
             lending_balance_after_deposit.balance.u128(),
-            lending_balance_before_deposit.balance.u128()
+            lending_balance_before_deposit.balance.u128() + 100000000u128
         );
 
         let user_deposited_balance: GetBalanceResponse = app
@@ -146,6 +146,37 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.balance.u128(), 0, "Should be zero");
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            100000000u128,
+            "Should match deposit amount"
+        );
+
+        app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            lending_addr.clone(),
+            &ExecuteMsg::Redeem {
+                denom: "ilend-denom".to_string(),
+                amount: Uint128::from(100000000u128),
+            },
+            &[],
+        ).unwrap();
+
+        let user_deposited_balance: GetBalanceResponse = app
+            .wrap()
+            .query_wasm_smart(
+                lending_addr.clone(),
+                &QueryMsg::GetDeposit {
+                    address: "cw20-user".to_string(),
+                    denom: "ilend-denom".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            0u128,
+            "Should be zero after whole redemption"
+        );
     }
 }

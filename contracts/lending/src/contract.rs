@@ -16,6 +16,8 @@ use crate::msg::{
     TotalBorrowData, UserBorrowingInfo,
 };
 
+use cw_asset::AssetInfo;
+
 use crate::state::{
     IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_ADDRESS, PYTH_CONTRACT,
     TOTAL_BORROW_DATA, USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
@@ -23,8 +25,10 @@ use crate::state::{
 
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 
-use cosmwasm_std::{attr, ensure, from_json, to_json_binary, Addr};
-use cw20::Cw20ReceiveMsg;
+use cosmwasm_std::{
+    attr, coin, ensure, from_json, to_json_binary, wasm_execute, Addr, CosmosMsg, SubMsg,
+};
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use std::ops::{Add, Div, Mul};
 
 use pyth_sdk_cw::{query_price_feed, PriceFeedResponse};
@@ -171,167 +175,6 @@ pub fn instantiate(
     Ok(Response::new().add_attribute("method", "instantiate"))
 }
 
-pub fn cw20_receive(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: Cw20ReceiveMsg,
-) -> Result<Response, ContractError> {
-    let sender = deps.api.addr_validate(&msg.sender)?;
-    let amount = msg.amount;
-
-    match from_json::<Cw20HookMsg>(&msg.msg)? {
-        Cw20HookMsg::Deposit { denom } => {
-            execute_cw20_deposit(deps, env, info, sender, amount, denom)
-        }
-    }
-}
-
-pub fn execute_cw20_deposit(
-    mut deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    sender: Addr,
-    amount: Uint128,
-    denom: String,
-) -> Result<Response, ContractError> {
-    // only cw20 tokens must be sent, not a coins
-    nonpayable(&info)?;
-
-    ensure!(
-        amount > Uint128::zero(),
-        ContractError::InvalidFunds {
-            msg: "Cannot send 0 amount to deposit".to_string()
-        }
-    );
-
-    ensure!(
-        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-        ContractError::TokenNotSupported {}
-    );
-
-    ensure!(
-        SUPPORTED_TOKENS
-            .load(deps.storage, denom.clone())
-            .unwrap()
-            .cw20_address
-            .unwrap()
-            == info.sender.clone().into_string(),
-        ContractError::TokenNotSupported {}
-    );
-
-    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
-
-    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
-        .unwrap()
-        .u128() as u32;
-
-    let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
-        .unwrap()
-        .u128();
-
-    let deposited_mm_token_amount =
-        Decimal::from_i128_with_scale(amount.u128() as i128, token_decimals)
-            .div(Decimal::from_i128_with_scale(
-                mm_token_price as i128,
-                token_decimals,
-            ))
-            .to_u128_with_decimals(token_decimals)
-            .unwrap();
-
-    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
-        .load(
-            deps.storage,
-            (sender.to_string(), String::from(denom.clone())),
-        )
-        .unwrap_or_else(|_| Uint128::zero());
-
-    let new_user_mm_token_balance =
-        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
-
-    USER_MM_TOKEN_BALANCE.save(
-        deps.storage,
-        (sender.to_string(), String::from(denom.clone())),
-        &Uint128::from(new_user_mm_token_balance),
-    )?;
-
-    let resp = Response::default().add_attributes(vec![
-        attr("action", "receive"),
-        attr("sender", sender.to_string()),
-        attr("amount", amount.to_string()),
-        attr("token_address", denom.clone()),
-    ]);
-
-    Ok(resp)
-}
-
-pub fn execute_deposit_native(
-    mut deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-) -> Result<Response, ContractError> {
-    ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
-    one_coin(&info)?;
-
-    let deposited_token = info.funds.first().unwrap();
-    let deposited_token_amount = deposited_token.amount.u128();
-
-    ensure!(
-        deposited_token_amount > 0,
-        ContractError::InvalidFunds {
-            msg: "Cannot send 0 amount to deposit".to_string()
-        }
-    );
-
-    ensure!(
-        SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
-        ContractError::TokenNotSupported {}
-    );
-
-    execute_update_liquidity_index_data(&mut deps, env.clone(), deposited_token.denom.clone())?;
-
-    let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone())
-        .unwrap()
-        .u128() as u32;
-
-    let mm_token_price =
-        get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
-            .unwrap()
-            .u128();
-
-    let deposited_mm_token_amount =
-        Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
-            .div(Decimal::from_i128_with_scale(
-                mm_token_price as i128,
-                token_decimals,
-            ))
-            .to_u128_with_decimals(token_decimals)
-            .unwrap();
-
-    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
-        .load(
-            deps.storage,
-            (info.sender.to_string(), deposited_token.denom.clone()),
-        )
-        .unwrap_or_else(|_| Uint128::zero());
-
-    let new_user_mm_token_balance =
-        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
-
-    USER_MM_TOKEN_BALANCE.save(
-        deps.storage,
-        (info.sender.to_string(), deposited_token.denom.clone()),
-        &Uint128::from(new_user_mm_token_balance),
-    )?;
-
-    let mut resp = Response::default().add_attributes(vec![
-        attr("action", "deposit"),
-        attr("depositee", info.sender.to_string()),
-    ]);
-
-    Ok(resp)
-}
-
 pub fn execute(
     mut deps: DepsMut,
     env: Env,
@@ -340,64 +183,8 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Deposit {} => execute_deposit_native(deps, env, info),
-        ExecuteMsg::Receive(cw20msg) => cw20_receive(deps, env, info, cw20msg),
-        ExecuteMsg::Redeem { denom, amount } => {
-            let amount = amount.u128();
-
-            assert!(amount > 0, "Amount should be a positive number");
-
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
-
-            let current_balance = get_deposit(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string(),
-                denom.clone(),
-            )
-            .unwrap()
-            .balance
-            .u128();
-
-            assert!(
-                current_balance >= amount.clone(),
-                "The account doesn't have enough digital tokens to do withdraw"
-            );
-
-            let remaining = current_balance - amount.clone();
-
-            let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
-                .unwrap()
-                .u128();
-
-            let new_user_mm_token_balance =
-                Decimal::from_i128_with_scale(remaining as i128, token_decimals.clone())
-                    .div(Decimal::from_i128_with_scale(
-                        mm_token_price as i128,
-                        token_decimals.clone(),
-                    ))
-                    .to_u128_with_decimals(token_decimals)
-                    .unwrap();
-
-            USER_MM_TOKEN_BALANCE.save(
-                deps.storage,
-                (info.sender.to_string(), denom.clone()),
-                &Uint128::from(new_user_mm_token_balance),
-            )?;
-
-            Ok(Response::new().add_message(BankMsg::Send {
-                to_address: info.sender.to_string(),
-                amount: coins(amount, denom.clone()),
-            }))
-        }
+        ExecuteMsg::Receive(cw20msg) => execute_cw20_receive(deps, env, info, cw20msg),
+        ExecuteMsg::Redeem { denom, amount } => execute_redeem(deps, env, info, amount, denom),
         ExecuteMsg::AddMarkets {
             denom,
             name,
@@ -492,8 +279,8 @@ pub fn execute(
                 info.sender.to_string(),
                 denom.clone(),
             )
-            .unwrap()
-            .u128();
+                .unwrap()
+                .u128();
 
             assert!(
                 available_to_borrow_amount >= amount.u128(),
@@ -515,8 +302,8 @@ pub fn execute(
                 info.sender.to_string(),
                 denom.clone(),
             )
-            .unwrap()
-            .u128();
+                .unwrap()
+                .u128();
 
             let user_borrowing_info = get_user_borrowing_info(
                 deps.as_ref(),
@@ -524,7 +311,7 @@ pub fn execute(
                 info.sender.to_string().clone(),
                 denom.clone(),
             )
-            .unwrap();
+                .unwrap();
 
             let new_user_borrow_amount: u128 = user_borrow_amount_with_interest + amount.u128();
 
@@ -541,24 +328,24 @@ pub fn execute(
                 user_borrow_amount_with_interest as i128,
                 borrowed_token_decimals,
             )
-            .mul(Decimal::from_i128_with_scale(
-                user_borrowing_info.average_interest_rate.u128() as i128,
-                INTEREST_RATE_DECIMALS,
-            ))
-            .add(
-                Decimal::from_i128_with_scale(amount.u128() as i128, borrowed_token_decimals).mul(
-                    Decimal::from_i128_with_scale(
-                        current_interest_rate as i128,
-                        INTEREST_RATE_DECIMALS,
+                .mul(Decimal::from_i128_with_scale(
+                    user_borrowing_info.average_interest_rate.u128() as i128,
+                    INTEREST_RATE_DECIMALS,
+                ))
+                .add(
+                    Decimal::from_i128_with_scale(amount.u128() as i128, borrowed_token_decimals).mul(
+                        Decimal::from_i128_with_scale(
+                            current_interest_rate as i128,
+                            INTEREST_RATE_DECIMALS,
+                        ),
                     ),
-                ),
-            ))
-            .div(Decimal::from_i128_with_scale(
-                new_user_borrow_amount as i128,
-                borrowed_token_decimals,
-            ))
-            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-            .unwrap();
+                ))
+                .div(Decimal::from_i128_with_scale(
+                    new_user_borrow_amount as i128,
+                    borrowed_token_decimals,
+                ))
+                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+                .unwrap();
 
             // updating user borrowing info
             let new_user_borrowing_info = UserBorrowingInfo {
@@ -572,9 +359,9 @@ pub fn execute(
 
             let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
                 - Decimal::from_i128_with_scale(
-                    user_borrowing_info.borrowed_amount.u128() as i128,
-                    borrowed_token_decimals,
-                )
+                user_borrowing_info.borrowed_amount.u128() as i128,
+                borrowed_token_decimals,
+            )
                 .mul(Decimal::from_i128_with_scale(
                     (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
                     INTEREST_RATE_DECIMALS,
@@ -582,9 +369,9 @@ pub fn execute(
                 .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
                 .unwrap()
                 + Decimal::from_i128_with_scale(
-                    new_user_borrow_amount as i128,
-                    borrowed_token_decimals,
-                )
+                new_user_borrow_amount as i128,
+                borrowed_token_decimals,
+            )
                 .mul(Decimal::from_i128_with_scale(
                     (average_interest_rate / HUNDRED) as i128,
                     INTEREST_RATE_DECIMALS,
@@ -598,9 +385,9 @@ pub fn execute(
 
             let total_average_interest_rate = HUNDRED
                 * Decimal::from_i128_with_scale(
-                    expected_annual_interest_income as i128,
-                    INTEREST_RATE_DECIMALS,
-                )
+                expected_annual_interest_income as i128,
+                INTEREST_RATE_DECIMALS,
+            )
                 .div(Decimal::from_i128_with_scale(
                     total_borrowed_amount as i128,
                     borrowed_token_decimals,
@@ -754,9 +541,9 @@ pub fn execute(
                     info.sender.to_string(),
                     denom.clone(),
                 )
-                .unwrap()
-                .balance
-                .u128();
+                    .unwrap()
+                    .balance
+                    .u128();
 
                 if user_token_balance != 0 {
                     let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
@@ -778,8 +565,8 @@ pub fn execute(
                         env.clone(),
                         info.sender.to_string(),
                     )
-                    .unwrap()
-                    .u128();
+                        .unwrap()
+                        .u128();
 
                     let sum_borrow_balance_usd =
                         get_user_borrowed_usd(deps.as_ref(), env.clone(), info.sender.to_string())
@@ -791,8 +578,8 @@ pub fn execute(
                         env.clone(),
                         info.sender.to_string(),
                     )
-                    .unwrap()
-                    .u128();
+                        .unwrap()
+                        .u128();
 
                     assert!(
                         sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold < sum_collateral_balance_usd - user_token_balance_usd,
@@ -820,8 +607,8 @@ pub fn execute(
                     info.sender.to_string(),
                     token.denom.clone(),
                 )
-                .unwrap()
-                .u128();
+                    .unwrap()
+                    .u128();
 
                 assert_eq!(
                     liquidator_borrow_amount_with_interest, 0,
@@ -858,9 +645,9 @@ pub fn execute(
                         user.clone(),
                         token.denom.clone(),
                     )
-                    .unwrap()
-                    .balance
-                    .u128();
+                        .unwrap()
+                        .balance
+                        .u128();
 
                     USER_MM_TOKEN_BALANCE.save(
                         deps.storage,
@@ -875,8 +662,8 @@ pub fn execute(
                     user.clone(),
                     token.denom.clone(),
                 )
-                .unwrap()
-                .u128();
+                    .unwrap()
+                    .u128();
 
                 if user_borrow_amount_with_interest > 0 || user_token_balance > 0 {
                     let liquidator_balance = get_deposit(
@@ -885,9 +672,9 @@ pub fn execute(
                         info.sender.to_string(),
                         token.denom.clone(),
                     )
-                    .unwrap()
-                    .balance
-                    .u128();
+                        .unwrap()
+                        .balance
+                        .u128();
 
                     let token_decimals = get_token_decimal(deps.as_ref(), token.denom.clone())
                         .unwrap()
@@ -905,7 +692,7 @@ pub fn execute(
                             user.clone(),
                             token.denom.clone(),
                         )
-                        .unwrap();
+                            .unwrap();
 
                         let new_user_borrowing_info = UserBorrowingInfo {
                             borrowed_amount: Uint128::from(0u128),
@@ -920,9 +707,9 @@ pub fn execute(
                         let expected_annual_interest_income = total_borrow_data
                             .expected_annual_interest_income
                             - Decimal::from_i128_with_scale(
-                                (user_borrowing_info.borrowed_amount.u128()) as i128,
-                                token_decimals,
-                            )
+                            (user_borrowing_info.borrowed_amount.u128()) as i128,
+                            token_decimals,
+                        )
                             .mul(Decimal::from_i128_with_scale(
                                 (user_borrowing_info.average_interest_rate.u128() / HUNDRED)
                                     as i128,
@@ -938,9 +725,9 @@ pub fn execute(
                         if total_borrowed_amount != 0u128 {
                             total_average_interest_rate = HUNDRED
                                 * Decimal::from_i128_with_scale(
-                                    expected_annual_interest_income as i128,
-                                    INTEREST_RATE_DECIMALS,
-                                )
+                                expected_annual_interest_income as i128,
+                                INTEREST_RATE_DECIMALS,
+                            )
                                 .div(Decimal::from_i128_with_scale(
                                     total_borrowed_amount as i128,
                                     token_decimals,
@@ -982,12 +769,12 @@ pub fn execute(
                         new_liquidator_token_balance as i128,
                         token_decimals,
                     )
-                    .div(Decimal::from_i128_with_scale(
-                        mm_token_price as i128,
-                        token_decimals,
-                    ))
-                    .to_u128_with_decimals(token_decimals)
-                    .unwrap();
+                        .div(Decimal::from_i128_with_scale(
+                            mm_token_price as i128,
+                            token_decimals,
+                        ))
+                        .to_u128_with_decimals(token_decimals)
+                        .unwrap();
 
                     USER_MM_TOKEN_BALANCE.save(
                         deps.storage,
@@ -1022,7 +809,7 @@ pub fn execute(
                 info.sender.to_string().clone(),
                 repay_token.denom.clone(),
             )
-            .unwrap();
+                .unwrap();
 
             execute_update_liquidity_index_data(&mut deps, env.clone(), repay_token.denom.clone())?;
 
@@ -1032,8 +819,8 @@ pub fn execute(
                 info.sender.to_string(),
                 repay_token.denom.clone(),
             )
-            .unwrap()
-            .u128();
+                .unwrap()
+                .u128();
 
             let mut remaining_amount = 0u128;
             let mut average_interest_rate = user_borrowing_info.average_interest_rate;
@@ -1058,10 +845,10 @@ pub fn execute(
 
             let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
                 + Decimal::from_i128_with_scale(
-                    (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128())
-                        as i128,
-                    repay_token_decimals,
-                )
+                (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128())
+                    as i128,
+                repay_token_decimals,
+            )
                 .mul(Decimal::from_i128_with_scale(
                     (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
                     INTEREST_RATE_DECIMALS,
@@ -1069,12 +856,12 @@ pub fn execute(
                 .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
                 .unwrap()
                 - Decimal::from_i128_with_scale((repay_amount) as i128, repay_token_decimals)
-                    .mul(Decimal::from_i128_with_scale(
-                        (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-                        INTEREST_RATE_DECIMALS,
-                    ))
-                    .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                    .unwrap();
+                .mul(Decimal::from_i128_with_scale(
+                    (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+                    INTEREST_RATE_DECIMALS,
+                ))
+                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+                .unwrap();
 
             let total_borrowed_amount = total_borrow_data.total_borrowed_amount
                 + user_borrow_amount_with_interest
@@ -1085,9 +872,9 @@ pub fn execute(
             if total_borrowed_amount != 0u128 {
                 total_average_interest_rate = HUNDRED
                     * Decimal::from_i128_with_scale(
-                        expected_annual_interest_income as i128,
-                        INTEREST_RATE_DECIMALS,
-                    )
+                    expected_annual_interest_income as i128,
+                    INTEREST_RATE_DECIMALS,
+                )
                     .div(Decimal::from_i128_with_scale(
                         total_borrowed_amount as i128,
                         repay_token_decimals,
@@ -1408,8 +1195,8 @@ pub mod query {
             (env.block.time.seconds() - current_borrowing_info.timestamp.seconds()) as u128,
             token_decimals,
         )
-        .unwrap()
-        .u128();
+            .unwrap()
+            .u128();
 
         Ok(Uint128::from(borrow_amount_with_interest))
     }
@@ -1433,13 +1220,13 @@ pub mod query {
                 expected_annual_interest_income as i128,
                 INTEREST_RATE_DECIMALS,
             )
-            .mul(Decimal::from_i128_with_scale(HUNDRED as i128, 0u32))
-            .div(Decimal::from_i128_with_scale(
-                reserves_by_token as i128,
-                token_decimals,
-            ))
-            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-            .unwrap();
+                .mul(Decimal::from_i128_with_scale(HUNDRED as i128, 0u32))
+                .div(Decimal::from_i128_with_scale(
+                    reserves_by_token as i128,
+                    token_decimals,
+                ))
+                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+                .unwrap();
 
             Ok(Uint128::from(liquidity_rate))
         }
@@ -1471,9 +1258,9 @@ pub mod query {
             .checked_sub(liquidity_index_last_update.seconds())
             .unwrap_or_default()) as u128
             * Decimal::from_i128_with_scale(
-                (liquidity_rate / HUNDRED + INTEREST_RATE_MULTIPLIER) as i128,
-                INTEREST_RATE_DECIMALS,
-            )
+            (liquidity_rate / HUNDRED + INTEREST_RATE_MULTIPLIER) as i128,
+            INTEREST_RATE_DECIMALS,
+        )
             .ln()
             .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
             .unwrap()
@@ -1505,9 +1292,9 @@ pub mod query {
             current_liquidity_index_ln as i128,
             INTEREST_RATE_DECIMALS,
         )
-        .exp()
-        .to_u128_with_decimals(token_decimals)
-        .unwrap_or_default();
+            .exp()
+            .to_u128_with_decimals(token_decimals)
+            .unwrap_or_default();
 
         Ok(Uint128::from(mm_token_price))
     }
@@ -1615,13 +1402,13 @@ pub mod query {
             Ok(Uint128::from(
                 min_interest_rate
                     + utilization_rate * (safe_borrow_max_rate - min_interest_rate)
-                        / optimal_utilisation_ratio,
+                    / optimal_utilisation_ratio,
             ))
         } else {
             Ok(Uint128::from(
                 safe_borrow_max_rate
                     + rate_growth_factor * (utilization_rate - optimal_utilisation_ratio)
-                        / (HUNDRED_PERCENT - optimal_utilisation_ratio),
+                    / (HUNDRED_PERCENT - optimal_utilisation_ratio),
             ))
         }
     }
@@ -1734,8 +1521,8 @@ pub mod query {
                 user.clone(),
                 token.denom.clone(),
             )
-            .unwrap()
-            .u128();
+                .unwrap()
+                .u128();
 
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
@@ -1748,9 +1535,9 @@ pub mod query {
                 user_borrow_amount_with_interest as i128,
                 token_decimals,
             )
-            .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-            .to_u128_with_decimals(USD_DECIMALS)
-            .unwrap()
+                .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                .to_u128_with_decimals(USD_DECIMALS)
+                .unwrap()
         }
 
         Ok(Uint128::from(user_borrowed_usd))
@@ -1895,9 +1682,9 @@ pub mod query {
                 (max_allowed_borrow_amount_usd - sum_user_borrow_balance_usd) as i128,
                 USD_DECIMALS,
             )
-            .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-            .to_u128_with_decimals(token_decimals)
-            .unwrap();
+                .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                .to_u128_with_decimals(token_decimals)
+                .unwrap();
 
             let token_liquidity =
                 get_available_liquidity_by_token(deps, env.clone(), denom.clone())
@@ -1961,9 +1748,9 @@ pub mod query {
                         (sum_collateral_balance_usd - required_collateral_balance_usd) as i128,
                         USD_DECIMALS,
                     )
-                    .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                    .to_u128_with_decimals(token_decimals)
-                    .unwrap();
+                        .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                        .to_u128_with_decimals(token_decimals)
+                        .unwrap();
 
                     if available_to_redeem > user_token_balance {
                         available_to_redeem = user_token_balance;
@@ -1988,7 +1775,7 @@ pub mod query {
 
         let mut sum_mm_token_balance = 0u128;
         for users_mm_token_balances in users_mm_token_balances_iter.unwrap() {
-            if users_mm_token_balances.0 .1 == denom {
+            if users_mm_token_balances.0.1 == denom {
                 sum_mm_token_balance += users_mm_token_balances.1.u128();
             }
         }
@@ -2022,8 +1809,8 @@ pub mod query {
             (env.block.time.seconds() - total_borrow_data.timestamp.seconds()) as u128,
             token_decimals,
         )
-        .unwrap()
-        .u128();
+            .unwrap()
+            .u128();
 
         Ok(Uint128::from(total_borrowed_amount_with_interest))
     }
@@ -2114,7 +1901,7 @@ pub mod query {
                 address.clone(),
                 token.denom.clone(),
             )
-            .unwrap();
+                .unwrap();
             let user_data_by_token = UserDataByToken {
                 deposited: user_deposit,
                 borrowed: user_borrow_amount_with_interest,
@@ -2126,3 +1913,284 @@ pub mod query {
         Ok(result)
     }
 }
+
+
+pub fn execute_cw20_receive(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: Cw20ReceiveMsg,
+) -> Result<Response, ContractError> {
+    let sender = deps.api.addr_validate(&msg.sender)?;
+    let amount = msg.amount;
+
+    match from_json::<Cw20HookMsg>(&msg.msg)? {
+        Cw20HookMsg::Deposit { denom } => {
+            execute_cw20_deposit(deps, env, info, sender, amount, denom)
+        }
+    }
+}
+
+
+pub fn execute_redeem(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+    denom: String,
+) -> Result<Response, ContractError> {
+    let amount = amount.u128();
+    let mut resp = Response::default();
+
+    ensure!(
+        amount > 0,
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
+
+    let current_balance = get_deposit(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string(),
+        denom.clone(),
+    )
+        .unwrap()
+        .balance
+        .u128();
+
+    ensure!(
+        current_balance >= amount.clone(),
+        ContractError::NotEnoughBalanceToDoRedeem {}
+    );
+
+    let remaining = current_balance - amount.clone();
+
+    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
+        .unwrap()
+        .u128();
+
+    let new_user_mm_token_balance =
+        Decimal::from_i128_with_scale(remaining as i128, token_decimals.clone())
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals.clone(),
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (info.sender.to_string(), denom.clone()),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let cw20_address = SUPPORTED_TOKENS
+        .load(deps.storage, denom.clone())
+        .unwrap()
+        .cw20_address;
+
+    let asset = if cw20_address.is_some() {
+        AssetInfo::Cw20(Addr::unchecked(cw20_address.unwrap()))
+    } else {
+        AssetInfo::Native(denom.clone())
+    };
+
+    resp = resp.add_message(generate_transfer_message(
+        asset.clone(),
+        Uint128::from(amount),
+        info.sender.to_string(),
+    )?);
+
+    Ok(resp.add_attributes(vec![
+        attr("action", "redeem"),
+        attr("amount", Uint128::from(amount)),
+        attr("user", info.sender.clone().to_string()),
+        attr("denom", denom.clone().to_string()),
+    ]))
+}
+
+pub fn execute_cw20_deposit(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sender: Addr,
+    amount: Uint128,
+    denom: String,
+) -> Result<Response, ContractError> {
+    // only cw20 tokens must be sent, not a coins
+    nonpayable(&info)?;
+
+    ensure!(
+        amount > Uint128::zero(),
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .cw20_address
+            .unwrap()
+            == info.sender.clone().into_string(),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
+
+    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
+        .unwrap()
+        .u128();
+
+    let deposited_mm_token_amount =
+        Decimal::from_i128_with_scale(amount.u128() as i128, token_decimals)
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
+        .load(
+            deps.storage,
+            (sender.to_string(), String::from(denom.clone())),
+        )
+        .unwrap_or_else(|_| Uint128::zero());
+
+    let new_user_mm_token_balance =
+        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (sender.to_string(), String::from(denom.clone())),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let resp = Response::default().add_attributes(vec![
+        attr("action", "receive"),
+        attr("sender", sender.to_string()),
+        attr("amount", amount.to_string()),
+        attr("token_address", denom.clone()),
+    ]);
+
+    Ok(resp)
+}
+
+/// Generates a transfer message given an asset and an amount
+fn generate_transfer_message(
+    asset: AssetInfo,
+    amount: Uint128,
+    recipient: String,
+) -> Result<CosmosMsg, ContractError> {
+    match asset.clone() {
+        AssetInfo::Native(denom) => {
+            let bank_msg = BankMsg::Send {
+                to_address: recipient,
+                amount: vec![coin(amount.u128(), denom)],
+            };
+
+            Ok(CosmosMsg::Bank(bank_msg))
+        }
+        AssetInfo::Cw20(addr) => {
+            let transfer_msg = Cw20ExecuteMsg::Transfer { recipient, amount };
+            let wasm_msg = wasm_execute(addr, &transfer_msg, vec![])?;
+            Ok(CosmosMsg::Wasm(wasm_msg))
+        }
+        // Does not support 1155 currently
+        _ => Err(ContractError::InvalidAsset {
+            asset: asset.to_string(),
+        }),
+    }
+}
+
+pub fn execute_deposit_native(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
+    one_coin(&info)?;
+
+    let deposited_token = info.funds.first().unwrap();
+    let deposited_token_amount = deposited_token.amount.u128();
+
+    ensure!(
+        deposited_token_amount > 0,
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), deposited_token.denom.clone())?;
+
+    let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price =
+        get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
+            .unwrap()
+            .u128();
+
+    let deposited_mm_token_amount =
+        Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
+        .load(
+            deps.storage,
+            (info.sender.to_string(), deposited_token.denom.clone()),
+        )
+        .unwrap_or_else(|_| Uint128::zero());
+
+    let new_user_mm_token_balance =
+        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (info.sender.to_string(), deposited_token.denom.clone()),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let mut resp = Response::default().add_attributes(vec![
+        attr("action", "deposit"),
+        attr("depositee", info.sender.to_string()),
+        attr("amount", Uint128::from(deposited_token_amount)),
+    ]);
+
+    Ok(resp)
+}
+

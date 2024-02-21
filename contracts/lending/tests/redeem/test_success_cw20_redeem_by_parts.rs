@@ -9,7 +9,10 @@ mod tests {
         QueryMsg as QueryMsgCW20,
     };
     use cw_multi_test::Executor;
-    use lending::msg::{Cw20HookMsg, ExecuteMsg, GetBalanceResponse, GetSupportedTokensResponse, QueryMsg, UserDataByToken};
+    use lending::msg::{
+        Cw20HookMsg, ExecuteMsg, GetBalanceResponse, GetSupportedTokensResponse, QueryMsg,
+        UserDataByToken,
+    };
 
     #[test]
     fn test_success_deposit_cw20() {
@@ -94,12 +97,13 @@ mod tests {
             msg: to_json_binary(&hook).unwrap(),
         };
 
-        dbg!(app.execute_contract(
-            Addr::unchecked("cw20-user"),
-            cw20_token_addr.clone(),
-            &send_msg,
-            &[],
-        )
+        (app
+            .execute_contract(
+                Addr::unchecked("cw20-user"),
+                cw20_token_addr.clone(),
+                &send_msg,
+                &[],
+            )
             .unwrap());
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
@@ -142,6 +146,68 @@ mod tests {
             )
             .unwrap();
 
-        assert_eq!(user_deposited_balance.balance.u128(), 100000000u128, "Should match deposit amount");
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            100000000u128,
+            "Should match deposit amount"
+        );
+
+        app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            lending_addr.clone(),
+            &ExecuteMsg::Redeem {
+                denom: "ilend-denom".to_string(),
+                amount: Uint128::from(100000000u128 / 2u128),
+            },
+            &[],
+        ).unwrap();
+
+
+        let user_deposited_balance: GetBalanceResponse = app
+            .wrap()
+            .query_wasm_smart(
+                lending_addr.clone(),
+                &QueryMsg::GetDeposit {
+                    address: "cw20-user".to_string(),
+                    denom: "ilend-denom".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            100000000u128 / 2u128,
+            "Should match deposit amount after partial redeem"
+        );
+
+
+        app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            lending_addr.clone(),
+            &ExecuteMsg::Redeem {
+                denom: "ilend-denom".to_string(),
+                amount: Uint128::from(100000000u128 / 2u128),
+            },
+            &[],
+        )
+            .unwrap();
+
+
+        let user_deposited_balance: GetBalanceResponse = app
+            .wrap()
+            .query_wasm_smart(
+                lending_addr.clone(),
+                &QueryMsg::GetDeposit {
+                    address: "cw20-user".to_string(),
+                    denom: "ilend-denom".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            user_deposited_balance.balance.u128(),
+            0u128,
+            "Should be zero after whole redemption"
+        );
     }
 }

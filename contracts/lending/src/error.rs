@@ -21,4 +21,10 @@ pub enum ContractError {
 
     #[error("Token not supported")]
     TokenNotSupported {},
+
+    #[error("Invalid Asset: {asset}")]
+    InvalidAsset { asset: String },
+
+    #[error("Not Enough Balance To Do Redeem")]
+    NotEnoughBalanceToDoRedeem {}
 }
