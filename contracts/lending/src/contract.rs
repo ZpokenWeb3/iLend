@@ -23,16 +23,20 @@ use crate::state::{
 
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 
-use cosmwasm_std::to_json_binary;
+use cosmwasm_std::{Addr, attr, ensure, from_json, to_json_binary};
 use std::ops::{Add, Div, Mul};
+use cw20::Cw20ReceiveMsg;
+
 use pyth_sdk_cw::{PriceFeedResponse, query_price_feed};
+
+use cw_utils::{nonpayable, one_coin};
 
 use {
     crate::contract::query::get_deposit,
     crate::{
         error::ContractError,
         msg::InstantiateMsg,
-        msg::{ExecuteMsg, QueryMsg},
+        msg::{ExecuteMsg, QueryMsg, Cw20HookMsg},
         state::{
             ADMIN, RESERVE_CONFIGURATION, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS,
             USER_MM_TOKEN_BALANCE,
@@ -166,6 +170,121 @@ pub fn instantiate(
     Ok(Response::new().add_attribute("method", "instantiate"))
 }
 
+pub fn cw20_receive(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: Cw20ReceiveMsg,
+) -> Result<Response, ContractError> {
+    let sender = deps.api.addr_validate(&msg.sender)?;
+    let amount = msg.amount;
+
+    match from_json::<Cw20HookMsg>(&msg.msg)? {
+        Cw20HookMsg::Deposit {} => {
+            execute_cw20_deposit(deps, env, info, sender, amount)
+        }
+    }
+}
+
+pub fn execute_cw20_deposit(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sender: Addr,
+    amount: Uint128,
+) -> Result<Response, ContractError> {
+    nonpayable(&info)?;
+    ensure!(
+        amount > Uint128::zero(),
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+    let token_address = info.sender;
+    let resp = Response::default().add_attributes(vec![
+        attr("action", "receive"),
+        attr("sender", sender.to_string()),
+        attr("amount", amount.to_string()),
+        attr("token_address", token_address.to_string()),
+    ]);
+
+    Ok(resp)
+}
+
+
+pub fn execute_deposit_native(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
+    one_coin(&info)?;
+
+    let deposited_token = info.funds.first().unwrap();
+    let deposited_token_amount = deposited_token.amount.u128();
+
+    ensure!(
+        deposited_token_amount > 0,
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(
+        &mut deps,
+        env.clone(),
+        deposited_token.denom.clone(),
+    )?;
+
+    let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price =
+        get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
+            .unwrap()
+            .u128();
+
+    let deposited_mm_token_amount =
+        Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
+        .load(
+            deps.storage,
+            (info.sender.to_string(), deposited_token.denom.clone()),
+        )
+        .unwrap_or_else(|_| Uint128::zero());
+
+    let new_user_mm_token_balance =
+        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (info.sender.to_string(), deposited_token.denom.clone()),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let mut resp = Response::default().add_attributes(vec![
+        attr("action", "deposit"),
+        attr("depositee", info.sender.to_string()),
+    ]);
+
+
+    Ok(resp)
+}
+
+
 pub fn execute(
     mut deps: DepsMut,
     env: Env,
@@ -173,74 +292,8 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => {
-            // underlying balances that are allowing user to send funds along with calling Deposit
-            // is operated through cw20 contracts
-
-            if info.funds.is_empty() {
-                return Err(ContractError::CustomError {
-                    val: "No funds deposited!".to_string(),
-                });
-            }
-
-            assert_eq!(
-                info.funds.len(),
-                1,
-                "You have to deposit one asset per time"
-            );
-
-            let deposited_token = info.funds.first().unwrap();
-            let deposited_token_amount = deposited_token.amount.u128();
-
-            assert!(deposited_token_amount > 0);
-
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            execute_update_liquidity_index_data(
-                &mut deps,
-                env.clone(),
-                deposited_token.denom.clone(),
-            )?;
-
-            let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let mm_token_price =
-                get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
-                    .unwrap()
-                    .u128();
-
-            let deposited_mm_token_amount =
-                Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
-                    .div(Decimal::from_i128_with_scale(
-                        mm_token_price as i128,
-                        token_decimals,
-                    ))
-                    .to_u128_with_decimals(token_decimals)
-                    .unwrap();
-
-            let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
-                .load(
-                    deps.storage,
-                    (info.sender.to_string(), deposited_token.denom.clone()),
-                )
-                .unwrap_or_else(|_| Uint128::zero());
-
-            let new_user_mm_token_balance =
-                user_current_mm_token_balance.u128() + deposited_mm_token_amount;
-
-            USER_MM_TOKEN_BALANCE.save(
-                deps.storage,
-                (info.sender.to_string(), deposited_token.denom.clone()),
-                &Uint128::from(new_user_mm_token_balance),
-            )?;
-
-            Ok(Response::default())
-        }
+        ExecuteMsg::Deposit {} => execute_deposit_native(deps, env, info),
+        ExecuteMsg::Receive(cw20msg) => cw20_receive(deps, env, info, cw20msg),
         ExecuteMsg::Redeem { denom, amount } => {
             let amount = amount.u128();
 

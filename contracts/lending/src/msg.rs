@@ -1,6 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::Timestamp;
+use cosmwasm_std::{Addr, Timestamp};
 use cosmwasm_std::Uint128;
+use cw20::Cw20ReceiveMsg;
 
 use pyth_sdk_cw::{Price, PriceIdentifier};
 
@@ -25,6 +26,11 @@ pub struct InstantiateMsg {
 
 #[cw_serde]
 pub enum ExecuteMsg {
+    // Receive hook for Cw20 Send messages
+    // for depositing Token Factory Token
+    Receive(Cw20ReceiveMsg),
+
+    // for depositing ERC20 Tokens, IBC Token and INJ
     Deposit {},
     Redeem {
         denom: String,
@@ -84,6 +90,13 @@ pub enum ExecuteMsg {
         admin: String,
     },
 }
+
+
+#[cw_serde]
+pub enum Cw20HookMsg {
+    Deposit {},
+}
+
 
 #[cw_serde]
 #[derive(QueryResponses)]
