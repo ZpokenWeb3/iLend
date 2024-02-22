@@ -25,7 +25,7 @@ pub enum ContractError {
     #[error("CoinNotFound")]
     CoinNotFound {},
 
-    #[error("Token not supported")]
+    #[error("Token Not Supported")]
     TokenNotSupported {},
 
     #[error("Invalid Asset: {asset}")]

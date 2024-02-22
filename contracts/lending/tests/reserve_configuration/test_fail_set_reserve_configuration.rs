@@ -28,7 +28,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Token not supported")]
+    #[should_panic(expected = "Token Not Supported")]
     fn test_fail_set_reserve_configuration_if_token_is_not_supported() {
         const PERCENT_DECIMALS: u32 = 5;
         const LTV_ETH: u128 = 92 * 10u128.pow(PERCENT_DECIMALS); // 92%

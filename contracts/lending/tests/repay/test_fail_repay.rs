@@ -6,7 +6,7 @@ mod tests {
     use lending::msg::ExecuteMsg;
 
     #[test]
-    #[should_panic(expected = "Funds not transferred!")]
+    #[should_panic(expected = "CoinNotFound")]
     fn test_fail_repay_if_funds_not_transferred() {
         // user borrowed 50 ETH
         let (mut app, addr) = success_borrow_setup();
@@ -21,7 +21,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "You have to repay one asset per time")]
+    #[should_panic(expected = "Sent more than one denomination")]
     fn test_fail_repay_if_more_than_one_asset_is_transferred() {
         const TOKENS_DECIMALS: u32 = 18;
         const REPAY_AMOUNT_ETH: u128 = 30 * 10u128.pow(TOKENS_DECIMALS); // 30 ETH
@@ -58,7 +58,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "There is no such supported token yet")]
+    #[should_panic(expected = "Token Not Supported")]
     fn test_fail_repay_if_token_is_not_supported() {
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_UNSUPPORTED_TOKEN: u128 = 10 * 10u128.pow(TOKENS_DECIMALS);

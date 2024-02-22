@@ -34,7 +34,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Token not supported")]
+    #[should_panic(expected = "Token Not Supported")]
     fn test_fail_set_tokens_interest_rate_model_params_if_token_is_not_supported() {
         const PERCENT_DECIMALS: u32 = 5;
 

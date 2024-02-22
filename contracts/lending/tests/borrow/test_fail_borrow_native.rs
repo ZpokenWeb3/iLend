@@ -6,7 +6,7 @@ mod tests {
     use lending::msg::ExecuteMsg;
 
     #[test]
-    #[should_panic(expected = "Token not supported")]
+    #[should_panic(expected = "Token Not Supported")]
     fn test_fail_borrow_if_token_is_not_supported() {
         const TOKENS_DECIMALS: u32 = 18;
         const BORROW_AMOUNT_UNSUPPORTED_TOKEN: u128 = 10 * 10u128.pow(TOKENS_DECIMALS);

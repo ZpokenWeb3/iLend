@@ -643,132 +643,7 @@ pub fn execute(
 
             Ok(Response::new())
         }
-        ExecuteMsg::Repay {} => {
-            if info.funds.is_empty() {
-                return Err(ContractError::CustomError {
-                    val: "Funds not transferred!".to_string(),
-                });
-            }
-
-            assert_eq!(info.funds.len(), 1, "You have to repay one asset per time");
-
-            let repay_token = info.funds.first().unwrap();
-            let mut repay_amount = repay_token.amount.u128();
-
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            let user_borrowing_info = get_user_borrowing_info(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string().clone(),
-                repay_token.denom.clone(),
-            )
-            .unwrap();
-
-            execute_update_liquidity_index_data(&mut deps, env.clone(), repay_token.denom.clone())?;
-
-            let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string(),
-                repay_token.denom.clone(),
-            )
-            .unwrap()
-            .u128();
-
-            let mut remaining_amount = 0u128;
-            let mut average_interest_rate = user_borrowing_info.average_interest_rate;
-            if repay_amount >= user_borrow_amount_with_interest {
-                remaining_amount = repay_amount - user_borrow_amount_with_interest;
-                repay_amount = user_borrow_amount_with_interest;
-                average_interest_rate = Uint128::zero();
-            }
-
-            let new_user_borrowing_info = UserBorrowingInfo {
-                borrowed_amount: Uint128::from(user_borrow_amount_with_interest - repay_amount),
-                average_interest_rate: average_interest_rate,
-                timestamp: env.block.time,
-            };
-
-            let total_borrow_data =
-                get_total_borrow_data(deps.as_ref(), repay_token.denom.clone()).unwrap_or_default();
-
-            let repay_token_decimals = get_token_decimal(deps.as_ref(), repay_token.denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
-                + Decimal::from_i128_with_scale(
-                    (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128())
-                        as i128,
-                    repay_token_decimals,
-                )
-                .mul(Decimal::from_i128_with_scale(
-                    (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-                    INTEREST_RATE_DECIMALS,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap()
-                - Decimal::from_i128_with_scale((repay_amount) as i128, repay_token_decimals)
-                    .mul(Decimal::from_i128_with_scale(
-                        (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-                        INTEREST_RATE_DECIMALS,
-                    ))
-                    .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                    .unwrap();
-
-            let total_borrowed_amount = total_borrow_data.total_borrowed_amount
-                + user_borrow_amount_with_interest
-                - user_borrowing_info.borrowed_amount.u128()
-                - repay_amount;
-
-            let mut total_average_interest_rate = 0u128;
-            if total_borrowed_amount != 0u128 {
-                total_average_interest_rate = HUNDRED
-                    * Decimal::from_i128_with_scale(
-                        expected_annual_interest_income as i128,
-                        INTEREST_RATE_DECIMALS,
-                    )
-                    .div(Decimal::from_i128_with_scale(
-                        total_borrowed_amount as i128,
-                        repay_token_decimals,
-                    ))
-                    .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                    .unwrap();
-            }
-
-            let new_total_borrow_data = TotalBorrowData {
-                denom: repay_token.denom.clone(),
-                total_borrowed_amount: total_borrowed_amount,
-                expected_annual_interest_income: expected_annual_interest_income,
-                average_interest_rate: total_average_interest_rate,
-                timestamp: env.block.time,
-            };
-
-            USER_BORROWING_INFO.save(
-                deps.storage,
-                (info.sender.to_string(), repay_token.denom.clone()),
-                &new_user_borrowing_info,
-            )?;
-
-            TOTAL_BORROW_DATA.save(
-                deps.storage,
-                repay_token.denom.clone(),
-                &new_total_borrow_data,
-            )?;
-
-            if remaining_amount > 0 {
-                Ok(Response::new().add_message(BankMsg::Send {
-                    to_address: info.sender.to_string(),
-                    amount: coins(remaining_amount, repay_token.denom.clone()),
-                }))
-            } else {
-                Ok(Response::default())
-            }
-        }
+        ExecuteMsg::Repay {} => execute_repay_native(deps, env, info),
         ExecuteMsg::UpdatePythContract { pyth_contract_addr } => {
             assert_eq!(
                 info.sender.to_string(),
@@ -2239,4 +2114,129 @@ pub fn execute_borrow(
         attr("user", info.sender.clone().to_string()),
         attr("denom", denom.clone().to_string()),
     ]))
+}
+
+pub fn execute_repay_native(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
+    one_coin(&info)?;
+
+    let repay_token = info.funds.first().unwrap();
+    let mut repay_amount = repay_token.amount.u128();
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    let user_borrowing_info = get_user_borrowing_info(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string().clone(),
+        repay_token.denom.clone(),
+    )
+    .unwrap();
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), repay_token.denom.clone())?;
+
+    let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string(),
+        repay_token.denom.clone(),
+    )
+    .unwrap()
+    .u128();
+
+    let mut remaining_amount = 0u128;
+    let mut average_interest_rate = user_borrowing_info.average_interest_rate;
+    if repay_amount >= user_borrow_amount_with_interest {
+        remaining_amount = repay_amount - user_borrow_amount_with_interest;
+        repay_amount = user_borrow_amount_with_interest;
+        average_interest_rate = Uint128::zero();
+    }
+
+    let new_user_borrowing_info = UserBorrowingInfo {
+        borrowed_amount: Uint128::from(user_borrow_amount_with_interest - repay_amount),
+        average_interest_rate: average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    let total_borrow_data =
+        get_total_borrow_data(deps.as_ref(), repay_token.denom.clone()).unwrap_or_default();
+
+    let repay_token_decimals = get_token_decimal(deps.as_ref(), repay_token.denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
+        + Decimal::from_i128_with_scale(
+            (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
+            repay_token_decimals,
+        )
+        .mul(Decimal::from_i128_with_scale(
+            (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+            INTEREST_RATE_DECIMALS,
+        ))
+        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+        .unwrap()
+        - Decimal::from_i128_with_scale((repay_amount) as i128, repay_token_decimals)
+            .mul(Decimal::from_i128_with_scale(
+                (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+
+    let total_borrowed_amount = total_borrow_data.total_borrowed_amount
+        + user_borrow_amount_with_interest
+        - user_borrowing_info.borrowed_amount.u128()
+        - repay_amount;
+
+    let mut total_average_interest_rate = 0u128;
+    if total_borrowed_amount != 0u128 {
+        total_average_interest_rate = HUNDRED
+            * Decimal::from_i128_with_scale(
+                expected_annual_interest_income as i128,
+                INTEREST_RATE_DECIMALS,
+            )
+            .div(Decimal::from_i128_with_scale(
+                total_borrowed_amount as i128,
+                repay_token_decimals,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+    }
+
+    let new_total_borrow_data = TotalBorrowData {
+        denom: repay_token.denom.clone(),
+        total_borrowed_amount: total_borrowed_amount,
+        expected_annual_interest_income: expected_annual_interest_income,
+        average_interest_rate: total_average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    USER_BORROWING_INFO.save(
+        deps.storage,
+        (info.sender.to_string(), repay_token.denom.clone()),
+        &new_user_borrowing_info,
+    )?;
+
+    TOTAL_BORROW_DATA.save(
+        deps.storage,
+        repay_token.denom.clone(),
+        &new_total_borrow_data,
+    )?;
+
+    if remaining_amount > 0 {
+        Ok(Response::new().add_message(BankMsg::Send {
+            to_address: info.sender.to_string(),
+            amount: coins(remaining_amount, repay_token.denom.clone()),
+        }))
+    } else {
+        Ok(Response::default())
+    }
 }
