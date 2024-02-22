@@ -332,15 +332,15 @@ pub fn execute(
             liquidation_threshold,
         } => {
             ensure_eq!(
-                    info.sender.to_string(),
-                    ADMIN.load(deps.storage).unwrap(),
-                    ContractError::ForAdminOnly {}
-                );
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                ContractError::ForAdminOnly {}
+            );
 
             ensure!(
-                    SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                    ContractError::TokenNotSupported {}
-                );
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                ContractError::TokenNotSupported {}
+            );
 
             RESERVE_CONFIGURATION.save(
                 deps.storage,
@@ -362,15 +362,15 @@ pub fn execute(
             optimal_utilisation_ratio,
         } => {
             ensure_eq!(
-                    info.sender.to_string(),
-                    ADMIN.load(deps.storage).unwrap(),
-                    ContractError::ForAdminOnly {}
-                );
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                ContractError::ForAdminOnly {}
+            );
 
             ensure!(
-                    SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                    ContractError::TokenNotSupported {}
-                );
+                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+                ContractError::TokenNotSupported {}
+            );
 
             TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
                 deps.storage,
@@ -944,7 +944,9 @@ pub mod query {
         UserDataByToken,
     };
     use cosmwasm_std::Order::Ascending;
-    use cosmwasm_std::{Coin, Order};
+    use cosmwasm_std::{BalanceResponse, Coin, Order};
+    use cw20::BalanceResponse as BalanceResponseCw20;
+    use cw20::Cw20QueryMsg;
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
 
     pub fn get_deposit(
@@ -1405,15 +1407,36 @@ pub mod query {
         env: Env,
         denom: String,
     ) -> StdResult<Uint128> {
-        let contract_address = env.contract.address;
-        let coins: Vec<Coin> = deps.querier.query_all_balances(contract_address)?;
+        let cw20_address = SUPPORTED_TOKENS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .cw20_address;
 
-        let liquidity = coins
-            .into_iter()
-            .find(|coin| coin.denom == denom)
-            .map_or(Uint128::zero(), |coin| coin.amount);
+        if cw20_address.is_some() {
+            // for CW20 tokens query balance from token contract
+            let liquidity: BalanceResponseCw20 = deps
+                .querier
+                .query_wasm_smart(
+                    cw20_address.unwrap(),
+                    &Cw20QueryMsg::Balance {
+                        address: env.contract.address.to_string(),
+                    },
+                )
+                .unwrap();
 
-        Ok(liquidity)
+            Ok(liquidity.balance)
+        } else {
+            // for Native tokens query balance from current contract
+            let contract_address = env.contract.address;
+            let coins: Vec<Coin> = deps.querier.query_all_balances(contract_address)?;
+
+            let liquidity = coins
+                .into_iter()
+                .find(|coin| coin.denom == denom)
+                .map_or(Uint128::zero(), |coin| coin.amount);
+
+            Ok(liquidity)
+        }
     }
 
     pub fn get_user_liquidation_threshold(

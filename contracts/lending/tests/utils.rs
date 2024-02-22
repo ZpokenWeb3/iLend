@@ -940,10 +940,10 @@ pub fn success_borrow_setup() -> (BasicApp, Addr) {
 pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
     const TOKENS_DECIMALS: u32 = 18;
 
-    const INIT_USER_BALANCE: u128 = 1000 * 10u128.pow(TOKENS_DECIMALS);
+    const INIT_USER_BALANCE: u128 = 100000 * 10u128.pow(TOKENS_DECIMALS);
     const INIT_LIQUIDATOR_BALANCE_ETH: u128 = 1_000_000 * 10u128.pow(TOKENS_DECIMALS); // 1M ETH
 
-    const CONTRACT_RESERVES: u128 = 1000000 * 10u128.pow(TOKENS_DECIMALS);
+    const CONTRACT_RESERVES: u128 = 10000 * 10u128.pow(TOKENS_DECIMALS);
     const FIRST_DEPOSIT_AMOUNT_ETH: u128 = 200 * 10u128.pow(TOKENS_DECIMALS);
     const SECOND_DEPOSIT_AMOUNT_ETH: u128 = 300 * 10u128.pow(TOKENS_DECIMALS);
 
@@ -961,6 +961,15 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
     const OPTIMAL_UTILISATION_RATIO: u128 = 80 * 10u128.pow(PERCENT_DECIMALS);
 
     let mut app = App::new(|router, _, storage| {
+        router
+            .bank
+            .init_balance(
+                storage,
+                &Addr::unchecked("cw20-user"),
+                coins(INIT_USER_BALANCE, "eth"),
+            )
+            .unwrap();
+
         router
             .bank
             .init_balance(
@@ -1001,6 +1010,13 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
                 price_ids: vec![
                     (
                         "inj".to_string(),
+                        PriceIdentifier::from_hex(
+                            "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                        )
+                        .unwrap(),
+                    ),
+                    (
+                        "ilend-denom".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )
