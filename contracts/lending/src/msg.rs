@@ -95,6 +95,7 @@ pub enum ExecuteMsg {
 #[cw_serde]
 pub enum Cw20HookMsg {
     Deposit { denom: String },
+    Repay { denom: String },
 }
 
 #[cw_serde]

@@ -93,7 +93,7 @@ mod tests {
 
         let send_msg = ExecuteMsgCW20::Send {
             contract: lending_addr.clone().to_string(),
-            amount: Uint128::from(10000000000000u128),
+            amount: Uint128::from(1000000000000000000000000000000000u128),
             msg: to_json_binary(&hook).unwrap(),
         };
 

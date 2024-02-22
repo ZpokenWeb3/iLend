@@ -15,7 +15,7 @@ mod tests {
     };
 
     #[test]
-    fn test_success_deposit_cw20() {
+    fn test_success_repay_cw20_whole_amount() {
         const PERCENT_DECIMALS: u32 = 5;
         const TOKEN_DECIMALS: u32 = 18;
         const PRICE_DECIMALS: u32 = 8;
@@ -58,7 +58,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let supported_tokens_response_after: GetSupportedTokensResponse = app
             .wrap()
@@ -80,7 +80,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let price_eth: Uint128 = app
             .wrap()
@@ -101,7 +101,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let price_cw20: Uint128 = app
             .wrap()
@@ -152,7 +152,7 @@ mod tests {
             &send_msg,
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
             .wrap()
@@ -189,7 +189,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ETH, "eth"),
         )
-        .unwrap();
+            .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -233,7 +233,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         app.execute_contract(
             Addr::unchecked("cw20-user"),
@@ -243,7 +243,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let available_to_borrow_cw20: Uint128 = app
             .wrap()
@@ -275,7 +275,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let cw20_user_balance_after_first_borrow: BalanceResponse = app
             .wrap()
@@ -319,7 +319,7 @@ mod tests {
             },
             &[],
         )
-        .unwrap();
+            .unwrap();
 
         let cw20_user_balance_after_second_borrow: BalanceResponse = app
             .wrap()
@@ -352,6 +352,79 @@ mod tests {
             available_to_borrow_cw20_after_two_borrows.u128(),
             0,
             "Must exceed available borrow amount"
+        );
+
+        let repay_amount: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                lending_addr.clone(),
+                &QueryMsg::GetUserBorrowAmountWithInterest {
+                    address: "cw20-user".to_string(),
+                    denom: "ilend-denom".to_string(),
+                },
+            )
+            .unwrap();
+
+
+        let cw20_user_balance_before_repayments: BalanceResponse = app
+            .wrap()
+            .query_wasm_smart(
+                cw20_token_addr.clone(),
+                &Cw20QueryMsg::Balance {
+                    address: "cw20-user".to_string(),
+                },
+            )
+            .unwrap();
+
+
+        let hook = Cw20HookMsg::Repay {
+            denom: "ilend-denom".to_string(),
+        };
+
+        let send_msg = ExecuteMsgCW20::Send {
+            contract: lending_addr.clone().to_string(),
+            amount: Uint128::from(repay_amount.u128() * 2 ),
+            msg: to_json_binary(&hook).unwrap(),
+        };
+
+        app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            cw20_token_addr.clone(),
+            &send_msg,
+            &[],
+        )
+            .unwrap();
+
+        let user_cw20_borrowed_amount_with_interest_after_repayment: Uint128 = app
+            .wrap()
+            .query_wasm_smart(
+                lending_addr.clone(),
+                &QueryMsg::GetUserBorrowAmountWithInterest {
+                    address: "cw20-user".to_string(),
+                    denom: "ilend-denom".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            user_cw20_borrowed_amount_with_interest_after_repayment.u128(),
+            0,
+            "Should repay all the borrowed amount"
+        );
+
+        let cw20_user_balance_after_repayments: BalanceResponse = app
+            .wrap()
+            .query_wasm_smart(
+                cw20_token_addr.clone(),
+                &Cw20QueryMsg::Balance {
+                    address: "cw20-user".to_string(),
+                },
+            )
+            .unwrap();
+
+        assert_eq!(
+            cw20_user_balance_before_repayments.balance.u128(),
+            cw20_user_balance_after_repayments.balance.u128() + repay_amount.u128()
         );
     }
 }

@@ -1087,7 +1087,7 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
         initial_balances: vec![
             Cw20Coin {
                 address: String::from(Addr::unchecked("cw20-user")),
-                amount: Uint128::from(1000000000000u128),
+                amount: Uint128::from(10000000000000000u128),
             },
             Cw20Coin {
                 address: String::from(&Addr::unchecked("owner-token")),
@@ -1157,7 +1157,7 @@ pub fn success_native_and_cw20_setup() -> (BasicApp, Addr, Addr) {
     );
     assert_eq!(
         cw20_user_token_initial_amount.balance.u128(),
-        1000000000000,
+        10000000000000000,
         "Has to be equal to the initially obtained amount"
     );
     assert_eq!(
