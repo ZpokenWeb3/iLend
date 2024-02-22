@@ -58,7 +58,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let supported_tokens_response_after: GetSupportedTokensResponse = app
             .wrap()
@@ -80,7 +80,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let price_eth: Uint128 = app
             .wrap()
@@ -101,7 +101,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let price_cw20: Uint128 = app
             .wrap()
@@ -152,7 +152,7 @@ mod tests {
             &send_msg,
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
             .wrap()
@@ -189,7 +189,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(DEPOSIT_AMOUNT_ETH, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -233,7 +233,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         app.execute_contract(
             Addr::unchecked("cw20-user"),
@@ -243,7 +243,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let available_to_borrow_cw20: Uint128 = app
             .wrap()
@@ -275,7 +275,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let cw20_user_balance_after_first_borrow: BalanceResponse = app
             .wrap()
@@ -319,7 +319,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let cw20_user_balance_after_second_borrow: BalanceResponse = app
             .wrap()
@@ -365,7 +365,6 @@ mod tests {
             )
             .unwrap();
 
-
         let cw20_user_balance_before_repayments: BalanceResponse = app
             .wrap()
             .query_wasm_smart(
@@ -375,7 +374,6 @@ mod tests {
                 },
             )
             .unwrap();
-
 
         let hook = Cw20HookMsg::Repay {
             denom: "ilend-denom".to_string(),
@@ -393,7 +391,7 @@ mod tests {
             &send_msg,
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_cw20_borrowed_amount_with_interest_after_repayment: Uint128 = app
             .wrap()

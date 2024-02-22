@@ -398,9 +398,9 @@ pub fn execute(
                     info.sender.to_string(),
                     denom.clone(),
                 )
-                    .unwrap()
-                    .balance
-                    .u128();
+                .unwrap()
+                .balance
+                .u128();
 
                 if user_token_balance != 0 {
                     let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
@@ -422,8 +422,8 @@ pub fn execute(
                         env.clone(),
                         info.sender.to_string(),
                     )
-                        .unwrap()
-                        .u128();
+                    .unwrap()
+                    .u128();
 
                     let sum_borrow_balance_usd =
                         get_user_borrowed_usd(deps.as_ref(), env.clone(), info.sender.to_string())
@@ -435,8 +435,8 @@ pub fn execute(
                         env.clone(),
                         info.sender.to_string(),
                     )
-                        .unwrap()
-                        .u128();
+                    .unwrap()
+                    .u128();
 
                     assert!(
                         sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold < sum_collateral_balance_usd - user_token_balance_usd,
@@ -464,8 +464,8 @@ pub fn execute(
                     info.sender.to_string(),
                     token.denom.clone(),
                 )
-                    .unwrap()
-                    .u128();
+                .unwrap()
+                .u128();
 
                 assert_eq!(
                     liquidator_borrow_amount_with_interest, 0,
@@ -502,9 +502,9 @@ pub fn execute(
                         user.clone(),
                         token.denom.clone(),
                     )
-                        .unwrap()
-                        .balance
-                        .u128();
+                    .unwrap()
+                    .balance
+                    .u128();
 
                     USER_MM_TOKEN_BALANCE.save(
                         deps.storage,
@@ -519,8 +519,8 @@ pub fn execute(
                     user.clone(),
                     token.denom.clone(),
                 )
-                    .unwrap()
-                    .u128();
+                .unwrap()
+                .u128();
 
                 if user_borrow_amount_with_interest > 0 || user_token_balance > 0 {
                     let liquidator_balance = get_deposit(
@@ -529,9 +529,9 @@ pub fn execute(
                         info.sender.to_string(),
                         token.denom.clone(),
                     )
-                        .unwrap()
-                        .balance
-                        .u128();
+                    .unwrap()
+                    .balance
+                    .u128();
 
                     let token_decimals = get_token_decimal(deps.as_ref(), token.denom.clone())
                         .unwrap()
@@ -549,7 +549,7 @@ pub fn execute(
                             user.clone(),
                             token.denom.clone(),
                         )
-                            .unwrap();
+                        .unwrap();
 
                         let new_user_borrowing_info = UserBorrowingInfo {
                             borrowed_amount: Uint128::from(0u128),
@@ -564,9 +564,9 @@ pub fn execute(
                         let expected_annual_interest_income = total_borrow_data
                             .expected_annual_interest_income
                             - Decimal::from_i128_with_scale(
-                            (user_borrowing_info.borrowed_amount.u128()) as i128,
-                            token_decimals,
-                        )
+                                (user_borrowing_info.borrowed_amount.u128()) as i128,
+                                token_decimals,
+                            )
                             .mul(Decimal::from_i128_with_scale(
                                 (user_borrowing_info.average_interest_rate.u128() / HUNDRED)
                                     as i128,
@@ -582,9 +582,9 @@ pub fn execute(
                         if total_borrowed_amount != 0u128 {
                             total_average_interest_rate = HUNDRED
                                 * Decimal::from_i128_with_scale(
-                                expected_annual_interest_income as i128,
-                                INTEREST_RATE_DECIMALS,
-                            )
+                                    expected_annual_interest_income as i128,
+                                    INTEREST_RATE_DECIMALS,
+                                )
                                 .div(Decimal::from_i128_with_scale(
                                     total_borrowed_amount as i128,
                                     token_decimals,
@@ -626,12 +626,12 @@ pub fn execute(
                         new_liquidator_token_balance as i128,
                         token_decimals,
                     )
-                        .div(Decimal::from_i128_with_scale(
-                            mm_token_price as i128,
-                            token_decimals,
-                        ))
-                        .to_u128_with_decimals(token_decimals)
-                        .unwrap();
+                    .div(Decimal::from_i128_with_scale(
+                        mm_token_price as i128,
+                        token_decimals,
+                    ))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
 
                     USER_MM_TOKEN_BALANCE.save(
                         deps.storage,
@@ -929,8 +929,8 @@ pub mod query {
             (env.block.time.seconds() - current_borrowing_info.timestamp.seconds()) as u128,
             token_decimals,
         )
-            .unwrap()
-            .u128();
+        .unwrap()
+        .u128();
 
         Ok(Uint128::from(borrow_amount_with_interest))
     }
@@ -954,13 +954,13 @@ pub mod query {
                 expected_annual_interest_income as i128,
                 INTEREST_RATE_DECIMALS,
             )
-                .mul(Decimal::from_i128_with_scale(HUNDRED as i128, 0u32))
-                .div(Decimal::from_i128_with_scale(
-                    reserves_by_token as i128,
-                    token_decimals,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap();
+            .mul(Decimal::from_i128_with_scale(HUNDRED as i128, 0u32))
+            .div(Decimal::from_i128_with_scale(
+                reserves_by_token as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
 
             Ok(Uint128::from(liquidity_rate))
         }
@@ -992,9 +992,9 @@ pub mod query {
             .checked_sub(liquidity_index_last_update.seconds())
             .unwrap_or_default()) as u128
             * Decimal::from_i128_with_scale(
-            (liquidity_rate / HUNDRED + INTEREST_RATE_MULTIPLIER) as i128,
-            INTEREST_RATE_DECIMALS,
-        )
+                (liquidity_rate / HUNDRED + INTEREST_RATE_MULTIPLIER) as i128,
+                INTEREST_RATE_DECIMALS,
+            )
             .ln()
             .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
             .unwrap()
@@ -1026,9 +1026,9 @@ pub mod query {
             current_liquidity_index_ln as i128,
             INTEREST_RATE_DECIMALS,
         )
-            .exp()
-            .to_u128_with_decimals(token_decimals)
-            .unwrap_or_default();
+        .exp()
+        .to_u128_with_decimals(token_decimals)
+        .unwrap_or_default();
 
         Ok(Uint128::from(mm_token_price))
     }
@@ -1136,13 +1136,13 @@ pub mod query {
             Ok(Uint128::from(
                 min_interest_rate
                     + utilization_rate * (safe_borrow_max_rate - min_interest_rate)
-                    / optimal_utilisation_ratio,
+                        / optimal_utilisation_ratio,
             ))
         } else {
             Ok(Uint128::from(
                 safe_borrow_max_rate
                     + rate_growth_factor * (utilization_rate - optimal_utilisation_ratio)
-                    / (HUNDRED_PERCENT - optimal_utilisation_ratio),
+                        / (HUNDRED_PERCENT - optimal_utilisation_ratio),
             ))
         }
     }
@@ -1255,8 +1255,8 @@ pub mod query {
                 user.clone(),
                 token.denom.clone(),
             )
-                .unwrap()
-                .u128();
+            .unwrap()
+            .u128();
 
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
@@ -1269,9 +1269,9 @@ pub mod query {
                 user_borrow_amount_with_interest as i128,
                 token_decimals,
             )
-                .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                .to_u128_with_decimals(USD_DECIMALS)
-                .unwrap()
+            .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+            .to_u128_with_decimals(USD_DECIMALS)
+            .unwrap()
         }
 
         Ok(Uint128::from(user_borrowed_usd))
@@ -1437,9 +1437,9 @@ pub mod query {
                 (max_allowed_borrow_amount_usd - sum_user_borrow_balance_usd) as i128,
                 USD_DECIMALS,
             )
-                .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                .to_u128_with_decimals(token_decimals)
-                .unwrap();
+            .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
 
             let token_liquidity =
                 get_available_liquidity_by_token(deps, env.clone(), denom.clone())
@@ -1503,9 +1503,9 @@ pub mod query {
                         (sum_collateral_balance_usd - required_collateral_balance_usd) as i128,
                         USD_DECIMALS,
                     )
-                        .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                        .to_u128_with_decimals(token_decimals)
-                        .unwrap();
+                    .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
 
                     if available_to_redeem > user_token_balance {
                         available_to_redeem = user_token_balance;
@@ -1530,7 +1530,7 @@ pub mod query {
 
         let mut sum_mm_token_balance = 0u128;
         for users_mm_token_balances in users_mm_token_balances_iter.unwrap() {
-            if users_mm_token_balances.0.1 == denom {
+            if users_mm_token_balances.0 .1 == denom {
                 sum_mm_token_balance += users_mm_token_balances.1.u128();
             }
         }
@@ -1564,8 +1564,8 @@ pub mod query {
             (env.block.time.seconds() - total_borrow_data.timestamp.seconds()) as u128,
             token_decimals,
         )
-            .unwrap()
-            .u128();
+        .unwrap()
+        .u128();
 
         Ok(Uint128::from(total_borrowed_amount_with_interest))
     }
@@ -1656,7 +1656,7 @@ pub mod query {
                 address.clone(),
                 token.denom.clone(),
             )
-                .unwrap();
+            .unwrap();
             let user_data_by_token = UserDataByToken {
                 deposited: user_deposit,
                 borrowed: user_borrow_amount_with_interest,
@@ -1716,9 +1716,9 @@ pub fn execute_redeem(
         info.sender.to_string(),
         denom.clone(),
     )
-        .unwrap()
-        .balance
-        .u128();
+    .unwrap()
+    .balance
+    .u128();
 
     ensure!(
         current_balance >= amount.clone(),
@@ -1967,8 +1967,8 @@ pub fn execute_borrow(
         info.sender.to_string(),
         denom.clone(),
     )
-        .unwrap()
-        .u128();
+    .unwrap()
+    .u128();
 
     ensure!(
         available_to_borrow_amount >= amount.u128(),
@@ -1991,8 +1991,8 @@ pub fn execute_borrow(
         info.sender.to_string(),
         denom.clone(),
     )
-        .unwrap()
-        .u128();
+    .unwrap()
+    .u128();
 
     let user_borrowing_info = get_user_borrowing_info(
         deps.as_ref(),
@@ -2000,7 +2000,7 @@ pub fn execute_borrow(
         info.sender.to_string().clone(),
         denom.clone(),
     )
-        .unwrap();
+    .unwrap();
 
     let new_user_borrow_amount: u128 = user_borrow_amount_with_interest + amount.u128();
 
@@ -2016,21 +2016,21 @@ pub fn execute_borrow(
         user_borrow_amount_with_interest as i128,
         borrowed_token_decimals,
     )
-        .mul(Decimal::from_i128_with_scale(
-            user_borrowing_info.average_interest_rate.u128() as i128,
-            INTEREST_RATE_DECIMALS,
-        ))
-        .add(
-            Decimal::from_i128_with_scale(amount.u128() as i128, borrowed_token_decimals).mul(
-                Decimal::from_i128_with_scale(current_interest_rate as i128, INTEREST_RATE_DECIMALS),
-            ),
-        ))
-        .div(Decimal::from_i128_with_scale(
-            new_user_borrow_amount as i128,
-            borrowed_token_decimals,
-        ))
-        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-        .unwrap();
+    .mul(Decimal::from_i128_with_scale(
+        user_borrowing_info.average_interest_rate.u128() as i128,
+        INTEREST_RATE_DECIMALS,
+    ))
+    .add(
+        Decimal::from_i128_with_scale(amount.u128() as i128, borrowed_token_decimals).mul(
+            Decimal::from_i128_with_scale(current_interest_rate as i128, INTEREST_RATE_DECIMALS),
+        ),
+    ))
+    .div(Decimal::from_i128_with_scale(
+        new_user_borrow_amount as i128,
+        borrowed_token_decimals,
+    ))
+    .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+    .unwrap();
 
     // updating user borrowing info
     let new_user_borrowing_info = UserBorrowingInfo {
@@ -2043,9 +2043,9 @@ pub fn execute_borrow(
 
     let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
         - Decimal::from_i128_with_scale(
-        user_borrowing_info.borrowed_amount.u128() as i128,
-        borrowed_token_decimals,
-    )
+            user_borrowing_info.borrowed_amount.u128() as i128,
+            borrowed_token_decimals,
+        )
         .mul(Decimal::from_i128_with_scale(
             (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
             INTEREST_RATE_DECIMALS,
@@ -2053,12 +2053,12 @@ pub fn execute_borrow(
         .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
         .unwrap()
         + Decimal::from_i128_with_scale(new_user_borrow_amount as i128, borrowed_token_decimals)
-        .mul(Decimal::from_i128_with_scale(
-            (average_interest_rate / HUNDRED) as i128,
-            INTEREST_RATE_DECIMALS,
-        ))
-        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-        .unwrap();
+            .mul(Decimal::from_i128_with_scale(
+                (average_interest_rate / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
 
     let total_borrowed_amount = total_borrow_data.total_borrowed_amount
         - user_borrowing_info.borrowed_amount.u128()
@@ -2066,9 +2066,9 @@ pub fn execute_borrow(
 
     let total_average_interest_rate = HUNDRED
         * Decimal::from_i128_with_scale(
-        expected_annual_interest_income as i128,
-        INTEREST_RATE_DECIMALS,
-    )
+            expected_annual_interest_income as i128,
+            INTEREST_RATE_DECIMALS,
+        )
         .div(Decimal::from_i128_with_scale(
             total_borrowed_amount as i128,
             borrowed_token_decimals,
@@ -2139,7 +2139,7 @@ pub fn execute_repay_native(
         info.sender.to_string().clone(),
         repay_token.denom.clone(),
     )
-        .unwrap();
+    .unwrap();
 
     execute_update_liquidity_index_data(&mut deps, env.clone(), repay_token.denom.clone())?;
 
@@ -2149,8 +2149,8 @@ pub fn execute_repay_native(
         info.sender.to_string(),
         repay_token.denom.clone(),
     )
-        .unwrap()
-        .u128();
+    .unwrap()
+    .u128();
 
     let mut remaining_amount = 0u128;
     let mut average_interest_rate = user_borrowing_info.average_interest_rate;
@@ -2175,9 +2175,9 @@ pub fn execute_repay_native(
 
     let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
         + Decimal::from_i128_with_scale(
-        (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
-        repay_token_decimals,
-    )
+            (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
+            repay_token_decimals,
+        )
         .mul(Decimal::from_i128_with_scale(
             (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
             INTEREST_RATE_DECIMALS,
@@ -2185,12 +2185,12 @@ pub fn execute_repay_native(
         .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
         .unwrap()
         - Decimal::from_i128_with_scale((repay_amount) as i128, repay_token_decimals)
-        .mul(Decimal::from_i128_with_scale(
-            (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-            INTEREST_RATE_DECIMALS,
-        ))
-        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-        .unwrap();
+            .mul(Decimal::from_i128_with_scale(
+                (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
 
     let total_borrowed_amount = total_borrow_data.total_borrowed_amount
         + user_borrow_amount_with_interest
@@ -2201,9 +2201,9 @@ pub fn execute_repay_native(
     if total_borrowed_amount != 0u128 {
         total_average_interest_rate = HUNDRED
             * Decimal::from_i128_with_scale(
-            expected_annual_interest_income as i128,
-            INTEREST_RATE_DECIMALS,
-        )
+                expected_annual_interest_income as i128,
+                INTEREST_RATE_DECIMALS,
+            )
             .div(Decimal::from_i128_with_scale(
                 total_borrowed_amount as i128,
                 repay_token_decimals,
@@ -2275,14 +2275,13 @@ pub fn execute_cw20_repay(
         ContractError::TokenNotSupported {}
     );
 
-
     let user_borrowing_info = get_user_borrowing_info(
         deps.as_ref(),
         env.clone(),
         sender.to_string().clone(),
         denom.clone(),
     )
-        .unwrap();
+    .unwrap();
 
     execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
 
@@ -2292,8 +2291,8 @@ pub fn execute_cw20_repay(
         sender.to_string(),
         denom.clone(),
     )
-        .unwrap()
-        .u128();
+    .unwrap()
+    .u128();
 
     let mut remaining_amount = 0u128;
     let mut average_interest_rate = user_borrowing_info.average_interest_rate;
@@ -2320,9 +2319,9 @@ pub fn execute_cw20_repay(
 
     let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
         + Decimal::from_i128_with_scale(
-        (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
-        repay_token_decimals,
-    )
+            (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
+            repay_token_decimals,
+        )
         .mul(Decimal::from_i128_with_scale(
             (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
             INTEREST_RATE_DECIMALS,
@@ -2330,12 +2329,12 @@ pub fn execute_cw20_repay(
         .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
         .unwrap()
         - Decimal::from_i128_with_scale((amount_to_repay) as i128, repay_token_decimals)
-        .mul(Decimal::from_i128_with_scale(
-            (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-            INTEREST_RATE_DECIMALS,
-        ))
-        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-        .unwrap();
+            .mul(Decimal::from_i128_with_scale(
+                (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
 
     let total_borrowed_amount = total_borrow_data.total_borrowed_amount
         + user_borrow_amount_with_interest
@@ -2346,9 +2345,9 @@ pub fn execute_cw20_repay(
     if total_borrowed_amount != 0u128 {
         total_average_interest_rate = HUNDRED
             * Decimal::from_i128_with_scale(
-            expected_annual_interest_income as i128,
-            INTEREST_RATE_DECIMALS,
-        )
+                expected_annual_interest_income as i128,
+                INTEREST_RATE_DECIMALS,
+            )
             .div(Decimal::from_i128_with_scale(
                 total_borrowed_amount as i128,
                 repay_token_decimals,
