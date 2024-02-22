@@ -5,11 +5,107 @@
     {
       "type": "object",
       "required": [
-        "fund"
+        "receive"
       ],
       "properties": {
-        "fund": {
+        "receive": {
+          "$ref": "#/definitions/Cw20ReceiveMsg"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "deposit"
+      ],
+      "properties": {
+        "deposit": {
           "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "redeem"
+      ],
+      "properties": {
+        "redeem": {
+          "type": "object",
+          "required": [
+            "amount",
+            "denom"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "borrow"
+      ],
+      "properties": {
+        "borrow": {
+          "type": "object",
+          "required": [
+            "amount",
+            "denom"
+          ],
+          "properties": {
+            "amount": {
+              "$ref": "#/definitions/Uint128"
+            },
+            "denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "repay"
+      ],
+      "properties": {
+        "repay": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "liquidation"
+      ],
+      "properties": {
+        "liquidation": {
+          "type": "object",
+          "required": [
+            "user"
+          ],
+          "properties": {
+            "user": {
+              "type": "string"
+            }
+          },
           "additionalProperties": false
         }
       },
@@ -143,6 +239,12 @@
             "symbol"
           ],
           "properties": {
+            "cw20_address": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
             "decimals": {
               "type": "integer",
               "format": "uint128",
@@ -196,82 +298,6 @@
     {
       "type": "object",
       "required": [
-        "deposit"
-      ],
-      "properties": {
-        "deposit": {
-          "type": "object",
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "redeem"
-      ],
-      "properties": {
-        "redeem": {
-          "type": "object",
-          "required": [
-            "amount",
-            "denom"
-          ],
-          "properties": {
-            "amount": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "denom": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "borrow"
-      ],
-      "properties": {
-        "borrow": {
-          "type": "object",
-          "required": [
-            "amount",
-            "denom"
-          ],
-          "properties": {
-            "amount": {
-              "$ref": "#/definitions/Uint128"
-            },
-            "denom": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
-        "repay"
-      ],
-      "properties": {
-        "repay": {
-          "type": "object",
-          "additionalProperties": false
-        }
-      },
-      "additionalProperties": false
-    },
-    {
-      "type": "object",
-      "required": [
         "toggle_collateral_setting"
       ],
       "properties": {
@@ -293,16 +319,16 @@
     {
       "type": "object",
       "required": [
-        "liquidation"
+        "update_pyth_contract"
       ],
       "properties": {
-        "liquidation": {
+        "update_pyth_contract": {
           "type": "object",
           "required": [
-            "user"
+            "pyth_contract_addr"
           ],
           "properties": {
-            "user": {
+            "pyth_contract_addr": {
               "type": "string"
             }
           },
@@ -314,16 +340,16 @@
     {
       "type": "object",
       "required": [
-        "set_pyth_contract"
+        "update_price_updater_addr"
       ],
       "properties": {
-        "set_pyth_contract": {
+        "update_price_updater_addr": {
           "type": "object",
           "required": [
-            "pyth_contract_addr"
+            "price_updater_addr"
           ],
           "properties": {
-            "pyth_contract_addr": {
+            "price_updater_addr": {
               "type": "string"
             }
           },
@@ -365,9 +391,97 @@
         }
       },
       "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "update_admin"
+      ],
+      "properties": {
+        "update_admin": {
+          "type": "object",
+          "required": [
+            "admin"
+          ],
+          "properties": {
+            "admin": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "remove_supported_token"
+      ],
+      "properties": {
+        "remove_supported_token": {
+          "type": "object",
+          "required": [
+            "denom"
+          ],
+          "properties": {
+            "denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": [
+        "remove_price_feed_id"
+      ],
+      "properties": {
+        "remove_price_feed_id": {
+          "type": "object",
+          "required": [
+            "denom"
+          ],
+          "properties": {
+            "denom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   ],
   "definitions": {
+    "Binary": {
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>. See also <https://github.com/CosmWasm/cosmwasm/blob/main/docs/MESSAGE_TYPES.md>.",
+      "type": "string"
+    },
+    "Cw20ReceiveMsg": {
+      "description": "Cw20ReceiveMsg should be de/serialized under `Receive()` variant in a ExecuteMsg",
+      "type": "object",
+      "required": [
+        "amount",
+        "msg",
+        "sender"
+      ],
+      "properties": {
+        "amount": {
+          "$ref": "#/definitions/Uint128"
+        },
+        "msg": {
+          "$ref": "#/definitions/Binary"
+        },
+        "sender": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
     "Identifier": {
       "type": "string"
     },
