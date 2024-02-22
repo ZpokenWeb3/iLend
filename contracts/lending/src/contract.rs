@@ -204,11 +204,6 @@ pub fn execute(
                 ContractError::ForAdminOnly {}
             );
 
-            ensure!(
-                !SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                ContractError::TokenNotSupported {}
-            );
-
             SUPPORTED_TOKENS.save(
                 deps.storage,
                 denom.clone(),
@@ -1844,7 +1839,7 @@ pub fn execute_cw20_deposit(
     )?;
 
     let resp = Response::default().add_attributes(vec![
-        attr("action", "receive"),
+        attr("action", "deposit"),
         attr("sender", sender.to_string()),
         attr("amount", amount.to_string()),
         attr("token_address", denom.clone()),

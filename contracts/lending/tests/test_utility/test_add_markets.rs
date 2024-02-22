@@ -4,7 +4,7 @@ mod tests {
     const PERCENT_DECIMALS: u32 = 5;
 
     const LTV_ETH: u128 = 85 * 10u128.pow(PERCENT_DECIMALS);
-    const LTV_TIA: u128 = 85 * 10u128.pow(PERCENT_DECIMALS);
+    const LTV_TIA: u128 = 75 * 10u128.pow(PERCENT_DECIMALS);
 
     const LIQUIDATION_THRESHOLD_ETH: u128 = 90 * 10u128.pow(PERCENT_DECIMALS);
     const LIQUIDATION_THRESHOLD_TIA: u128 = 90 * 10u128.pow(PERCENT_DECIMALS);
@@ -19,7 +19,9 @@ mod tests {
     use crate::utils::success_deposit_of_one_token_setup;
     use cosmwasm_std::{Addr, Uint128};
     use cw_multi_test::Executor;
-    use lending::msg::{ExecuteMsg, GetSupportedTokensResponse, QueryMsg};
+    use lending::msg::{
+        ExecuteMsg, GetReserveConfigurationResponse, GetSupportedTokensResponse, QueryMsg,
+    };
 
     #[test]
     #[should_panic]
@@ -48,7 +50,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_token_already_exists() {
         let (mut app, addr) = success_deposit_of_one_token_setup();
 
@@ -78,8 +79,8 @@ mod tests {
                 symbol: "ETH".to_string(),
                 decimals: TOKENS_DECIMALS as u128,
                 cw20_address: None,
-                loan_to_value_ratio: LTV_ETH,
-                liquidation_threshold: LIQUIDATION_THRESHOLD_ETH,
+                loan_to_value_ratio: LTV_TIA,
+                liquidation_threshold: LIQUIDATION_THRESHOLD_TIA,
                 min_interest_rate: MIN_INTEREST_RATE,
                 safe_borrow_max_rate: SAFE_BORROW_MAX_RATE,
                 rate_growth_factor: RATE_GROWTH_FACTOR,
@@ -88,6 +89,18 @@ mod tests {
             &[],
         )
         .unwrap();
+
+        let reserve_configuration_response: GetReserveConfigurationResponse = app
+            .wrap()
+            .query_wasm_smart(addr.clone(), &QueryMsg::GetReserveConfiguration {})
+            .unwrap();
+
+        for el in reserve_configuration_response.reserve_configuration {
+            if el.denom == "eth".to_string() {
+                assert_eq!(el.loan_to_value_ratio, LTV_TIA);
+                assert_eq!(el.liquidation_threshold, LIQUIDATION_THRESHOLD_TIA);
+            }
+        }
     }
 
     #[test]
