@@ -8,7 +8,7 @@ use crate::contract::query::{
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
     get_user_collateral_usd, get_user_deposited_usd, get_user_liquidation_threshold,
     get_user_max_allowed_borrow_amount_usd, get_user_utilization_rate, get_users_balances,
-    get_utilization_rate_by_token, user_deposit_as_collateral,
+    get_utilization_rate_by_token, is_paused, user_deposit_as_collateral,
 };
 
 use crate::msg::{
@@ -19,14 +19,15 @@ use crate::msg::{
 use cw_asset::AssetInfo;
 
 use crate::state::{
-    IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_ADDRESS, PYTH_CONTRACT,
-    TOTAL_BORROW_DATA, USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
+    IS_PAUSED, IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_ADDRESS,
+    PYTH_CONTRACT, TOTAL_BORROW_DATA, USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
 };
 
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 
 use cosmwasm_std::{
-    attr, coin, ensure, ensure_eq, from_json, to_json_binary, wasm_execute, Addr, CosmosMsg, SubMsg,
+    attr, coin, ensure, ensure_eq, ensure_ne, from_json, to_json_binary, wasm_execute, Addr,
+    CosmosMsg, SubMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use std::ops::{Add, Div, Mul};
@@ -98,6 +99,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     IS_TESTING.save(deps.storage, &msg.is_testing)?;
+    IS_PAUSED.save(deps.storage, &false)?;
     PRICE_UPDATER_ADDRESS.save(deps.storage, &msg.price_updater_addr)?;
     ADMIN.save(deps.storage, &msg.admin)?;
     PYTH_CONTRACT.save(
@@ -404,6 +406,12 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::ToggleCollateralSetting { denom } => {
+            ensure_ne!(
+                true,
+                is_paused(deps.as_ref())?,
+                ContractError::ProtocolIsPaused {}
+            );
+
             let use_user_deposit_as_collateral =
                 user_deposit_as_collateral(deps.as_ref(), info.sender.to_string(), denom.clone())
                     .unwrap();
@@ -662,10 +670,10 @@ pub fn execute(
         }
         ExecuteMsg::Repay {} => execute_repay_native(deps, env, info),
         ExecuteMsg::UpdatePythContract { pyth_contract_addr } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             PYTH_CONTRACT.save(
@@ -676,10 +684,10 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::AddPriceFeedIds { price_ids } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             assert!(!price_ids.is_empty(), "Couldn't pass empty parameters");
@@ -692,10 +700,10 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::UpdatePriceUpdaterAddr { price_updater_addr } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             PRICE_UPDATER_ADDRESS.save(deps.storage, &price_updater_addr)?;
@@ -703,15 +711,22 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::UpdateAdmin { admin } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             ADMIN.save(deps.storage, &admin)?;
 
             Ok(Response::default())
+        }
+        ExecuteMsg::SetPause { value } => {
+            IS_PAUSED.save(deps.storage, &value)?;
+
+            Ok(Response::new()
+                .add_attribute("method", "set-pause")
+                .add_attribute("is_paused", format!("{}", value)))
         }
     }
 }
@@ -823,6 +838,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetUserBalances { address } => {
             to_json_binary(&get_users_balances(deps, env, address)?)
         }
+        QueryMsg::IsPaused {} => to_json_binary(&is_paused(deps)?),
     }
 }
 
@@ -840,6 +856,10 @@ pub mod query {
     use cw20::BalanceResponse as BalanceResponseCw20;
     use cw20::Cw20QueryMsg;
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
+
+    pub fn is_paused(deps: Deps) -> StdResult<bool> {
+        Ok(IS_PAUSED.load(deps.storage)?)
+    }
 
     pub fn get_deposit(
         deps: Deps,
@@ -1800,6 +1820,12 @@ pub fn execute_cw20_deposit(
     amount: Uint128,
     denom: String,
 ) -> Result<Response, ContractError> {
+    ensure_ne!(
+        true,
+        is_paused(deps.as_ref())?,
+        ContractError::ProtocolIsPaused {}
+    );
+
     // only cw20 tokens must be sent, not a coins
     nonpayable(&info)?;
 
@@ -1902,6 +1928,12 @@ pub fn execute_deposit_native(
     env: Env,
     info: MessageInfo,
 ) -> Result<Response, ContractError> {
+    ensure_ne!(
+        true,
+        is_paused(deps.as_ref())?,
+        ContractError::ProtocolIsPaused {}
+    );
+
     ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
     one_coin(&info)?;
 
@@ -1972,6 +2004,12 @@ pub fn execute_borrow(
     amount: Uint128,
     denom: String,
 ) -> Result<Response, ContractError> {
+    ensure_ne!(
+        true,
+        is_paused(deps.as_ref())?,
+        ContractError::ProtocolIsPaused {}
+    );
+
     ensure!(
         SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
         ContractError::TokenNotSupported {}

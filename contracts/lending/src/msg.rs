@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
     // different sources for testing and production
     pub is_testing: bool,
     pub admin: String,
-    // name, denom, symbol, decimals
+    // name, denom, symbol, cw20_address (Optional), decimals
     pub supported_tokens: Vec<(String, String, String, Option<String>, u128)>,
     // denom, loan_to_value_ratio, liquidation_threshold
     pub reserve_configuration: Vec<(String, u128, u128)>,
@@ -95,6 +95,9 @@ pub enum ExecuteMsg {
     },
     RemovePriceFeedId {
         denom: String,
+    },
+    SetPause {
+        value: bool,
     },
 }
 
@@ -202,6 +205,9 @@ pub enum QueryMsg {
 
     #[returns(Vec < (String, Uint128) >)]
     GetUserBalances { address: String },
+
+    #[returns(bool)]
+    IsPaused {},
 }
 
 #[cw_serde]

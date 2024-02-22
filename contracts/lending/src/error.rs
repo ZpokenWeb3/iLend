@@ -39,4 +39,7 @@ pub enum ContractError {
 
     #[error("Not Enough Liquidity To Borrow")]
     NotEnoughLiquidityToBorrow {},
+
+    #[error("Protocol Is Paused")]
+    ProtocolIsPaused {},
 }
