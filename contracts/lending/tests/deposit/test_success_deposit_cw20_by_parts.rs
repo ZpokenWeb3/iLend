@@ -97,14 +97,13 @@ mod tests {
             msg: to_json_binary(&hook).unwrap(),
         };
 
-        app
-            .execute_contract(
-                Addr::unchecked("cw20-user"),
-                cw20_token_addr.clone(),
-                &send_msg,
-                &[],
-            )
-            .unwrap();
+        app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            cw20_token_addr.clone(),
+            &send_msg,
+            &[],
+        )
+        .unwrap();
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
             .wrap()
@@ -152,14 +151,13 @@ mod tests {
             "Should match deposit amount"
         );
 
-        app
-            .execute_contract(
-                Addr::unchecked("cw20-user"),
-                cw20_token_addr.clone(),
-                &send_msg,
-                &[],
-            )
-            .unwrap();
+        app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            cw20_token_addr.clone(),
+            &send_msg,
+            &[],
+        )
+        .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
@@ -177,6 +175,5 @@ mod tests {
             200000000u128,
             "Should match deposit amount"
         );
-
     }
 }

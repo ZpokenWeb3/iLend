@@ -7,6 +7,12 @@ pub enum ContractError {
     #[error("{0}")]
     Std(#[from] StdError),
 
+    #[error("Allowed for Admin Only")]
+    ForAdminOnly {},
+
+    #[error("Allowed for Price Updater Contract Only")]
+    ForPriceUpdaterContractOnly {},
+
     #[error("Custom Error val: {val:?}")]
     CustomError { val: String },
 
@@ -26,5 +32,11 @@ pub enum ContractError {
     InvalidAsset { asset: String },
 
     #[error("Not Enough Balance To Do Redeem")]
-    NotEnoughBalanceToDoRedeem {}
+    NotEnoughBalanceToDoRedeem {},
+
+    #[error("Amount To Be Borrowed Is Not Available")]
+    AmountToBeBorrowedIsNotAvailable {},
+
+    #[error("Not Enough Liquidity To Borrow")]
+    NotEnoughLiquidityToBorrow {},
 }

@@ -54,7 +54,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let supported_tokens_response_after: GetSupportedTokensResponse = app
             .wrap()
@@ -97,14 +97,13 @@ mod tests {
             msg: to_json_binary(&hook).unwrap(),
         };
 
-        (app
-            .execute_contract(
-                Addr::unchecked("cw20-user"),
-                cw20_token_addr.clone(),
-                &send_msg,
-                &[],
-            )
-            .unwrap());
+        (app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            cw20_token_addr.clone(),
+            &send_msg,
+            &[],
+        )
+        .unwrap());
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
             .wrap()
@@ -160,7 +159,8 @@ mod tests {
                 amount: Uint128::from(100000000u128),
             },
             &[],
-        ).unwrap();
+        )
+        .unwrap();
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()

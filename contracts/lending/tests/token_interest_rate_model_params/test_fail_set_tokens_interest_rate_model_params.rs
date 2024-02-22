@@ -6,7 +6,7 @@ mod tests {
     use lending::msg::ExecuteMsg;
 
     #[test]
-    #[should_panic(expected = "This functionality is allowed for admin only")]
+    #[should_panic(expected = "Allowed for Admin Only")]
     fn test_fail_set_tokens_interest_rate_model_params_if_caller_is_not_owner() {
         const PERCENT_DECIMALS: u32 = 5;
 
@@ -34,7 +34,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "There is no such supported token yet")]
+    #[should_panic(expected = "Token not supported")]
     fn test_fail_set_tokens_interest_rate_model_params_if_token_is_not_supported() {
         const PERCENT_DECIMALS: u32 = 5;
 

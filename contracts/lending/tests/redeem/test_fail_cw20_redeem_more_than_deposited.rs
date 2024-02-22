@@ -54,7 +54,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let supported_tokens_response_after: GetSupportedTokensResponse = app
             .wrap()
@@ -97,14 +97,13 @@ mod tests {
             msg: to_json_binary(&hook).unwrap(),
         };
 
-        (app
-            .execute_contract(
-                Addr::unchecked("cw20-user"),
-                cw20_token_addr.clone(),
-                &send_msg,
-                &[],
-            )
-            .unwrap());
+        (app.execute_contract(
+            Addr::unchecked("cw20-user"),
+            cw20_token_addr.clone(),
+            &send_msg,
+            &[],
+        )
+        .unwrap());
 
         let cw20_user_balance_after_deposit: BalanceResponse = app
             .wrap()
@@ -152,15 +151,17 @@ mod tests {
             "Should match deposit amount"
         );
 
-        assert!(app.execute_contract(
-            Addr::unchecked("cw20-user"),
-            lending_addr.clone(),
-            &ExecuteMsg::Redeem {
-                denom: "ilend-denom".to_string(),
-                amount: Uint128::from(10000000000u128),
-            },
-            &[],
-        ).is_err());
+        assert!(app
+            .execute_contract(
+                Addr::unchecked("cw20-user"),
+                lending_addr.clone(),
+                &ExecuteMsg::Redeem {
+                    denom: "ilend-denom".to_string(),
+                    amount: Uint128::from(10000000000u128),
+                },
+                &[],
+            )
+            .is_err());
 
         let user_deposited_balance: GetBalanceResponse = app
             .wrap()
