@@ -45,7 +45,10 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
             .init_balance(
                 storage,
                 &Addr::unchecked("user"),
-                coins(INIT_USER_BALANCE, "eth"),
+                vec![
+                    coin(INIT_USER_BALANCE, "eth"),
+                    coin(INIT_USER_BALANCE, "tia"),
+                ],
             )
             .unwrap();
 
@@ -87,6 +90,13 @@ pub fn success_deposit_of_one_token_setup() -> (BasicApp, Addr) {
                     ),
                     (
                         "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
+                        PriceIdentifier::from_hex(
+                            "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                        )
+                        .unwrap(),
+                    ),
+                    (
+                        "tia".to_string(),
                         PriceIdentifier::from_hex(
                             "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                         )

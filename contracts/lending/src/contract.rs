@@ -185,6 +185,28 @@ pub fn execute(
         ExecuteMsg::Deposit {} => execute_deposit_native(deps, env, info),
         ExecuteMsg::Receive(cw20msg) => execute_cw20_receive(deps, env, info, cw20msg),
         ExecuteMsg::Redeem { denom, amount } => execute_redeem(deps, env, info, amount, denom),
+        ExecuteMsg::RemovePriceFeedId { denom } => {
+            ensure_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                ContractError::ForAdminOnly {}
+            );
+
+            PRICE_FEED_IDS.remove(deps.storage, denom.clone());
+
+            Ok(Response::default())
+        }
+        ExecuteMsg::RemoveSupportedToken { denom } => {
+            ensure_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                ContractError::ForAdminOnly {}
+            );
+
+            SUPPORTED_TOKENS.remove(deps.storage, denom.clone());
+
+            Ok(Response::default())
+        }
         ExecuteMsg::AddMarkets {
             denom,
             name,

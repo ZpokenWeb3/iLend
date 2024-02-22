@@ -90,6 +90,12 @@ pub enum ExecuteMsg {
     UpdateAdmin {
         admin: String,
     },
+    RemoveSupportedToken {
+        denom: String,
+    },
+    RemovePriceFeedId {
+        denom: String,
+    },
 }
 
 #[cw_serde]
