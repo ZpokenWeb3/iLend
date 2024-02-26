@@ -27,6 +27,13 @@ mod tests {
                 )
                 .unwrap(),
             ),
+            (
+                "tia".to_string(),
+                PriceIdentifier::from_hex(
+                    "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                )
+                .unwrap(),
+            ),
         ];
 
         const PRICE_DECIMALS: u32 = 8;
@@ -55,6 +62,13 @@ mod tests {
             ),
             (
                 "peggy0x44C21afAaF20c270EBbF5914Cfc3b5022173FEB7".to_string(),
+                PriceIdentifier::from_hex(
+                    "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
+                )
+                .unwrap(),
+            ),
+            (
+                "tia".to_string(),
                 PriceIdentifier::from_hex(
                     "2d9315a88f3019f8efa88dfe9c0f0843712da0bac814461e27733f6b83eb51b3",
                 )

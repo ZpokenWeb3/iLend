@@ -139,7 +139,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let available_to_borrow_eth: Uint128 = app
             .wrap()
@@ -271,7 +271,7 @@ mod tests {
             &ExecuteMsg::Deposit {},
             &coins(LIQUIDATOR_DEPOSIT_AMOUNT_ETH, "eth"),
         )
-            .unwrap();
+        .unwrap();
 
         let liquidator_deposit_amount_eth: GetBalanceResponse = app
             .wrap()
@@ -309,7 +309,7 @@ mod tests {
             },
             &[],
         )
-            .unwrap();
+        .unwrap();
 
         let user_collateral_usd: Uint128 = app
             .wrap()
@@ -359,8 +359,6 @@ mod tests {
             )
             .unwrap();
 
-        // 9999.999999999999999999 ETH - 191.850604584630250327 ETH + 203.331286529000814400 ETH ~= 10011,480681944 ETH
-        // TODO: need to correct the calculation inaccuracy
         assert_eq!(
             liquidator_deposit_amount_eth.balance.u128(),
             10008510511955314159271

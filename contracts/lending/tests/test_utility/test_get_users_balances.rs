@@ -20,6 +20,6 @@ mod tests {
             )
             .unwrap();
 
-        dbg!(user_data_by_token);
+        println!("{:?}", user_data_by_token);
     }
 }

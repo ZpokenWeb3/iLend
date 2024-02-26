@@ -22,6 +22,8 @@ mod test_get_user_liquidation_threshold;
 mod test_get_user_utilization_rate;
 mod test_get_users_balances;
 mod test_get_utilization_rate_by_token;
+mod test_remove_price_feed_id;
+mod test_remove_supported_token;
 mod test_set_get_price;
 mod test_set_get_price_feed_ids;
 mod test_set_get_pyth_contract;

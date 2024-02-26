@@ -8,7 +8,7 @@ use crate::contract::query::{
     get_user_borrow_amount_with_interest, get_user_borrowed_usd, get_user_borrowing_info,
     get_user_collateral_usd, get_user_deposited_usd, get_user_liquidation_threshold,
     get_user_max_allowed_borrow_amount_usd, get_user_utilization_rate, get_users_balances,
-    get_utilization_rate_by_token, user_deposit_as_collateral,
+    get_utilization_rate_by_token, is_paused, user_deposit_as_collateral,
 };
 
 use crate::msg::{
@@ -16,23 +16,32 @@ use crate::msg::{
     TotalBorrowData, UserBorrowingInfo,
 };
 
+use cw_asset::AssetInfo;
+
 use crate::state::{
-    IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_ADDRESS, PYTH_CONTRACT,
-    TOTAL_BORROW_DATA, USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
+    IS_PAUSED, IS_TESTING, LIQUIDITY_INDEX_DATA, PRICES, PRICE_FEED_IDS, PRICE_UPDATER_ADDRESS,
+    PYTH_CONTRACT, TOTAL_BORROW_DATA, USER_BORROWING_INFO, USER_DEPOSIT_AS_COLLATERAL,
 };
 
 use rust_decimal::prelude::{Decimal, MathematicalOps};
 
-use cosmwasm_std::to_json_binary;
+use cosmwasm_std::{
+    attr, coin, ensure, ensure_eq, ensure_ne, from_json, to_json_binary, wasm_execute, Addr,
+    CosmosMsg, SubMsg,
+};
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use std::ops::{Add, Div, Mul};
-use pyth_sdk_cw::{PriceFeedResponse, query_price_feed};
+
+use pyth_sdk_cw::{query_price_feed, PriceFeedResponse};
+
+use cw_utils::{nonpayable, one_coin};
 
 use {
     crate::contract::query::get_deposit,
     crate::{
         error::ContractError,
         msg::InstantiateMsg,
-        msg::{ExecuteMsg, QueryMsg},
+        msg::{Cw20HookMsg, ExecuteMsg, QueryMsg},
         state::{
             ADMIN, RESERVE_CONFIGURATION, SUPPORTED_TOKENS, TOKENS_INTEREST_RATE_MODEL_PARAMS,
             USER_MM_TOKEN_BALANCE,
@@ -90,6 +99,7 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     IS_TESTING.save(deps.storage, &msg.is_testing)?;
+    IS_PAUSED.save(deps.storage, &false)?;
     PRICE_UPDATER_ADDRESS.save(deps.storage, &msg.price_updater_addr)?;
     ADMIN.save(deps.storage, &msg.admin)?;
     PYTH_CONTRACT.save(
@@ -110,7 +120,8 @@ pub fn instantiate(
                 denom: token.0.clone(),
                 name: token.1,
                 symbol: token.2,
-                decimals: token.3,
+                cw20_address: token.3,
+                decimals: token.4,
             },
         )?;
 
@@ -173,136 +184,37 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Deposit {} => {
-            // underlying balances that are allowing user to send funds along with calling Deposit
-            // is operated through cw20 contracts
-
-            if info.funds.is_empty() {
-                return Err(ContractError::CustomError {
-                    val: "No funds deposited!".to_string(),
-                });
-            }
-
-            assert_eq!(
-                info.funds.len(),
-                1,
-                "You have to deposit one asset per time"
+        ExecuteMsg::Deposit {} => execute_deposit_native(deps, env, info),
+        ExecuteMsg::Receive(cw20msg) => execute_cw20_receive(deps, env, info, cw20msg),
+        ExecuteMsg::Redeem { denom, amount } => execute_redeem(deps, env, info, amount, denom),
+        ExecuteMsg::RemovePriceFeedId { denom } => {
+            ensure_eq!(
+                info.sender.to_string(),
+                ADMIN.load(deps.storage).unwrap(),
+                ContractError::ForAdminOnly {}
             );
 
-            let deposited_token = info.funds.first().unwrap();
-            let deposited_token_amount = deposited_token.amount.u128();
-
-            assert!(deposited_token_amount > 0);
-
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            execute_update_liquidity_index_data(
-                &mut deps,
-                env.clone(),
-                deposited_token.denom.clone(),
-            )?;
-
-            let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let mm_token_price =
-                get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
-                    .unwrap()
-                    .u128();
-
-            let deposited_mm_token_amount =
-                Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
-                    .div(Decimal::from_i128_with_scale(
-                        mm_token_price as i128,
-                        token_decimals,
-                    ))
-                    .to_u128_with_decimals(token_decimals)
-                    .unwrap();
-
-            let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
-                .load(
-                    deps.storage,
-                    (info.sender.to_string(), deposited_token.denom.clone()),
-                )
-                .unwrap_or_else(|_| Uint128::zero());
-
-            let new_user_mm_token_balance =
-                user_current_mm_token_balance.u128() + deposited_mm_token_amount;
-
-            USER_MM_TOKEN_BALANCE.save(
-                deps.storage,
-                (info.sender.to_string(), deposited_token.denom.clone()),
-                &Uint128::from(new_user_mm_token_balance),
-            )?;
+            PRICE_FEED_IDS.remove(deps.storage, denom.clone());
 
             Ok(Response::default())
         }
-        ExecuteMsg::Redeem { denom, amount } => {
-            let amount = amount.u128();
-
-            assert!(amount > 0, "Amount should be a positive number");
-
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
-
-            let current_balance = get_deposit(
-                deps.as_ref(),
-                env.clone(),
+        ExecuteMsg::RemoveSupportedToken { denom } => {
+            ensure_eq!(
                 info.sender.to_string(),
-                denom.clone(),
-            )
-                .unwrap()
-                .balance
-                .u128();
-
-            assert!(
-                current_balance >= amount,
-                "The account doesn't have enough digital tokens to do withdraw"
+                ADMIN.load(deps.storage).unwrap(),
+                ContractError::ForAdminOnly {}
             );
 
-            let remaining = current_balance - amount;
+            SUPPORTED_TOKENS.remove(deps.storage, denom.clone());
 
-            let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
-                .unwrap()
-                .u128();
-
-            let new_user_mm_token_balance =
-                Decimal::from_i128_with_scale(remaining as i128, token_decimals)
-                    .div(Decimal::from_i128_with_scale(
-                        mm_token_price as i128,
-                        token_decimals,
-                    ))
-                    .to_u128_with_decimals(token_decimals)
-                    .unwrap();
-
-            USER_MM_TOKEN_BALANCE.save(
-                deps.storage,
-                (info.sender.to_string(), denom.clone()),
-                &Uint128::from(new_user_mm_token_balance),
-            )?;
-
-            Ok(Response::new().add_message(BankMsg::Send {
-                to_address: info.sender.to_string(),
-                amount: coins(amount, denom.clone()),
-            }))
+            Ok(Response::default())
         }
         ExecuteMsg::AddMarkets {
             denom,
             name,
             symbol,
             decimals,
+            cw20_address,
             loan_to_value_ratio,
             liquidation_threshold,
             min_interest_rate,
@@ -310,15 +222,10 @@ pub fn execute(
             rate_growth_factor,
             optimal_utilisation_ratio,
         } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
-            );
-
-            assert!(
-                !SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There already exists such a supported token"
+                ContractError::ForAdminOnly {}
             );
 
             SUPPORTED_TOKENS.save(
@@ -329,6 +236,7 @@ pub fn execute(
                     name,
                     symbol,
                     decimals,
+                    cw20_address,
                 },
             )?;
 
@@ -378,176 +286,33 @@ pub fn execute(
 
             Ok(Response::default())
         }
-        ExecuteMsg::Borrow { denom, amount } => {
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            let available_to_borrow_amount = get_available_to_borrow(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string(),
-                denom.clone(),
-            )
-                .unwrap()
-                .u128();
-
-            assert!(
-                available_to_borrow_amount >= amount.u128(),
-                "The amount to be borrowed is not available"
-            );
-
-            assert!(
-                get_available_liquidity_by_token(deps.as_ref(), env.clone(), denom.clone())
-                    .unwrap()
-                    .u128()
-                    >= amount.u128()
-            );
-
-            execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
-
-            let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string(),
-                denom.clone(),
-            )
-                .unwrap()
-                .u128();
-
-            let user_borrowing_info = get_user_borrowing_info(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string().clone(),
-                denom.clone(),
-            )
-                .unwrap();
-
-            let new_user_borrow_amount: u128 = user_borrow_amount_with_interest + amount.u128();
-
-            let current_interest_rate =
-                get_interest_rate(deps.as_ref(), env.clone(), denom.clone())
-                    .unwrap()
-                    .u128();
-
-            let borrowed_token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let average_interest_rate = (Decimal::from_i128_with_scale(
-                user_borrow_amount_with_interest as i128,
-                borrowed_token_decimals,
-            )
-                .mul(Decimal::from_i128_with_scale(
-                    user_borrowing_info.average_interest_rate.u128() as i128,
-                    INTEREST_RATE_DECIMALS,
-                ))
-                .add(
-                    Decimal::from_i128_with_scale(amount.u128() as i128, borrowed_token_decimals).mul(
-                        Decimal::from_i128_with_scale(
-                            current_interest_rate as i128,
-                            INTEREST_RATE_DECIMALS,
-                        ),
-                    ),
-                ))
-                .div(Decimal::from_i128_with_scale(
-                    new_user_borrow_amount as i128,
-                    borrowed_token_decimals,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap();
-
-            // updating user borrowing info
-            let new_user_borrowing_info = UserBorrowingInfo {
-                borrowed_amount: Uint128::from(new_user_borrow_amount.clone()),
-                average_interest_rate: Uint128::from(average_interest_rate),
-                timestamp: env.block.time,
-            };
-
-            let total_borrow_data =
-                get_total_borrow_data(deps.as_ref(), denom.clone()).unwrap_or_default();
-
-            let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
-                - Decimal::from_i128_with_scale(
-                user_borrowing_info.borrowed_amount.u128() as i128,
-                borrowed_token_decimals,
-            )
-                .mul(Decimal::from_i128_with_scale(
-                    (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-                    INTEREST_RATE_DECIMALS,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap()
-                + Decimal::from_i128_with_scale(
-                new_user_borrow_amount as i128,
-                borrowed_token_decimals,
-            )
-                .mul(Decimal::from_i128_with_scale(
-                    (average_interest_rate / HUNDRED) as i128,
-                    INTEREST_RATE_DECIMALS,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap();
-
-            let total_borrowed_amount = total_borrow_data.total_borrowed_amount
-                - user_borrowing_info.borrowed_amount.u128()
-                + new_user_borrow_amount;
-
-            let total_average_interest_rate = HUNDRED
-                * Decimal::from_i128_with_scale(
-                expected_annual_interest_income as i128,
-                INTEREST_RATE_DECIMALS,
-            )
-                .div(Decimal::from_i128_with_scale(
-                    total_borrowed_amount as i128,
-                    borrowed_token_decimals,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap();
-
-            let new_total_borrow_data = TotalBorrowData {
-                denom: denom.clone(),
-                total_borrowed_amount: total_borrowed_amount,
-                expected_annual_interest_income: expected_annual_interest_income,
-                average_interest_rate: total_average_interest_rate,
-                timestamp: env.block.time,
-            };
-
-            USER_BORROWING_INFO.save(
-                deps.storage,
-                (info.sender.to_string(), denom.clone()),
-                &new_user_borrowing_info,
-            )?;
-
-            TOTAL_BORROW_DATA.save(deps.storage, denom.clone(), &new_total_borrow_data)?;
-
-            Ok(Response::new().add_message(BankMsg::Send {
-                to_address: info.sender.to_string(),
-                amount: coins(amount.u128(), denom.clone()),
-            }))
-        }
+        ExecuteMsg::Borrow { denom, amount } => execute_borrow(deps, env, info, amount, denom),
         ExecuteMsg::UpdatePrice { denom, price } => {
             // if Testing mode, directly set prices for asset
             // if not Testing mode and price argument passed as 0, PRICE_UPDATER_ADDRESS fetching price from Pyth contract, if not available, leaving as is
             if IS_TESTING.load(deps.storage).unwrap() {
-                assert_eq!(
+                ensure_eq!(
                     info.sender.to_string(),
                     ADMIN.load(deps.storage).unwrap(),
-                    "This functionality is allowed for admin only"
+                    ContractError::ForAdminOnly {}
                 );
 
-                assert!(
-                    SUPPORTED_TOKENS.has(deps.storage, denom.as_ref().unwrap().clone()),
-                    "There is no such supported token yet"
+                ensure!(
+                    SUPPORTED_TOKENS.has(deps.storage, denom.clone().unwrap()),
+                    ContractError::TokenNotSupported {}
                 );
 
                 PRICES.save(deps.storage, denom.unwrap().clone(), &price.unwrap())?;
             } else {
-                assert_eq!(
+                ensure_eq!(
                     info.sender.to_string(),
                     PRICE_UPDATER_ADDRESS.load(deps.storage).unwrap(),
-                    "This functionality is allowed for PRICE_UPDATER_ADDRESS only"
+                    ContractError::ForPriceUpdaterContractOnly {}
+                );
+
+                ensure!(
+                    SUPPORTED_TOKENS.has(deps.storage, denom.clone().unwrap()),
+                    ContractError::TokenNotSupported {}
                 );
 
                 if price.unwrap() == 0 {
@@ -557,7 +322,8 @@ pub fn execute(
                     {
                         let pyth_contract = PYTH_CONTRACT.load(deps.storage)?;
 
-                        let price_identifier = PRICE_FEED_IDS.load(deps.storage, token.denom.clone())?;
+                        let price_identifier =
+                            PRICE_FEED_IDS.load(deps.storage, token.denom.clone())?;
 
                         let price_feed_response: PriceFeedResponse =
                             query_price_feed(&deps.querier, pyth_contract, price_identifier)?;
@@ -567,7 +333,11 @@ pub fn execute(
                             price_feed.get_price_no_older_than(env.block.time.seconds() as i64, 60);
 
                         if pyth_current_price.is_some() {
-                            PRICES.save(deps.storage, token.denom, &(pyth_current_price.unwrap().price as u128))?;
+                            PRICES.save(
+                                deps.storage,
+                                token.denom,
+                                &(pyth_current_price.unwrap().price as u128),
+                            )?;
                         }
                     }
                 }
@@ -580,15 +350,15 @@ pub fn execute(
             loan_to_value_ratio,
             liquidation_threshold,
         } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
-            assert!(
+            ensure!(
                 SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There is no such supported token yet"
+                ContractError::TokenNotSupported {}
             );
 
             RESERVE_CONFIGURATION.save(
@@ -610,15 +380,15 @@ pub fn execute(
             rate_growth_factor,
             optimal_utilisation_ratio,
         } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
-            assert!(
+            ensure!(
                 SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
-                "There is no such supported token yet"
+                ContractError::TokenNotSupported {}
             );
 
             TOKENS_INTEREST_RATE_MODEL_PARAMS.save(
@@ -636,6 +406,12 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::ToggleCollateralSetting { denom } => {
+            ensure_ne!(
+                true,
+                is_paused(deps.as_ref())?,
+                ContractError::ProtocolIsPaused {}
+            );
+
             let use_user_deposit_as_collateral =
                 user_deposit_as_collateral(deps.as_ref(), info.sender.to_string(), denom.clone())
                     .unwrap();
@@ -647,9 +423,9 @@ pub fn execute(
                     info.sender.to_string(),
                     denom.clone(),
                 )
-                    .unwrap()
-                    .balance
-                    .u128();
+                .unwrap()
+                .balance
+                .u128();
 
                 if user_token_balance != 0 {
                     let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
@@ -671,8 +447,8 @@ pub fn execute(
                         env.clone(),
                         info.sender.to_string(),
                     )
-                        .unwrap()
-                        .u128();
+                    .unwrap()
+                    .u128();
 
                     let sum_borrow_balance_usd =
                         get_user_borrowed_usd(deps.as_ref(), env.clone(), info.sender.to_string())
@@ -684,8 +460,8 @@ pub fn execute(
                         env.clone(),
                         info.sender.to_string(),
                     )
-                        .unwrap()
-                        .u128();
+                    .unwrap()
+                    .u128();
 
                     assert!(
                         sum_borrow_balance_usd * HUNDRED_PERCENT / user_liquidation_threshold < sum_collateral_balance_usd - user_token_balance_usd,
@@ -713,12 +489,14 @@ pub fn execute(
                     info.sender.to_string(),
                     token.denom.clone(),
                 )
-                    .unwrap()
-                    .u128();
+                .unwrap()
+                .u128();
 
-                assert_eq!(liquidator_borrow_amount_with_interest, 0, "Liquidator can't have any borrows");
+                assert_eq!(
+                    liquidator_borrow_amount_with_interest, 0,
+                    "Liquidator can't have any borrows"
+                );
             }
-
 
             let user_utilization_rate =
                 get_user_utilization_rate(deps.as_ref(), env.clone(), user.clone()).unwrap();
@@ -730,7 +508,6 @@ pub fn execute(
                 user_utilization_rate >= user_liquidation_threshold,
                 "User borrowing has not reached the threshold of liquidation"
             );
-
 
             for token in get_supported_tokens(deps.as_ref())
                 .unwrap()
@@ -750,9 +527,9 @@ pub fn execute(
                         user.clone(),
                         token.denom.clone(),
                     )
-                        .unwrap()
-                        .balance
-                        .u128();
+                    .unwrap()
+                    .balance
+                    .u128();
 
                     USER_MM_TOKEN_BALANCE.save(
                         deps.storage,
@@ -767,8 +544,8 @@ pub fn execute(
                     user.clone(),
                     token.denom.clone(),
                 )
-                    .unwrap()
-                    .u128();
+                .unwrap()
+                .u128();
 
                 if user_borrow_amount_with_interest > 0 || user_token_balance > 0 {
                     let liquidator_balance = get_deposit(
@@ -777,9 +554,9 @@ pub fn execute(
                         info.sender.to_string(),
                         token.denom.clone(),
                     )
-                        .unwrap()
-                        .balance
-                        .u128();
+                    .unwrap()
+                    .balance
+                    .u128();
 
                     let token_decimals = get_token_decimal(deps.as_ref(), token.denom.clone())
                         .unwrap()
@@ -797,7 +574,7 @@ pub fn execute(
                             user.clone(),
                             token.denom.clone(),
                         )
-                            .unwrap();
+                        .unwrap();
 
                         let new_user_borrowing_info = UserBorrowingInfo {
                             borrowed_amount: Uint128::from(0u128),
@@ -812,9 +589,9 @@ pub fn execute(
                         let expected_annual_interest_income = total_borrow_data
                             .expected_annual_interest_income
                             - Decimal::from_i128_with_scale(
-                            (user_borrowing_info.borrowed_amount.u128()) as i128,
-                            token_decimals,
-                        )
+                                (user_borrowing_info.borrowed_amount.u128()) as i128,
+                                token_decimals,
+                            )
                             .mul(Decimal::from_i128_with_scale(
                                 (user_borrowing_info.average_interest_rate.u128() / HUNDRED)
                                     as i128,
@@ -830,9 +607,9 @@ pub fn execute(
                         if total_borrowed_amount != 0u128 {
                             total_average_interest_rate = HUNDRED
                                 * Decimal::from_i128_with_scale(
-                                expected_annual_interest_income as i128,
-                                INTEREST_RATE_DECIMALS,
-                            )
+                                    expected_annual_interest_income as i128,
+                                    INTEREST_RATE_DECIMALS,
+                                )
                                 .div(Decimal::from_i128_with_scale(
                                     total_borrowed_amount as i128,
                                     token_decimals,
@@ -874,12 +651,12 @@ pub fn execute(
                         new_liquidator_token_balance as i128,
                         token_decimals,
                     )
-                        .div(Decimal::from_i128_with_scale(
-                            mm_token_price as i128,
-                            token_decimals,
-                        ))
-                        .to_u128_with_decimals(token_decimals)
-                        .unwrap();
+                    .div(Decimal::from_i128_with_scale(
+                        mm_token_price as i128,
+                        token_decimals,
+                    ))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
 
                     USER_MM_TOKEN_BALANCE.save(
                         deps.storage,
@@ -891,137 +668,12 @@ pub fn execute(
 
             Ok(Response::new())
         }
-        ExecuteMsg::Repay {} => {
-            if info.funds.is_empty() {
-                return Err(ContractError::CustomError {
-                    val: "Funds not transferred!".to_string(),
-                });
-            }
-
-            assert_eq!(info.funds.len(), 1, "You have to repay one asset per time");
-
-            let repay_token = info.funds.first().unwrap();
-            let mut repay_amount = repay_token.amount.u128();
-
-            assert!(
-                SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
-                "There is no such supported token yet"
-            );
-
-            let user_borrowing_info = get_user_borrowing_info(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string().clone(),
-                repay_token.denom.clone(),
-            )
-                .unwrap();
-
-            execute_update_liquidity_index_data(&mut deps, env.clone(), repay_token.denom.clone())?;
-
-            let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
-                deps.as_ref(),
-                env.clone(),
-                info.sender.to_string(),
-                repay_token.denom.clone(),
-            )
-                .unwrap()
-                .u128();
-
-            let mut remaining_amount = 0u128;
-            let mut average_interest_rate = user_borrowing_info.average_interest_rate;
-            if repay_amount >= user_borrow_amount_with_interest {
-                remaining_amount = repay_amount - user_borrow_amount_with_interest;
-                repay_amount = user_borrow_amount_with_interest;
-                average_interest_rate = Uint128::zero();
-            }
-
-            let new_user_borrowing_info = UserBorrowingInfo {
-                borrowed_amount: Uint128::from(user_borrow_amount_with_interest - repay_amount),
-                average_interest_rate: average_interest_rate,
-                timestamp: env.block.time,
-            };
-
-            let total_borrow_data =
-                get_total_borrow_data(deps.as_ref(), repay_token.denom.clone()).unwrap_or_default();
-
-            let repay_token_decimals = get_token_decimal(deps.as_ref(), repay_token.denom.clone())
-                .unwrap()
-                .u128() as u32;
-
-            let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
-                + Decimal::from_i128_with_scale(
-                (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128())
-                    as i128,
-                repay_token_decimals,
-            )
-                .mul(Decimal::from_i128_with_scale(
-                    (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-                    INTEREST_RATE_DECIMALS,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap()
-                - Decimal::from_i128_with_scale((repay_amount) as i128, repay_token_decimals)
-                .mul(Decimal::from_i128_with_scale(
-                    (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
-                    INTEREST_RATE_DECIMALS,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap();
-
-            let total_borrowed_amount = total_borrow_data.total_borrowed_amount
-                + user_borrow_amount_with_interest
-                - user_borrowing_info.borrowed_amount.u128()
-                - repay_amount;
-
-            let mut total_average_interest_rate = 0u128;
-            if total_borrowed_amount != 0u128 {
-                total_average_interest_rate = HUNDRED
-                    * Decimal::from_i128_with_scale(
-                    expected_annual_interest_income as i128,
-                    INTEREST_RATE_DECIMALS,
-                )
-                    .div(Decimal::from_i128_with_scale(
-                        total_borrowed_amount as i128,
-                        repay_token_decimals,
-                    ))
-                    .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                    .unwrap();
-            }
-
-            let new_total_borrow_data = TotalBorrowData {
-                denom: repay_token.denom.clone(),
-                total_borrowed_amount: total_borrowed_amount,
-                expected_annual_interest_income: expected_annual_interest_income,
-                average_interest_rate: total_average_interest_rate,
-                timestamp: env.block.time,
-            };
-
-            USER_BORROWING_INFO.save(
-                deps.storage,
-                (info.sender.to_string(), repay_token.denom.clone()),
-                &new_user_borrowing_info,
-            )?;
-
-            TOTAL_BORROW_DATA.save(
-                deps.storage,
-                repay_token.denom.clone(),
-                &new_total_borrow_data,
-            )?;
-
-            if remaining_amount > 0 {
-                Ok(Response::new().add_message(BankMsg::Send {
-                    to_address: info.sender.to_string(),
-                    amount: coins(remaining_amount, repay_token.denom.clone()),
-                }))
-            } else {
-                Ok(Response::default())
-            }
-        }
+        ExecuteMsg::Repay {} => execute_repay_native(deps, env, info),
         ExecuteMsg::UpdatePythContract { pyth_contract_addr } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             PYTH_CONTRACT.save(
@@ -1032,10 +684,10 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::AddPriceFeedIds { price_ids } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             assert!(!price_ids.is_empty(), "Couldn't pass empty parameters");
@@ -1048,10 +700,10 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::UpdatePriceUpdaterAddr { price_updater_addr } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             PRICE_UPDATER_ADDRESS.save(deps.storage, &price_updater_addr)?;
@@ -1059,15 +711,22 @@ pub fn execute(
             Ok(Response::default())
         }
         ExecuteMsg::UpdateAdmin { admin } => {
-            assert_eq!(
+            ensure_eq!(
                 info.sender.to_string(),
                 ADMIN.load(deps.storage).unwrap(),
-                "This functionality is allowed for admin only"
+                ContractError::ForAdminOnly {}
             );
 
             ADMIN.save(deps.storage, &admin)?;
 
             Ok(Response::default())
+        }
+        ExecuteMsg::SetPause { value } => {
+            IS_PAUSED.save(deps.storage, &value)?;
+
+            Ok(Response::new()
+                .add_attribute("method", "set-pause")
+                .add_attribute("is_paused", format!("{}", value)))
         }
     }
 }
@@ -1179,6 +838,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetUserBalances { address } => {
             to_json_binary(&get_users_balances(deps, env, address)?)
         }
+        QueryMsg::IsPaused {} => to_json_binary(&is_paused(deps)?),
     }
 }
 
@@ -1192,8 +852,14 @@ pub mod query {
         UserDataByToken,
     };
     use cosmwasm_std::Order::Ascending;
-    use cosmwasm_std::{Coin, Order};
+    use cosmwasm_std::{BalanceResponse, Coin, Order};
+    use cw20::BalanceResponse as BalanceResponseCw20;
+    use cw20::Cw20QueryMsg;
     use pyth_sdk_cw::{query_price_feed, PriceFeedResponse, PriceIdentifier};
+
+    pub fn is_paused(deps: Deps) -> StdResult<bool> {
+        Ok(IS_PAUSED.load(deps.storage)?)
+    }
 
     pub fn get_deposit(
         deps: Deps,
@@ -1300,8 +966,8 @@ pub mod query {
             (env.block.time.seconds() - current_borrowing_info.timestamp.seconds()) as u128,
             token_decimals,
         )
-            .unwrap()
-            .u128();
+        .unwrap()
+        .u128();
 
         Ok(Uint128::from(borrow_amount_with_interest))
     }
@@ -1309,7 +975,7 @@ pub mod query {
     pub fn get_liquidity_rate(deps: Deps, env: Env, denom: String) -> StdResult<Uint128> {
         let expected_annual_interest_income = TOTAL_BORROW_DATA
             .load(deps.storage, denom.clone())
-            .unwrap()
+            .unwrap_or_default()
             .expected_annual_interest_income;
 
         let reserves_by_token = get_total_reserves_by_token(deps, env.clone(), denom.clone())
@@ -1325,13 +991,13 @@ pub mod query {
                 expected_annual_interest_income as i128,
                 INTEREST_RATE_DECIMALS,
             )
-                .mul(Decimal::from_i128_with_scale(HUNDRED as i128, 0u32))
-                .div(Decimal::from_i128_with_scale(
-                    reserves_by_token as i128,
-                    token_decimals,
-                ))
-                .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
-                .unwrap();
+            .mul(Decimal::from_i128_with_scale(HUNDRED as i128, 0u32))
+            .div(Decimal::from_i128_with_scale(
+                reserves_by_token as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
 
             Ok(Uint128::from(liquidity_rate))
         }
@@ -1363,9 +1029,9 @@ pub mod query {
             .checked_sub(liquidity_index_last_update.seconds())
             .unwrap_or_default()) as u128
             * Decimal::from_i128_with_scale(
-            (liquidity_rate / HUNDRED + INTEREST_RATE_MULTIPLIER) as i128,
-            INTEREST_RATE_DECIMALS,
-        )
+                (liquidity_rate / HUNDRED + INTEREST_RATE_MULTIPLIER) as i128,
+                INTEREST_RATE_DECIMALS,
+            )
             .ln()
             .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
             .unwrap()
@@ -1397,9 +1063,9 @@ pub mod query {
             current_liquidity_index_ln as i128,
             INTEREST_RATE_DECIMALS,
         )
-            .exp()
-            .to_u128_with_decimals(token_decimals)
-            .unwrap_or_default();
+        .exp()
+        .to_u128_with_decimals(token_decimals)
+        .unwrap_or_default();
 
         Ok(Uint128::from(mm_token_price))
     }
@@ -1507,13 +1173,13 @@ pub mod query {
             Ok(Uint128::from(
                 min_interest_rate
                     + utilization_rate * (safe_borrow_max_rate - min_interest_rate)
-                    / optimal_utilisation_ratio,
+                        / optimal_utilisation_ratio,
             ))
         } else {
             Ok(Uint128::from(
                 safe_borrow_max_rate
                     + rate_growth_factor * (utilization_rate - optimal_utilisation_ratio)
-                    / (HUNDRED_PERCENT - optimal_utilisation_ratio),
+                        / (HUNDRED_PERCENT - optimal_utilisation_ratio),
             ))
         }
     }
@@ -1626,8 +1292,8 @@ pub mod query {
                 user.clone(),
                 token.denom.clone(),
             )
-                .unwrap()
-                .u128();
+            .unwrap()
+            .u128();
 
             let token_decimals =
                 get_token_decimal(deps, token.denom.clone()).unwrap().u128() as u32;
@@ -1640,9 +1306,9 @@ pub mod query {
                 user_borrow_amount_with_interest as i128,
                 token_decimals,
             )
-                .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                .to_u128_with_decimals(USD_DECIMALS)
-                .unwrap()
+            .mul(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+            .to_u128_with_decimals(USD_DECIMALS)
+            .unwrap()
         }
 
         Ok(Uint128::from(user_borrowed_usd))
@@ -1653,15 +1319,36 @@ pub mod query {
         env: Env,
         denom: String,
     ) -> StdResult<Uint128> {
-        let contract_address = env.contract.address;
-        let coins: Vec<Coin> = deps.querier.query_all_balances(contract_address)?;
+        let cw20_address = SUPPORTED_TOKENS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .cw20_address;
 
-        let liquidity = coins
-            .into_iter()
-            .find(|coin| coin.denom == denom)
-            .map_or(Uint128::zero(), |coin| coin.amount);
+        if cw20_address.is_some() {
+            // for CW20 tokens query balance from token contract
+            let liquidity: BalanceResponseCw20 = deps
+                .querier
+                .query_wasm_smart(
+                    cw20_address.unwrap(),
+                    &Cw20QueryMsg::Balance {
+                        address: env.contract.address.to_string(),
+                    },
+                )
+                .unwrap();
 
-        Ok(liquidity)
+            Ok(liquidity.balance)
+        } else {
+            // for Native tokens query balance from current contract
+            let contract_address = env.contract.address;
+            let coins: Vec<Coin> = deps.querier.query_all_balances(contract_address)?;
+
+            let liquidity = coins
+                .into_iter()
+                .find(|coin| coin.denom == denom)
+                .map_or(Uint128::zero(), |coin| coin.amount);
+
+            Ok(liquidity)
+        }
     }
 
     pub fn get_user_liquidation_threshold(
@@ -1787,9 +1474,9 @@ pub mod query {
                 (max_allowed_borrow_amount_usd - sum_user_borrow_balance_usd) as i128,
                 USD_DECIMALS,
             )
-                .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                .to_u128_with_decimals(token_decimals)
-                .unwrap();
+            .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
 
             let token_liquidity =
                 get_available_liquidity_by_token(deps, env.clone(), denom.clone())
@@ -1853,9 +1540,9 @@ pub mod query {
                         (sum_collateral_balance_usd - required_collateral_balance_usd) as i128,
                         USD_DECIMALS,
                     )
-                        .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
-                        .to_u128_with_decimals(token_decimals)
-                        .unwrap();
+                    .div(Decimal::from_i128_with_scale(price as i128, USD_DECIMALS))
+                    .to_u128_with_decimals(token_decimals)
+                    .unwrap();
 
                     if available_to_redeem > user_token_balance {
                         available_to_redeem = user_token_balance;
@@ -1880,7 +1567,7 @@ pub mod query {
 
         let mut sum_mm_token_balance = 0u128;
         for users_mm_token_balances in users_mm_token_balances_iter.unwrap() {
-            if users_mm_token_balances.0.1 == denom {
+            if users_mm_token_balances.0 .1 == denom {
                 sum_mm_token_balance += users_mm_token_balances.1.u128();
             }
         }
@@ -1914,8 +1601,8 @@ pub mod query {
             (env.block.time.seconds() - total_borrow_data.timestamp.seconds()) as u128,
             token_decimals,
         )
-            .unwrap()
-            .u128();
+        .unwrap()
+        .u128();
 
         Ok(Uint128::from(total_borrowed_amount_with_interest))
     }
@@ -2006,7 +1693,7 @@ pub mod query {
                 address.clone(),
                 token.denom.clone(),
             )
-                .unwrap();
+            .unwrap();
             let user_data_by_token = UserDataByToken {
                 deposited: user_deposit,
                 borrowed: user_borrow_amount_with_interest,
@@ -2016,5 +1703,752 @@ pub mod query {
         }
 
         Ok(result)
+    }
+}
+
+pub fn execute_cw20_receive(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    msg: Cw20ReceiveMsg,
+) -> Result<Response, ContractError> {
+    let sender = deps.api.addr_validate(&msg.sender)?;
+    let amount = msg.amount;
+
+    match from_json::<Cw20HookMsg>(&msg.msg)? {
+        Cw20HookMsg::Deposit { denom } => {
+            execute_cw20_deposit(deps, env, info, sender, amount, denom)
+        }
+        Cw20HookMsg::Repay { denom } => execute_cw20_repay(deps, env, info, sender, amount, denom),
+    }
+}
+
+pub fn execute_redeem(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+    denom: String,
+) -> Result<Response, ContractError> {
+    let amount = amount.u128();
+    let mut resp = Response::default();
+
+    ensure!(
+        amount > 0,
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
+
+    let current_balance = get_deposit(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string(),
+        denom.clone(),
+    )
+    .unwrap()
+    .balance
+    .u128();
+
+    ensure!(
+        current_balance >= amount.clone(),
+        ContractError::NotEnoughBalanceToDoRedeem {}
+    );
+
+    let remaining = current_balance - amount.clone();
+
+    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
+        .unwrap()
+        .u128();
+
+    let new_user_mm_token_balance =
+        Decimal::from_i128_with_scale(remaining as i128, token_decimals.clone())
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals.clone(),
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (info.sender.to_string(), denom.clone()),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let cw20_address = SUPPORTED_TOKENS
+        .load(deps.storage, denom.clone())
+        .unwrap()
+        .cw20_address;
+
+    let asset = if cw20_address.is_some() {
+        AssetInfo::Cw20(Addr::unchecked(cw20_address.unwrap()))
+    } else {
+        AssetInfo::Native(denom.clone())
+    };
+
+    resp = resp.add_message(generate_transfer_message(
+        asset.clone(),
+        Uint128::from(amount),
+        info.sender.to_string(),
+    )?);
+
+    Ok(resp.add_attributes(vec![
+        attr("action", "redeem"),
+        attr("amount", Uint128::from(amount)),
+        attr("user", info.sender.clone().to_string()),
+        attr("denom", denom.clone().to_string()),
+    ]))
+}
+
+pub fn execute_cw20_deposit(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sender: Addr,
+    amount: Uint128,
+    denom: String,
+) -> Result<Response, ContractError> {
+    ensure_ne!(
+        true,
+        is_paused(deps.as_ref())?,
+        ContractError::ProtocolIsPaused {}
+    );
+
+    // only cw20 tokens must be sent, not a coins
+    nonpayable(&info)?;
+
+    ensure!(
+        amount > Uint128::zero(),
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .cw20_address
+            .unwrap()
+            == info.sender.clone().into_string(),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
+
+    let token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price = get_mm_token_price(deps.as_ref(), env.clone(), denom.clone())
+        .unwrap()
+        .u128();
+
+    let deposited_mm_token_amount =
+        Decimal::from_i128_with_scale(amount.u128() as i128, token_decimals)
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
+        .load(
+            deps.storage,
+            (sender.to_string(), String::from(denom.clone())),
+        )
+        .unwrap_or_else(|_| Uint128::zero());
+
+    let new_user_mm_token_balance =
+        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (sender.to_string(), String::from(denom.clone())),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let resp = Response::default().add_attributes(vec![
+        attr("action", "deposit"),
+        attr("sender", sender.to_string()),
+        attr("amount", amount.to_string()),
+        attr("token_address", denom.clone()),
+    ]);
+
+    Ok(resp)
+}
+
+/// Generates a transfer message given an asset and an amount
+fn generate_transfer_message(
+    asset: AssetInfo,
+    amount: Uint128,
+    recipient: String,
+) -> Result<CosmosMsg, ContractError> {
+    match asset.clone() {
+        AssetInfo::Native(denom) => {
+            let bank_msg = BankMsg::Send {
+                to_address: recipient,
+                amount: vec![coin(amount.u128(), denom)],
+            };
+
+            Ok(CosmosMsg::Bank(bank_msg))
+        }
+        AssetInfo::Cw20(addr) => {
+            let transfer_msg = Cw20ExecuteMsg::Transfer { recipient, amount };
+            let wasm_msg = wasm_execute(addr, &transfer_msg, vec![])?;
+            Ok(CosmosMsg::Wasm(wasm_msg))
+        }
+        // Does not support 1155 currently
+        _ => Err(ContractError::InvalidAsset {
+            asset: asset.to_string(),
+        }),
+    }
+}
+
+pub fn execute_deposit_native(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    ensure_ne!(
+        true,
+        is_paused(deps.as_ref())?,
+        ContractError::ProtocolIsPaused {}
+    );
+
+    ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
+    one_coin(&info)?;
+
+    let deposited_token = info.funds.first().unwrap();
+    let deposited_token_amount = deposited_token.amount.u128();
+
+    ensure!(
+        deposited_token_amount > 0,
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, deposited_token.denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), deposited_token.denom.clone())?;
+
+    let token_decimals = get_token_decimal(deps.as_ref(), deposited_token.denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let mm_token_price =
+        get_mm_token_price(deps.as_ref(), env.clone(), deposited_token.denom.clone())
+            .unwrap()
+            .u128();
+
+    let deposited_mm_token_amount =
+        Decimal::from_i128_with_scale(deposited_token_amount as i128, token_decimals)
+            .div(Decimal::from_i128_with_scale(
+                mm_token_price as i128,
+                token_decimals,
+            ))
+            .to_u128_with_decimals(token_decimals)
+            .unwrap();
+
+    let user_current_mm_token_balance = USER_MM_TOKEN_BALANCE
+        .load(
+            deps.storage,
+            (info.sender.to_string(), deposited_token.denom.clone()),
+        )
+        .unwrap_or_else(|_| Uint128::zero());
+
+    let new_user_mm_token_balance =
+        user_current_mm_token_balance.u128() + deposited_mm_token_amount;
+
+    USER_MM_TOKEN_BALANCE.save(
+        deps.storage,
+        (info.sender.to_string(), deposited_token.denom.clone()),
+        &Uint128::from(new_user_mm_token_balance),
+    )?;
+
+    let mut resp = Response::default().add_attributes(vec![
+        attr("action", "deposit"),
+        attr("depositee", info.sender.to_string()),
+        attr("amount", Uint128::from(deposited_token_amount)),
+    ]);
+
+    Ok(resp)
+}
+
+pub fn execute_borrow(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    amount: Uint128,
+    denom: String,
+) -> Result<Response, ContractError> {
+    ensure_ne!(
+        true,
+        is_paused(deps.as_ref())?,
+        ContractError::ProtocolIsPaused {}
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+    let mut resp = Response::default();
+
+    let available_to_borrow_amount = get_available_to_borrow(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string(),
+        denom.clone(),
+    )
+    .unwrap()
+    .u128();
+
+    ensure!(
+        available_to_borrow_amount >= amount.u128(),
+        ContractError::AmountToBeBorrowedIsNotAvailable {}
+    );
+
+    ensure!(
+        get_available_liquidity_by_token(deps.as_ref(), env.clone(), denom.clone())
+            .unwrap()
+            .u128()
+            >= amount.u128(),
+        ContractError::NotEnoughLiquidityToBorrow {}
+    );
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
+
+    let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string(),
+        denom.clone(),
+    )
+    .unwrap()
+    .u128();
+
+    let user_borrowing_info = get_user_borrowing_info(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string().clone(),
+        denom.clone(),
+    )
+    .unwrap();
+
+    let new_user_borrow_amount: u128 = user_borrow_amount_with_interest + amount.u128();
+
+    let current_interest_rate = get_interest_rate(deps.as_ref(), env.clone(), denom.clone())
+        .unwrap()
+        .u128();
+
+    let borrowed_token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let average_interest_rate = (Decimal::from_i128_with_scale(
+        user_borrow_amount_with_interest as i128,
+        borrowed_token_decimals,
+    )
+    .mul(Decimal::from_i128_with_scale(
+        user_borrowing_info.average_interest_rate.u128() as i128,
+        INTEREST_RATE_DECIMALS,
+    ))
+    .add(
+        Decimal::from_i128_with_scale(amount.u128() as i128, borrowed_token_decimals).mul(
+            Decimal::from_i128_with_scale(current_interest_rate as i128, INTEREST_RATE_DECIMALS),
+        ),
+    ))
+    .div(Decimal::from_i128_with_scale(
+        new_user_borrow_amount as i128,
+        borrowed_token_decimals,
+    ))
+    .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+    .unwrap();
+
+    // updating user borrowing info
+    let new_user_borrowing_info = UserBorrowingInfo {
+        borrowed_amount: Uint128::from(new_user_borrow_amount.clone()),
+        average_interest_rate: Uint128::from(average_interest_rate),
+        timestamp: env.block.time,
+    };
+
+    let total_borrow_data = get_total_borrow_data(deps.as_ref(), denom.clone()).unwrap_or_default();
+
+    let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
+        - Decimal::from_i128_with_scale(
+            user_borrowing_info.borrowed_amount.u128() as i128,
+            borrowed_token_decimals,
+        )
+        .mul(Decimal::from_i128_with_scale(
+            (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+            INTEREST_RATE_DECIMALS,
+        ))
+        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+        .unwrap()
+        + Decimal::from_i128_with_scale(new_user_borrow_amount as i128, borrowed_token_decimals)
+            .mul(Decimal::from_i128_with_scale(
+                (average_interest_rate / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+
+    let total_borrowed_amount = total_borrow_data.total_borrowed_amount
+        - user_borrowing_info.borrowed_amount.u128()
+        + new_user_borrow_amount;
+
+    let total_average_interest_rate = HUNDRED
+        * Decimal::from_i128_with_scale(
+            expected_annual_interest_income as i128,
+            INTEREST_RATE_DECIMALS,
+        )
+        .div(Decimal::from_i128_with_scale(
+            total_borrowed_amount as i128,
+            borrowed_token_decimals,
+        ))
+        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+        .unwrap();
+
+    let new_total_borrow_data = TotalBorrowData {
+        denom: denom.clone(),
+        total_borrowed_amount: total_borrowed_amount,
+        expected_annual_interest_income: expected_annual_interest_income,
+        average_interest_rate: total_average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    USER_BORROWING_INFO.save(
+        deps.storage,
+        (info.sender.to_string(), denom.clone()),
+        &new_user_borrowing_info,
+    )?;
+
+    TOTAL_BORROW_DATA.save(deps.storage, denom.clone(), &new_total_borrow_data)?;
+
+    let cw20_address = SUPPORTED_TOKENS
+        .load(deps.storage, denom.clone())
+        .unwrap()
+        .cw20_address;
+
+    let asset = if cw20_address.is_some() {
+        AssetInfo::Cw20(Addr::unchecked(cw20_address.unwrap()))
+    } else {
+        AssetInfo::Native(denom.clone())
+    };
+
+    resp = resp.add_message(generate_transfer_message(
+        asset.clone(),
+        Uint128::from(amount),
+        info.sender.to_string(),
+    )?);
+
+    Ok(resp.add_attributes(vec![
+        attr("action", "borrow"),
+        attr("amount", Uint128::from(amount)),
+        attr("user", info.sender.clone().to_string()),
+        attr("denom", denom.clone().to_string()),
+    ]))
+}
+
+pub fn execute_repay_native(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    ensure!(!info.funds.is_empty(), ContractError::CoinNotFound {});
+    one_coin(&info)?;
+
+    let repay_token = info.funds.first().unwrap();
+    let mut repay_amount = repay_token.amount.u128();
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, repay_token.denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    let user_borrowing_info = get_user_borrowing_info(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string().clone(),
+        repay_token.denom.clone(),
+    )
+    .unwrap();
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), repay_token.denom.clone())?;
+
+    let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
+        deps.as_ref(),
+        env.clone(),
+        info.sender.to_string(),
+        repay_token.denom.clone(),
+    )
+    .unwrap()
+    .u128();
+
+    let mut remaining_amount = 0u128;
+    let mut average_interest_rate = user_borrowing_info.average_interest_rate;
+    if repay_amount >= user_borrow_amount_with_interest {
+        remaining_amount = repay_amount - user_borrow_amount_with_interest;
+        repay_amount = user_borrow_amount_with_interest;
+        average_interest_rate = Uint128::zero();
+    }
+
+    let new_user_borrowing_info = UserBorrowingInfo {
+        borrowed_amount: Uint128::from(user_borrow_amount_with_interest - repay_amount),
+        average_interest_rate: average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    let total_borrow_data =
+        get_total_borrow_data(deps.as_ref(), repay_token.denom.clone()).unwrap_or_default();
+
+    let repay_token_decimals = get_token_decimal(deps.as_ref(), repay_token.denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
+        + Decimal::from_i128_with_scale(
+            (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
+            repay_token_decimals,
+        )
+        .mul(Decimal::from_i128_with_scale(
+            (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+            INTEREST_RATE_DECIMALS,
+        ))
+        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+        .unwrap()
+        - Decimal::from_i128_with_scale((repay_amount) as i128, repay_token_decimals)
+            .mul(Decimal::from_i128_with_scale(
+                (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+
+    let total_borrowed_amount = total_borrow_data.total_borrowed_amount
+        + user_borrow_amount_with_interest
+        - user_borrowing_info.borrowed_amount.u128()
+        - repay_amount;
+
+    let mut total_average_interest_rate = 0u128;
+    if total_borrowed_amount != 0u128 {
+        total_average_interest_rate = HUNDRED
+            * Decimal::from_i128_with_scale(
+                expected_annual_interest_income as i128,
+                INTEREST_RATE_DECIMALS,
+            )
+            .div(Decimal::from_i128_with_scale(
+                total_borrowed_amount as i128,
+                repay_token_decimals,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+    }
+
+    let new_total_borrow_data = TotalBorrowData {
+        denom: repay_token.denom.clone(),
+        total_borrowed_amount: total_borrowed_amount,
+        expected_annual_interest_income: expected_annual_interest_income,
+        average_interest_rate: total_average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    USER_BORROWING_INFO.save(
+        deps.storage,
+        (info.sender.to_string(), repay_token.denom.clone()),
+        &new_user_borrowing_info,
+    )?;
+
+    TOTAL_BORROW_DATA.save(
+        deps.storage,
+        repay_token.denom.clone(),
+        &new_total_borrow_data,
+    )?;
+
+    if remaining_amount > 0 {
+        Ok(Response::new().add_message(BankMsg::Send {
+            to_address: info.sender.to_string(),
+            amount: coins(remaining_amount, repay_token.denom.clone()),
+        }))
+    } else {
+        Ok(Response::default())
+    }
+}
+
+pub fn execute_cw20_repay(
+    mut deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    sender: Addr,
+    amount: Uint128,
+    denom: String,
+) -> Result<Response, ContractError> {
+    // only cw20 tokens must be sent, not a coins
+    nonpayable(&info)?;
+
+    ensure!(
+        amount > Uint128::zero(),
+        ContractError::InvalidFunds {
+            msg: "Cannot send 0 amount to deposit".to_string()
+        }
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS.has(deps.storage, denom.clone()),
+        ContractError::TokenNotSupported {}
+    );
+
+    ensure!(
+        SUPPORTED_TOKENS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .cw20_address
+            .unwrap()
+            == info.sender.clone().into_string(),
+        ContractError::TokenNotSupported {}
+    );
+
+    let user_borrowing_info = get_user_borrowing_info(
+        deps.as_ref(),
+        env.clone(),
+        sender.to_string().clone(),
+        denom.clone(),
+    )
+    .unwrap();
+
+    execute_update_liquidity_index_data(&mut deps, env.clone(), denom.clone())?;
+
+    let user_borrow_amount_with_interest = get_user_borrow_amount_with_interest(
+        deps.as_ref(),
+        env.clone(),
+        sender.to_string(),
+        denom.clone(),
+    )
+    .unwrap()
+    .u128();
+
+    let mut remaining_amount = 0u128;
+    let mut average_interest_rate = user_borrowing_info.average_interest_rate;
+
+    let amount_to_repay = if amount.u128() >= user_borrow_amount_with_interest {
+        remaining_amount = amount.u128() - user_borrow_amount_with_interest;
+        average_interest_rate = Uint128::zero();
+        user_borrow_amount_with_interest.clone()
+    } else {
+        amount.u128()
+    };
+
+    let new_user_borrowing_info = UserBorrowingInfo {
+        borrowed_amount: Uint128::from(user_borrow_amount_with_interest.clone() - amount_to_repay),
+        average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    let total_borrow_data = get_total_borrow_data(deps.as_ref(), denom.clone()).unwrap_or_default();
+
+    let repay_token_decimals = get_token_decimal(deps.as_ref(), denom.clone())
+        .unwrap()
+        .u128() as u32;
+
+    let expected_annual_interest_income = total_borrow_data.expected_annual_interest_income
+        + Decimal::from_i128_with_scale(
+            (user_borrow_amount_with_interest - user_borrowing_info.borrowed_amount.u128()) as i128,
+            repay_token_decimals,
+        )
+        .mul(Decimal::from_i128_with_scale(
+            (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+            INTEREST_RATE_DECIMALS,
+        ))
+        .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+        .unwrap()
+        - Decimal::from_i128_with_scale((amount_to_repay) as i128, repay_token_decimals)
+            .mul(Decimal::from_i128_with_scale(
+                (user_borrowing_info.average_interest_rate.u128() / HUNDRED) as i128,
+                INTEREST_RATE_DECIMALS,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+
+    let total_borrowed_amount = total_borrow_data.total_borrowed_amount
+        + user_borrow_amount_with_interest
+        - user_borrowing_info.borrowed_amount.u128()
+        - amount_to_repay;
+
+    let mut total_average_interest_rate = 0u128;
+    if total_borrowed_amount != 0u128 {
+        total_average_interest_rate = HUNDRED
+            * Decimal::from_i128_with_scale(
+                expected_annual_interest_income as i128,
+                INTEREST_RATE_DECIMALS,
+            )
+            .div(Decimal::from_i128_with_scale(
+                total_borrowed_amount as i128,
+                repay_token_decimals,
+            ))
+            .to_u128_with_decimals(INTEREST_RATE_DECIMALS)
+            .unwrap();
+    }
+
+    let new_total_borrow_data = TotalBorrowData {
+        denom: denom.clone(),
+        total_borrowed_amount: total_borrowed_amount,
+        expected_annual_interest_income: expected_annual_interest_income,
+        average_interest_rate: total_average_interest_rate,
+        timestamp: env.block.time,
+    };
+
+    USER_BORROWING_INFO.save(
+        deps.storage,
+        (sender.to_string(), denom.clone()),
+        &new_user_borrowing_info,
+    )?;
+
+    TOTAL_BORROW_DATA.save(deps.storage, denom.clone(), &new_total_borrow_data)?;
+
+    if remaining_amount > 0 {
+        let cw20_address = SUPPORTED_TOKENS
+            .load(deps.storage, denom.clone())
+            .unwrap()
+            .cw20_address;
+
+        let resp = Response::default().add_message(generate_transfer_message(
+            AssetInfo::Cw20(Addr::unchecked(cw20_address.unwrap())),
+            Uint128::from(remaining_amount),
+            sender.to_string(),
+        )?);
+
+        Ok(resp.add_attributes(vec![
+            attr("action", "repay"),
+            attr("depositee", sender.to_string()),
+            attr("amount", amount),
+        ]))
+    } else {
+        Ok(Response::default().add_attributes(vec![
+            attr("action", "repay"),
+            attr("depositee", sender.to_string()),
+            attr("amount", amount),
+        ]))
     }
 }
